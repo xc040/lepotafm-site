@@ -1,8 +1,16 @@
-/* --- ТАЙМЕР СНА --- */
+/* --- ТАЙМЕР СНА (СЛАЙДЕР) --- */
 let sleepInterval = null;
 
+function updateSleepLabel(minutes) {
+    const display = document.getElementById('timer-val-display');
+    if (minutes == 0) display.innerText = "Off";
+    else display.innerText = minutes + " мин";
+}
+
 function setSleepTimer(minutes) {
-    cancelSleepTimer(); // Сброс старого
+    cancelSleepTimer(); // Сброс
+
+    if (minutes == 0) return; // Если 0 - просто выключили
 
     const targetTime = Date.now() + (minutes * 60 * 1000);
     const statusDiv = document.getElementById('sleep-status');
@@ -17,10 +25,10 @@ function setSleepTimer(minutes) {
             // Время вышло!
             stopRadio();
             cancelSleepTimer();
-            statusDiv.innerHTML = "Радио выключено 💤";
-            setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
+            // Сбрасываем слайдер
+            document.getElementById('sleep-slider').value = 0;
+            document.getElementById('timer-val-display').innerText = "Off";
         } else {
-            // Тик-так
             const m = Math.floor(diff / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -31,101 +39,146 @@ function setSleepTimer(minutes) {
 function cancelSleepTimer() {
     if (sleepInterval) clearInterval(sleepInterval);
     const statusDiv = document.getElementById('sleep-status');
-    if(statusDiv) {
-        statusDiv.style.display = "none";
-        statusDiv.innerHTML = 'Стоп через: <span id="sleep-countdown" class="neon-text">00:00</span> <button class="cancel-btn" onclick="cancelSleepTimer()">✕</button>';
-    }
+    if(statusDiv) statusDiv.style.display = "none";
 }
 
-/* --- БУДИЛЬНИК --- */
-let alarmInterval = null;
+/* --- БУДИЛЬНИК (СПИСОК) --- */
+let alarms = []; // Массив будильников
+let alarmChecker = null;
 
-// При загрузке проверяем, был ли включен будильник
 window.addEventListener('load', () => {
-    const savedTime = localStorage.getItem('alarmTime');
-    const savedState = localStorage.getItem('alarmActive');
-    
-    if (savedTime) document.getElementById('alarm-time-input').value = savedTime;
-    if (savedState === 'true') {
-        document.getElementById('alarm-toggle').checked = true;
-        startAlarmCheck();
-    }
+    loadAlarms();
+    startAlarmClock();
 });
 
-function toggleAlarm() {
-    const isChecked = document.getElementById('alarm-toggle').checked;
-    const timeVal = document.getElementById('alarm-time-input').value;
-    const msg = document.getElementById('alarm-msg');
-
-    if (isChecked) {
-        if (!timeVal) {
-            alert("Сначала выберите время!");
-            document.getElementById('alarm-toggle').checked = false;
-            return;
-        }
-        // Сохраняем
-        localStorage.setItem('alarmTime', timeVal);
-        localStorage.setItem('alarmActive', 'true');
-        
-        msg.style.display = 'block';
-        msg.style.color = '#00f3ff';
-        msg.innerText = `Будильник установлен на ${timeVal}`;
-        
-        startAlarmCheck();
-    } else {
-        // Выключаем
-        localStorage.setItem('alarmActive', 'false');
-        msg.style.display = 'none';
-        if (alarmInterval) clearInterval(alarmInterval);
+// Загрузка из памяти
+function loadAlarms() {
+    const stored = localStorage.getItem('myAlarms');
+    if (stored) {
+        alarms = JSON.parse(stored);
+        renderAlarms();
     }
 }
 
-function startAlarmCheck() {
-    if (alarmInterval) clearInterval(alarmInterval);
+// Сохранение
+function saveAlarms() {
+    localStorage.setItem('myAlarms', JSON.stringify(alarms));
+    renderAlarms();
+}
 
-    alarmInterval = setInterval(() => {
+// Выбор дней при создании
+let selectedDays = []; // 0=Вс, 1=Пн...
+function toggleDay(el) {
+    const day = parseInt(el.getAttribute('data-day'));
+    if (selectedDays.includes(day)) {
+        selectedDays = selectedDays.filter(d => d !== day);
+        el.classList.remove('selected');
+    } else {
+        selectedDays.push(day);
+        el.classList.add('selected');
+    }
+}
+
+// Добавить будильник
+function addAlarm() {
+    const timeInput = document.getElementById('new-alarm-time');
+    const time = timeInput.value;
+
+    if (!time) { alert("Выберите время!"); return; }
+    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
+
+    alarms.push({
+        time: time,
+        days: [...selectedDays], // Копия массива
+        active: true
+    });
+
+    saveAlarms();
+    
+    // Сброс формы
+    timeInput.value = "";
+    selectedDays = [];
+    document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
+}
+
+// Удалить будильник
+function deleteAlarm(index) {
+    alarms.splice(index, 1);
+    saveAlarms();
+}
+
+// Отрисовка списка
+function renderAlarms() {
+    const container = document.getElementById('alarms-list');
+    container.innerHTML = "";
+    
+    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+    alarms.forEach((alarm, index) => {
+        // Формируем строку дней
+        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
+        if (alarm.days.length === 7) daysStr = "Каждый день";
+
+        const div = document.createElement('div');
+        div.className = "alarm-item";
+        div.innerHTML = `
+            <div>
+                <div class="alarm-time">${alarm.time}</div>
+                <div class="alarm-days">${daysStr}</div>
+            </div>
+            <button class="alarm-del-btn" onclick="deleteAlarm(${index})">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ГЛАВНЫЙ ЦИКЛ ПРОВЕРКИ
+function startAlarmClock() {
+    if (alarmChecker) clearInterval(alarmChecker);
+    
+    alarmChecker = setInterval(() => {
         const now = new Date();
+        const currentDay = now.getDay(); // 0-6
         const h = String(now.getHours()).padStart(2, '0');
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
-        
-        const targetTime = localStorage.getItem('alarmTime');
+        const seconds = now.getSeconds();
 
-        // Если время совпало и секунды == 0
-        if (currentTime === targetTime && now.getSeconds() === 0) {
-            triggerAlarm();
-        }
+        // Проверяем только в 00 секунд (чтобы не орало минуту)
+        if (seconds !== 0) return;
+
+        alarms.forEach(alarm => {
+            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
+                triggerAlarm();
+            }
+        });
+
     }, 1000);
 }
 
 function triggerAlarm() {
-    // 1. Включаем радио (используем функцию из main.js)
     playRadio();
-    
-    // 2. Ставим громкость на максимум (чтобы точно проснулся)
+    // Громкость на макс
     const slider = document.getElementById('vol-slider');
     if (slider) {
         slider.value = 1.0;
-        // Генерируем событие, чтобы main.js увидел изменение
         slider.dispatchEvent(new Event('input'));
     }
-
-    // 3. Пишем сообщение
+    
     const msg = document.getElementById('alarm-msg');
-    msg.innerText = "⏰ ПОДЪЕМ! ИГРАЕТ РАДИО!";
-    msg.style.color = "var(--neon-pink)";
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 60000);
 }
 
-/* --- СВЯЗЬ С MAIN.JS --- */
+/* --- СВЯЗЬ --- */
 function stopRadio() {
-    // Если играет (переменная из main.js), нажимаем кнопку
     if (typeof isPlaying !== 'undefined' && isPlaying) {
         document.getElementById('play-btn').click();
     }
 }
-
 function playRadio() {
-    // Если НЕ играет, нажимаем кнопку
     if (typeof isPlaying !== 'undefined' && !isPlaying) {
         document.getElementById('play-btn').click();
     }
