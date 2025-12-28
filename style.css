@@ -23,138 +23,131 @@ body {
     background: radial-gradient(circle at 50% -20%, #1a1a40, #050510);
     z-index: -2;
 }
-/* Эффект старого монитора (еле заметные полоски) */
 .scanlines {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%);
-    background-size: 100% 4px;
-    pointer-events: none; z-index: -1;
+    background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
 /* Шапка */
 .top-section {
-    background: rgba(21, 21, 37, 0.9);
+    background: rgba(21, 21, 37, 0.95);
     border-bottom: 1px solid rgba(0, 243, 255, 0.2);
-    padding-bottom: 5px;
     z-index: 10;
+    flex-shrink: 0; /* Не сжимать шапку */
 }
 
 header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 15px 20px;
+    padding: 10px 20px;
 }
-.logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; }
+.logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
 .neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
 .live-indicator { 
     background: red; font-size: 10px; padding: 2px 6px; 
     border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
 }
 
-/* Табы */
+/* Табы (Кнопки меню) */
 .tabs {
-    display: flex; gap: 15px; padding: 0 15px;
-    overflow-x: auto; scrollbar-width: none;
+    display: flex; gap: 5px; padding: 0 10px;
+    overflow-x: auto; /* Если не влезают - скроллим */
 }
 .tab-btn {
+    flex: 1; /* Растянуть кнопки равномерно */
     background: none; border: none; color: #888;
-    font-size: 14px; font-weight: 600; text-transform: uppercase;
-    padding: 10px 5px; cursor: pointer; transition: 0.3s;
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    padding: 12px 0; cursor: pointer; transition: 0.3s;
     border-bottom: 2px solid transparent;
 }
 .tab-btn.active {
     color: var(--neon-blue);
     border-bottom: 2px solid var(--neon-blue);
-    text-shadow: 0 0 8px var(--neon-blue);
 }
 
 /* Контент */
 .main-content {
     flex: 1; overflow-y: auto; padding: 15px;
-    padding-bottom: 90px; /* Место под плеер */
+    padding-bottom: 100px; /* Большой отступ снизу для плеера */
 }
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* История треков */
+/* История */
+.loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .history-item {
     display: flex; align-items: center;
     background: var(--card);
-    margin-bottom: 10px; padding: 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 8px; padding: 8px;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
 }
 .hist-img {
-    width: 50px; height: 50px; border-radius: 6px;
-    object-fit: cover; margin-right: 15px;
+    width: 45px; height: 45px; border-radius: 6px;
+    object-fit: cover; margin-right: 12px;
 }
-.hist-info { flex: 1; }
-.hist-title { font-size: 14px; font-weight: bold; display: block; color: white; }
-.hist-artist { font-size: 12px; color: #aaa; }
+.hist-info { flex: 1; overflow: hidden; }
+.hist-title { font-size: 14px; font-weight: bold; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sku-btn {
     background: none; border: 1px solid var(--neon-blue);
-    color: var(--neon-blue); width: 35px; height: 35px;
+    color: var(--neon-blue); width: 32px; height: 32px;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
 }
 
 /* Чат и настройки */
 .placeholder-box {
-    text-align: center; padding: 40px;
+    text-align: center; padding: 30px;
     background: var(--card); border-radius: 15px;
-    border: 1px solid rgba(255,255,255,0.05);
 }
 .neon-btn {
-    display: inline-block; padding: 10px 25px; margin-top: 15px;
-    background: transparent; color: var(--neon-blue);
+    display: inline-block; padding: 8px 20px; margin-top: 15px;
     border: 1px solid var(--neon-blue); border-radius: 20px;
-    text-decoration: none; font-weight: bold;
-    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+    color: var(--neon-blue); text-decoration: none;
 }
 .setting-row {
     display: flex; justify-content: space-between;
-    padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Нижний плеер */
+/* НИЖНИЙ ПЛЕЕР (Исправленный) */
 .bottom-player {
-    position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
-    background: rgba(21, 21, 37, 0.95);
-    backdrop-filter: blur(10px);
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
+    background: rgba(21, 21, 37, 0.98);
     border-top: 1px solid var(--neon-pink);
     display: flex; align-items: center;
     padding: 0 15px; box-sizing: border-box;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     z-index: 100;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
 }
 #mini-art {
-    width: 50px; height: 50px; border-radius: 50%;
-    object-fit: cover; margin-right: 15px;
+    width: 45px; height: 45px; border-radius: 50%;
+    object-fit: cover; margin-right: 12px;
     border: 2px solid var(--neon-pink);
-    animation: spin 10s linear infinite;
-    animation-play-state: paused;
+    animation: spin 10s linear infinite; animation-play-state: paused;
 }
 .playing #mini-art { animation-play-state: running; }
 
-.player-info { flex: 1; overflow: hidden; }
-#track-name { font-size: 15px; font-weight: bold; white-space: nowrap; color: white; }
-#artist-name { font-size: 13px; color: var(--neon-blue); }
+.player-info { flex: 1; overflow: hidden; margin-right: 10px; }
+#track-name { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#artist-name { font-size: 12px; color: var(--neon-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Кнопка Play (Сделал больше и заметнее) */
 .control-btn {
     background: var(--neon-blue); border: none;
-    width: 45px; height: 45px; border-radius: 50%;
-    font-size: 18px; color: #000;
+    width: 50px; height: 50px; border-radius: 50%;
+    font-size: 20px; color: #000;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 15px var(--neon-blue);
-    cursor: pointer;
+    box-shadow: 0 0 10px var(--neon-blue);
+    flex-shrink: 0; /* Не сжиматься */
 }
 
 /* Свитч */
-.switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: var(--neon-pink); }
-input:checked + .slider:before { transform: translateX(22px); }
+input:checked + .slider:before { transform: translateX(20px); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
