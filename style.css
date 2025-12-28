@@ -28,7 +28,7 @@ body {
     background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* ЗОНА СВЕРХУ */
+/* ЗОНА СВЕРХУ (Шапка + Плеер) */
 .fixed-top-area {
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
@@ -63,25 +63,27 @@ header {
 }
 .tab-btn.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); }
 
-/* ПЛЕЕР (Встроенный) */
+/* ПЛЕЕР */
 .inline-player {
     display: flex; align-items: center;
     padding: 10px 15px;
     background: rgba(255,255,255,0.02);
 }
 
-/* --- ВЕРНУЛИ КРУГ И ВРАЩЕНИЕ --- */
+/* Картинка плеера (Круглая и крутится) */
 #mini-art {
     width: 50px; height: 50px; 
-    border-radius: 50%; /* Круг */
+    border-radius: 50%; 
     object-fit: cover; margin-right: 12px;
     border: 2px solid var(--neon-pink);
     box-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
-    /* Анимация вращения */
+    
+    /* Анимация */
     animation: spin 5s linear infinite; 
-    animation-play-state: paused; /* По умолчанию стоит */
+    animation-play-state: paused; 
 }
-/* Класс .playing добавляет JS, когда музыка играет */
+
+/* Когда играет музыка, добавляется класс playing */
 .inline-player.playing #mini-art {
     animation-play-state: running; 
 }
@@ -107,47 +109,19 @@ header {
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* Элементы списка (ИСТОРИЯ) */
+/* История */
+.loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .history-item {
-    display: flex; 
-    align-items: center; /* Центрируем по вертикали */
+    display: flex; align-items: center;
     background: var(--card);
-    margin-bottom: 8px; padding: 10px; /* Чуть больше отступ */
+    margin-bottom: 8px; padding: 10px;
     border-radius: 12px; 
     border: 1px solid rgba(255,255,255,0.05);
 }
-
-.hist-img { 
-    width: 50px; height: 50px; 
-    border-radius: 8px; 
-    object-fit: cover; margin-right: 15px; 
-}
-
-/* Блок с текстом: Делаем столбик */
-.hist-info { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; /* Друг под другом */
-    justify-content: center;
-    overflow: hidden; 
-}
-
-.hist-title { 
-    font-size: 15px; 
-    font-weight: bold; 
-    color: white; 
-    display: block; 
-    margin-bottom: 3px; /* Отступ между названием и артистом */
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-}
-
-.hist-artist { 
-    font-size: 13px; 
-    color: var(--neon-blue); /* Цвет артиста */
-    display: block;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-}
-
+.hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
+.hist-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.hist-title { font-size: 15px; font-weight: bold; color: white; display: block; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 13px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sku-btn {
     background: none; border: 1px solid var(--neon-blue);
     color: var(--neon-blue); width: 36px; height: 36px;
@@ -155,7 +129,7 @@ header {
     cursor: pointer; margin-left: 10px;
 }
 
-/* Настройки и Громкость */
+/* Настройки */
 .setting-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -174,4 +148,3 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
-
