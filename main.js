@@ -16,7 +16,7 @@ window.onload = function() {
     initPlayer();
     updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
-    initVolume(); // Запуск громкости
+    initVolume(); // Инициализация громкости
 };
 
 document.addEventListener("visibilitychange", () => {
@@ -38,11 +38,14 @@ window.openTab = function(tabName, btnElement) {
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player'); // Ищем новый плеер
 
     if (!playBtn) return;
 
     if (isApp) {
         if(icon) icon.className = "fas fa-pause";
+        // Сразу запускаем вращение в приложении
+        if(playerDiv) playerDiv.classList.add('playing');
     }
 
     playBtn.addEventListener('click', () => {
@@ -52,10 +55,12 @@ function initPlayer() {
                 if (isPlaying) {
                     window.Android.pauseAudio();
                     if(icon) icon.className = "fas fa-play";
+                    if(playerDiv) playerDiv.classList.remove('playing'); // Стоп вращение
                     isPlaying = false;
                 } else {
                     window.Android.playAudio();
                     if(icon) icon.className = "fas fa-pause";
+                    if(playerDiv) playerDiv.classList.add('playing'); // Старт вращение
                     isPlaying = true;
                 }
             } catch(e) { console.log(e); }
@@ -66,29 +71,27 @@ function initPlayer() {
         if (isPlaying) {
             audio.pause();
             if(icon) icon.className = "fas fa-play";
+            if(playerDiv) playerDiv.classList.remove('playing');
             isPlaying = false;
         } else {
             audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
             audio.play().catch(e => console.log("Блок автоплея"));
             if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
             isPlaying = true;
         }
     });
 }
 
-// Логика громкости
+// Логика громкости (ВКЛЮЧЕНА ВСЕГДА)
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Если это приложение - отключаем ползунок (так как кнопки телефона главнее)
-    if (isApp) {
-        slider.disabled = true;
-        slider.parentElement.style.opacity = "0.5";
-        return;
-    }
-
-    // Для браузера
+    // Убрали проверку "if (isApp)", теперь ползунок работает всегда
+    // НО: В приложении он не будет менять системную громкость Android (нужен Java-код)
+    // Он будет просто визуальным элементом, пока вы не обновите APK.
+    
     slider.addEventListener('input', (e) => {
         audio.volume = e.target.value;
     });
