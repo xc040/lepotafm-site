@@ -2,18 +2,16 @@
 let sleepInterval = null;
 
 function setSleepTimer(minutes) {
-    // Сбрасываем старый если был
-    cancelSleepTimer();
+    cancelSleepTimer(); // Сброс старого
 
     const targetTime = Date.now() + (minutes * 60 * 1000);
     const statusDiv = document.getElementById('sleep-status');
     const countdownSpan = document.getElementById('sleep-countdown');
 
-    statusDiv.style.display = "block"; // Показываем таймер
+    statusDiv.style.display = "block"; 
 
     sleepInterval = setInterval(() => {
-        const now = Date.now();
-        const diff = targetTime - now;
+        const diff = targetTime - Date.now();
 
         if (diff <= 0) {
             // Время вышло!
@@ -22,7 +20,7 @@ function setSleepTimer(minutes) {
             statusDiv.innerHTML = "Радио выключено 💤";
             setTimeout(() => { statusDiv.style.display = "none"; }, 3000);
         } else {
-            // Обновляем цифры
+            // Тик-так
             const m = Math.floor(diff / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -32,13 +30,17 @@ function setSleepTimer(minutes) {
 
 function cancelSleepTimer() {
     if (sleepInterval) clearInterval(sleepInterval);
-    document.getElementById('sleep-status').style.display = "none";
+    const statusDiv = document.getElementById('sleep-status');
+    if(statusDiv) {
+        statusDiv.style.display = "none";
+        statusDiv.innerHTML = 'Стоп через: <span id="sleep-countdown" class="neon-text">00:00</span> <button class="cancel-btn" onclick="cancelSleepTimer()">✕</button>';
+    }
 }
 
 /* --- БУДИЛЬНИК --- */
 let alarmInterval = null;
 
-// Загружаем сохраненный будильник при старте
+// При загрузке проверяем, был ли включен будильник
 window.addEventListener('load', () => {
     const savedTime = localStorage.getItem('alarmTime');
     const savedState = localStorage.getItem('alarmActive');
@@ -53,6 +55,7 @@ window.addEventListener('load', () => {
 function toggleAlarm() {
     const isChecked = document.getElementById('alarm-toggle').checked;
     const timeVal = document.getElementById('alarm-time-input').value;
+    const msg = document.getElementById('alarm-msg');
 
     if (isChecked) {
         if (!timeVal) {
@@ -63,13 +66,16 @@ function toggleAlarm() {
         // Сохраняем
         localStorage.setItem('alarmTime', timeVal);
         localStorage.setItem('alarmActive', 'true');
-        document.getElementById('alarm-msg').style.display = 'block';
-        document.getElementById('alarm-msg').innerText = `Будильник на ${timeVal}`;
+        
+        msg.style.display = 'block';
+        msg.style.color = '#00f3ff';
+        msg.innerText = `Будильник установлен на ${timeVal}`;
+        
         startAlarmCheck();
     } else {
         // Выключаем
         localStorage.setItem('alarmActive', 'false');
-        document.getElementById('alarm-msg').style.display = 'none';
+        msg.style.display = 'none';
         if (alarmInterval) clearInterval(alarmInterval);
     }
 }
@@ -79,13 +85,13 @@ function startAlarmCheck() {
 
     alarmInterval = setInterval(() => {
         const now = new Date();
-        const currentHours = String(now.getHours()).padStart(2, '0');
-        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${currentHours}:${currentMinutes}`;
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const currentTime = `${h}:${m}`;
         
         const targetTime = localStorage.getItem('alarmTime');
 
-        // Сравниваем время (и проверяем, чтобы секунды были 00, чтобы сработало 1 раз)
+        // Если время совпало и секунды == 0
         if (currentTime === targetTime && now.getSeconds() === 0) {
             triggerAlarm();
         }
@@ -93,29 +99,33 @@ function startAlarmCheck() {
 }
 
 function triggerAlarm() {
-    // Включаем радио
+    // 1. Включаем радио (используем функцию из main.js)
     playRadio();
     
-    // Показываем сообщение
+    // 2. Ставим громкость на максимум (чтобы точно проснулся)
+    const slider = document.getElementById('vol-slider');
+    if (slider) {
+        slider.value = 1.0;
+        // Генерируем событие, чтобы main.js увидел изменение
+        slider.dispatchEvent(new Event('input'));
+    }
+
+    // 3. Пишем сообщение
     const msg = document.getElementById('alarm-msg');
-    msg.innerText = "⏰ ПОДЪЕМ! ИГРАЕТ МУЗЫКА!";
-    msg.style.color = "#00f3ff";
-    
-    // Выключаем переключатель (чтобы завтра само не заиграло, если не хочешь)
-    // document.getElementById('alarm-toggle').checked = false;
-    // toggleAlarm(); 
+    msg.innerText = "⏰ ПОДЪЕМ! ИГРАЕТ РАДИО!";
+    msg.style.color = "var(--neon-pink)";
 }
 
-/* --- Вспомогательные функции (связь с main.js) --- */
+/* --- СВЯЗЬ С MAIN.JS --- */
 function stopRadio() {
-    // Нажимаем кнопку Play, если музыка играет
-    // Мы определяем это по классу иконки или глобальной переменной isPlaying из main.js
+    // Если играет (переменная из main.js), нажимаем кнопку
     if (typeof isPlaying !== 'undefined' && isPlaying) {
         document.getElementById('play-btn').click();
     }
 }
 
 function playRadio() {
+    // Если НЕ играет, нажимаем кнопку
     if (typeof isPlaying !== 'undefined' && !isPlaying) {
         document.getElementById('play-btn').click();
     }
