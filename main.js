@@ -131,14 +131,20 @@ function updateMetadata() {
         });
 }
 
+/* --- ИЗМЕНЕННАЯ ОТРИСОВКА ИСТОРИИ --- */
 function renderHistory(history) {
     const container = document.getElementById('history-container');
     if (!container) return;
 
     let html = '';
+    
     history.forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
+        
+        // Экранируем кавычки, чтобы скрипт не ломался, если в названии есть '
+        const safeTitle = song.title.replace(/'/g, "\\'");
+        const safeArtist = song.artist.replace(/'/g, "\\'");
         
         html += `
         <div class="history-item">
@@ -147,12 +153,14 @@ function renderHistory(history) {
                 <span class="hist-title">${song.title}</span>
                 <span class="hist-artist">${song.artist}</span>
             </div>
-            <button class="sku-btn" onclick="openSku('${song.title} ${song.artist}')">
-                <i class="fas fa-search"></i>
+            <!-- Передаем данные на новую страницу -->
+            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')">
+                <i class="fas fa-info"></i>
             </button>
         </div>
         `;
     });
+    
     container.innerHTML = html;
 }
 
@@ -162,6 +170,15 @@ function fixUrl(url) {
     return url;
 }
 
-window.openSku = function(query) {
-    window.open("https://www.google.com/search?q=" + encodeURIComponent(query), '_blank');
+/* --- ПЕРЕХОД НА ОТДЕЛЬНУЮ СТРАНИЦУ --- */
+window.openSku = function(title, artist, art) {
+    // Упаковываем данные в ссылку
+    const params = new URLSearchParams({
+        title: title,
+        artist: artist,
+        art: art
+    });
+    // Открываем файл свойств
+    window.location.href = 'song-info.html?' + params.toString();
 };
+
