@@ -27,7 +27,6 @@ function updateMetadataLoop() {
     setTimeout(updateMetadataLoop, CONFIG.refreshTime);
 }
 
-/* --- ПЛЕЕР --- */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
@@ -73,14 +72,13 @@ function togglePlayState() {
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Auto block"));
+        audio.play().catch(e => console.log("Block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
 }
 
-/* --- УМНАЯ ГРОМКОСТЬ --- */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -106,7 +104,6 @@ function initVolume() {
     });
 }
 
-/* --- ВКЛАДКИ --- */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -114,12 +111,10 @@ window.openTab = function(tabName, btnElement) {
     if (btnElement) btnElement.classList.add('active');
 };
 
-/* --- МЕТАДАННЫЕ И ИСТОРИЯ --- */
 function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // 1. ТЕКУЩИЙ ТРЕК (СТРОГО из playing)
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 document.getElementById('track-name').innerText = song.title;
@@ -129,8 +124,6 @@ function updateMetadata() {
                 const img = document.getElementById('mini-art');
                 if (img && img.src !== artUrl) img.src = artUrl;
             }
-
-            // 2. ИСТОРИЯ (Строго из history)
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
@@ -141,14 +134,10 @@ function updateMetadata() {
 function renderHistory(history) {
     const container = document.getElementById('history-container');
     if (!container) return;
-
     let html = '';
-    // Берем историю. Иногда API дублирует текущую песню первой,
-    // но мы выводим всё как дает сервер, чтобы не путаться.
     history.forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
-        // Экранируем кавычки для JS
         const safeTitle = song.title.replace(/'/g, "\\'"); 
         const safeArtist = song.artist.replace(/'/g, "\\'"); 
         const safeArt = art;
@@ -160,7 +149,6 @@ function renderHistory(history) {
                 <span class="hist-title">${song.title}</span>
                 <span class="hist-artist">${song.artist}</span>
             </div>
-            <!-- КНОПКА ИНФО (Вернулась!) -->
             <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
                 <i class="fas fa-info"></i>
             </button>
@@ -175,8 +163,20 @@ function fixUrl(url) {
     return url;
 }
 
-// Функция для кнопки Инфо (пример заглушки или редиректа)
+/* --- ОТКРЫТИЕ ИНФОРМАЦИИ (МОДАЛКА) --- */
 window.openSku = function(title, artist, art) {
-    alert(`Инфо о треке:\n${artist} - ${title}`);
-    // Тут можно сделать window.open('гугл поиск...')
+    const modal = document.getElementById('info-modal');
+    document.getElementById('modal-art').src = art;
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-artist').innerText = artist;
+    
+    // Ссылки (VK можно менять здесь или в HTML)
+    // Кнопка ВК уже прописана жестко в HTML, но если надо поиск:
+    // document.getElementById('link-vk').href = `https://vk.com/search?c%5Bq%5D=${artist} ${title}`;
+    
+    modal.classList.remove('hidden');
+};
+
+window.closeSku = function() {
+    document.getElementById('info-modal').classList.add('hidden');
 };
