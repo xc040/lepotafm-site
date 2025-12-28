@@ -6,12 +6,10 @@ const CONFIG = {
     refreshTime: 5000 
 };
 
-// Глобальные переменные (доступны для features.js)
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
-// Автостарт в приложении
 if (isApp) isPlaying = true;
 
 window.onload = function() {
@@ -37,7 +35,6 @@ function initPlayer() {
 
     if (!playBtn) return;
 
-    // Визуальный старт если приложение
     if (isApp) {
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
@@ -48,12 +45,10 @@ function initPlayer() {
     });
 }
 
-// Вынесли функцию переключения, чтобы будильник мог её нажимать
 function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -71,7 +66,6 @@ function togglePlayState() {
         return;
     }
 
-    // БРАУЗЕР
     if (isPlaying) {
         audio.pause();
         if(icon) icon.className = "fas fa-play";
@@ -79,7 +73,7 @@ function togglePlayState() {
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Autoplay block"));
+        audio.play().catch(e => console.log("Auto block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
@@ -93,12 +87,11 @@ function initVolume() {
 
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    if (finalVol < 0.1) finalVol = 0.5; // Защита от тишины
+    if (finalVol < 0.1) finalVol = 0.5;
 
     slider.value = finalVol;
     audio.volume = finalVol;
     
-    // Попытка установить громкость в приложении (если поддерживается)
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -121,14 +114,12 @@ window.openTab = function(tabName, btnElement) {
     if (btnElement) btnElement.classList.add('active');
 };
 
-/* --- МЕТАДАННЫЕ --- */
+/* --- МЕТАДАННЫЕ И ИСТОРИЯ --- */
 function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(res => {
-            if (!res.ok) throw new Error("Err");
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
+            // 1. ТЕКУЩИЙ ТРЕК (СТРОГО из playing)
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 document.getElementById('track-name').innerText = song.title;
@@ -138,6 +129,8 @@ function updateMetadata() {
                 const img = document.getElementById('mini-art');
                 if (img && img.src !== artUrl) img.src = artUrl;
             }
+
+            // 2. ИСТОРИЯ (Строго из history)
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
@@ -148,15 +141,29 @@ function updateMetadata() {
 function renderHistory(history) {
     const container = document.getElementById('history-container');
     if (!container) return;
+
     let html = '';
-    history.slice(0, 10).forEach(item => {
+    // Берем историю. Иногда API дублирует текущую песню первой,
+    // но мы выводим всё как дает сервер, чтобы не путаться.
+    history.forEach(item => {
+        const song = item.song;
+        const art = fixUrl(song.art);
+        // Экранируем кавычки для JS
+        const safeTitle = song.title.replace(/'/g, "\\'"); 
+        const safeArtist = song.artist.replace(/'/g, "\\'"); 
+        const safeArt = art;
+
         html += `
         <div class="history-item">
-            <img src="${fixUrl(item.song.art)}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
+            <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
             <div class="hist-info">
-                <span class="hist-title">${item.song.title}</span>
-                <span class="hist-artist">${item.song.artist}</span>
+                <span class="hist-title">${song.title}</span>
+                <span class="hist-artist">${song.artist}</span>
             </div>
+            <!-- КНОПКА ИНФО (Вернулась!) -->
+            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
+                <i class="fas fa-info"></i>
+            </button>
         </div>`;
     });
     container.innerHTML = html;
@@ -167,3 +174,9 @@ function fixUrl(url) {
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
+
+// Функция для кнопки Инфо (пример заглушки или редиректа)
+window.openSku = function(title, artist, art) {
+    alert(`Инфо о треке:\n${artist} - ${title}`);
+    // Тут можно сделать window.open('гугл поиск...')
+};
