@@ -15,21 +15,20 @@
     <!-- ВЕРХНЯЯ ЗОНА (Закреплена) -->
     <div class="fixed-top-area">
         
-        <!-- 1. Логотип -->
+        <!-- Логотип -->
         <header>
             <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
             <div class="live-indicator">LIVE</div>
         </header>
 
-        <!-- 2. Вкладки -->
+        <!-- Вкладки -->
         <nav class="tabs">
             <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
-            <button class="tab-btn" onclick="openTab('chat', this)">Чат</button>
+            <button class="tab-btn" onclick="openTab('chat', this)">Студия</button>
             <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
-            <button class="tab-btn" onclick="alert('Скоро!')">Shop</button>
         </nav>
 
-        <!-- 3. ПЛЕЕР (Теперь тут!) -->
+        <!-- ПЛЕЕР -->
         <div class="inline-player">
             <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
             
@@ -57,20 +56,52 @@
             </div>
         </div>
 
-        <!-- Вкладка ЧАТ -->
+        <!-- Вкладка ЧАТ/СТУДИЯ -->
         <div id="chat" class="tab-pane">
             <div class="placeholder-box">
-                <i class="fab fa-telegram-plane"></i>
-                <p>Наш Telegram чат</p>
-                <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Перейти</a>
+                <i class="fab fa-telegram-plane" style="font-size: 40px; color: #0088cc; margin-bottom: 15px;"></i>
+                <h3>Связь со студией</h3>
+                <p>Пишите приветы и заказывайте песни через наш Telegram</p>
+                <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Написать</a>
             </div>
         </div>
 
-        <!-- Вкладка ФИЧИ (С громкостью) -->
+        <!-- Вкладка ФИЧИ (Настройки + Будильник) -->
         <div id="features" class="tab-pane">
             <div class="settings-box">
                 
-                <!-- Новая настройка: ГРОМКОСТЬ -->
+                <!-- Таймер сна -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <i class="fas fa-moon"></i> Таймер сна
+                    </div>
+                    <div class="timer-controls">
+                        <button class="time-btn" onclick="setSleepTimer(15)">15 мин</button>
+                        <button class="time-btn" onclick="setSleepTimer(30)">30 мин</button>
+                        <button class="time-btn" onclick="setSleepTimer(60)">60 мин</button>
+                    </div>
+                    <div id="sleep-status" class="status-hidden">
+                        Стоп через: <span id="sleep-countdown" class="neon-text">00:00</span>
+                        <button class="cancel-btn" onclick="cancelSleepTimer()">✕</button>
+                    </div>
+                </div>
+
+                <!-- Будильник -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <i class="fas fa-clock"></i> Будильник (Радио)
+                    </div>
+                    <div class="alarm-row">
+                        <input type="time" id="alarm-time-input" class="neon-input">
+                        <label class="switch">
+                            <input type="checkbox" id="alarm-toggle" onchange="toggleAlarm()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div id="alarm-msg" class="status-hidden">Будильник установлен</div>
+                </div>
+
+                <!-- Громкость -->
                 <div class="setting-row volume-row">
                     <span>Громкость</span>
                     <div class="vol-control">
@@ -80,22 +111,19 @@
                     </div>
                 </div>
 
-                <div class="setting-row">
-                    <span>Уведомления</span>
-                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
-                </div>
-                
+                <!-- Доп. настройки -->
                 <div class="setting-row">
                     <span>Высокое качество</span>
-                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
                 </div>
+
             </div>
         </div>
 
     </div>
 
+    <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
     <script src="main.js"></script>
+    <script src="features.js"></script>
 </body>
 </html>
-
-
