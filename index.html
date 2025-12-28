@@ -9,29 +9,46 @@
 </head>
 <body>
 
-    <!-- Неоновый фон -->
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ВЕРХНЯЯ ЧАСТЬ: Шапка + Табы -->
-    <div class="top-section">
+    <!-- ВЕРХНЯЯ ЗОНА (Закреплена) -->
+    <div class="fixed-top-area">
+        
+        <!-- 1. Логотип -->
         <header>
             <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
             <div class="live-indicator">LIVE</div>
         </header>
 
+        <!-- 2. Вкладки -->
         <nav class="tabs">
             <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
             <button class="tab-btn" onclick="openTab('chat', this)">Чат</button>
             <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
             <button class="tab-btn" onclick="alert('Скоро!')">Shop</button>
         </nav>
+
+        <!-- 3. ПЛЕЕР (Теперь тут!) -->
+        <div class="inline-player">
+            <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
+            
+            <div class="player-info">
+                <div id="track-name">LepotaFM</div>
+                <div id="artist-name">Лучшая музыка</div>
+            </div>
+
+            <button id="play-btn" class="control-btn">
+                <i class="fas fa-play" id="play-icon"></i>
+            </button>
+        </div>
+
     </div>
 
-    <!-- ЦЕНТР: Контент -->
+    <!-- НИЖНЯЯ ЗОНА (Скроллится) -->
     <div class="main-content">
         
-        <!-- Вкладка ЭФИР (История треков) -->
+        <!-- Вкладка ЭФИР -->
         <div id="ether" class="tab-pane active">
             <div class="history-list" id="history-container">
                 <div class="loading-msg">
@@ -44,39 +61,37 @@
         <div id="chat" class="tab-pane">
             <div class="placeholder-box">
                 <i class="fab fa-telegram-plane"></i>
-                <p>Общайся с нами в Telegram</p>
+                <p>Наш Telegram чат</p>
                 <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Перейти</a>
             </div>
         </div>
 
-        <!-- Вкладка ФИЧИ -->
+        <!-- Вкладка ФИЧИ (С громкостью) -->
         <div id="features" class="tab-pane">
             <div class="settings-box">
-                <div class="setting-row">
-                    <span>Высокое качество</span>
-                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                
+                <!-- Новая настройка: ГРОМКОСТЬ -->
+                <div class="setting-row volume-row">
+                    <span>Громкость</span>
+                    <div class="vol-control">
+                        <i class="fas fa-volume-down"></i>
+                        <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="1">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
                 </div>
+
                 <div class="setting-row">
                     <span>Уведомления</span>
                     <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
                 </div>
+                
+                <div class="setting-row">
+                    <span>Высокое качество</span>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
             </div>
         </div>
 
-    </div>
-
-    <!-- НИЗ: Плеер -->
-    <div class="bottom-player">
-        <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
-        
-        <div class="player-info">
-            <div id="track-name">Загрузка...</div>
-            <div id="artist-name">LepotaFM</div>
-        </div>
-
-        <button id="play-btn" class="control-btn">
-            <i class="fas fa-play" id="play-icon"></i>
-        </button>
     </div>
 
     <script src="main.js"></script>
