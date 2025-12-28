@@ -12,118 +12,64 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ВЕРХНЯЯ ЗОНА (Закреплена) -->
+    <!-- ВЕРХНЯЯ ЗОНА -->
     <div class="fixed-top-area">
-        
-        <!-- Логотип -->
         <header>
             <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
             <div class="live-indicator">LIVE</div>
         </header>
 
-        <!-- Вкладки -->
         <nav class="tabs">
             <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
             <button class="tab-btn" onclick="openTab('chat', this)">Студия</button>
             <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
         </nav>
 
-        <!-- ПЛЕЕР -->
         <div class="inline-player">
             <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
-            
             <div class="player-info">
-                <div id="track-name">LepotaFM</div>
-                <div id="artist-name">Лучшая музыка</div>
+                <div id="track-name">Загрузка...</div>
+                <div id="artist-name">LepotaFM</div>
             </div>
-
             <button id="play-btn" class="control-btn">
                 <i class="fas fa-play" id="play-icon"></i>
             </button>
         </div>
-
     </div>
 
-    <!-- НИЖНЯЯ ЗОНА (Скроллится) -->
+    <!-- НИЖНЯЯ ЗОНА -->
     <div class="main-content">
         
         <!-- Вкладка ЭФИР -->
         <div id="ether" class="tab-pane active">
             <div class="history-list" id="history-container">
                 <div class="loading-msg">
-                    <i class="fas fa-circle-notch fa-spin"></i> Загрузка истории...
+                    <i class="fas fa-circle-notch fa-spin"></i> Загрузка...
                 </div>
             </div>
         </div>
 
-        <!-- Вкладка ЧАТ/СТУДИЯ -->
+        <!-- Вкладка СТУДИЯ -->
         <div id="chat" class="tab-pane">
             <div class="placeholder-box">
                 <i class="fab fa-telegram-plane" style="font-size: 40px; color: #0088cc; margin-bottom: 15px;"></i>
                 <h3>Связь со студией</h3>
-                <p>Пишите приветы и заказывайте песни через наш Telegram</p>
+                <p>Заявки и приветы через Telegram</p>
                 <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Написать</a>
             </div>
         </div>
 
-        <!-- Вкладка ФИЧИ (Настройки + Будильник) -->
+        <!-- Вкладка ФИЧИ -->
         <div id="features" class="tab-pane">
             <div class="settings-box">
                 
-                <!-- Таймер сна -->
+                <!-- 1. ТАЙМЕР СНА (СЛАЙДЕР) -->
                 <div class="feature-card">
                     <div class="feature-header">
                         <i class="fas fa-moon"></i> Таймер сна
                     </div>
-                    <div class="timer-controls">
-                        <button class="time-btn" onclick="setSleepTimer(15)">15 мин</button>
-                        <button class="time-btn" onclick="setSleepTimer(30)">30 мин</button>
-                        <button class="time-btn" onclick="setSleepTimer(60)">60 мин</button>
-                    </div>
-                    <div id="sleep-status" class="status-hidden">
-                        Стоп через: <span id="sleep-countdown" class="neon-text">00:00</span>
-                        <button class="cancel-btn" onclick="cancelSleepTimer()">✕</button>
-                    </div>
-                </div>
-
-                <!-- Будильник -->
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <i class="fas fa-clock"></i> Будильник (Радио)
-                    </div>
-                    <div class="alarm-row">
-                        <input type="time" id="alarm-time-input" class="neon-input">
-                        <label class="switch">
-                            <input type="checkbox" id="alarm-toggle" onchange="toggleAlarm()">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div id="alarm-msg" class="status-hidden">Будильник установлен</div>
-                </div>
-
-                <!-- Громкость -->
-                <div class="setting-row volume-row">
-                    <span>Громкость</span>
-                    <div class="vol-control">
-                        <i class="fas fa-volume-down"></i>
-                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-                        <i class="fas fa-volume-up"></i>
-                    </div>
-                </div>
-
-                <!-- Доп. настройки -->
-                <div class="setting-row">
-                    <span>Высокое качество</span>
-                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
-    <script src="main.js"></script>
-    <script src="features.js"></script>
-</body>
-</html>
+                    
+                    <div class="timer-slider-box">
+                        <div class="timer-display">
+                            <span id="timer-val-display">Off</span>
+                        </div>
