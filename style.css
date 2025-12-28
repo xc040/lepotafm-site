@@ -15,10 +15,9 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    user-select: none; /* Чтобы текст не выделялся на телефоне */
+    user-select: none;
 }
 
-/* ФОН */
 .neon-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: radial-gradient(circle at 50% -20%, #1a1a40, #050510);
@@ -30,7 +29,7 @@ body {
     background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* ШАПКА И ПЛЕЕР */
+/* ШАПКА */
 .fixed-top-area {
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
@@ -40,7 +39,6 @@ body {
     display: flex;
     flex-direction: column;
 }
-
 header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 20px;
@@ -93,7 +91,7 @@ header {
     cursor: pointer;
 }
 
-/* ОСНОВНОЙ КОНТЕНТ */
+/* КОНТЕНТ */
 .main-content {
     flex: 1; overflow-y: auto; padding: 15px;
     padding-bottom: 50px;
@@ -101,7 +99,7 @@ header {
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* История песен */
+/* ИСТОРИЯ (Вернули кнопку Инфо) */
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .history-item {
     display: flex; align-items: center;
@@ -111,46 +109,57 @@ header {
 }
 .hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
 .hist-info { flex: 1; overflow: hidden; }
-.hist-title { font-size: 14px; font-weight: bold; display: block; margin-bottom: 2px; }
-.hist-artist { font-size: 12px; color: var(--neon-blue); }
+.hist-title { font-size: 14px; font-weight: bold; display: block; margin-bottom: 2px; color:white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* --- НОВЫЕ СТИЛИ (ФИЧИ) --- */
+/* Кнопка ИНФО */
+.sku-btn {
+    background: transparent; border: 1px solid var(--neon-blue);
+    color: var(--neon-blue); width: 35px; height: 35px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; margin-left: 10px; transition: 0.2s;
+}
+.sku-btn:active { background: var(--neon-blue); color: #000; }
+
+/* ФИЧИ: ТАЙМЕР СНА */
 .feature-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px; padding: 15px; margin-bottom: 15px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.feature-header {
-    font-size: 15px; font-weight: bold; color: var(--neon-blue);
-    margin-bottom: 15px; display: flex; align-items: center; gap: 10px;
-}
-.timer-controls { display: flex; gap: 10px; margin-bottom: 10px; }
-.time-btn {
-    flex: 1; background: transparent; border: 1px solid #444;
-    color: white; padding: 8px; border-radius: 5px;
-    cursor: pointer; font-size: 13px;
-}
-.time-btn:active { background: var(--neon-pink); border-color: var(--neon-pink); }
+.feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
 
-.status-hidden { display: none; margin-top: 10px; font-size: 13px; color: #aaa; }
-.cancel-btn { background: none; border: none; color: red; font-weight: bold; margin-left: 10px; }
+.timer-slider-box { width: 100%; padding: 10px 0; }
+.timer-display { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--neon-pink); }
+#sleep-slider { width: 100%; accent-color: var(--neon-pink); height: 5px; }
+.slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px; }
+.status-hidden { display: none; margin-top: 10px; text-align: center; color: #aaa; }
 
-.alarm-row { display: flex; justify-content: space-between; align-items: center; }
-.neon-input {
-    background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue);
-    padding: 5px 10px; border-radius: 5px; font-size: 18px; outline: none;
-}
+/* ФИЧИ: БУДИЛЬНИК */
+.alarm-create-box { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 10px; }
+.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 18px; outline: none; }
 .neon-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 
-/* Общие элементы */
-.setting-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+.days-selector { display: flex; gap: 5px; margin: 10px 0; justify-content: space-between; }
+.day-check { 
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #444; border-radius: 50%; font-size: 12px; color: #666; cursor: pointer;
 }
-.vol-control { display: flex; align-items: center; gap: 10px; }
-.vol-control i { color: #888; font-size: 12px; }
-#vol-slider { width: 120px; accent-color: var(--neon-blue); }
+.day-check.selected { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); font-weight: bold; }
 
+.add-alarm-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.add-alarm-btn:active { background: var(--neon-blue); color: black; }
+
+/* Элемент списка будильника */
+.alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
+.alarm-time { font-size: 18px; font-weight: bold; color: white; }
+.alarm-days { font-size: 11px; color: #888; }
+.alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
+
+/* Общие */
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.vol-control { display: flex; align-items: center; gap: 10px; }
+#vol-slider { width: 120px; accent-color: var(--neon-blue); }
 .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -159,10 +168,7 @@ input:checked + .slider { background-color: var(--neon-pink); }
 input:checked + .slider:before { transform: translateX(20px); }
 
 .placeholder-box { text-align: center; padding: 40px 20px; }
-.neon-btn {
-    display: inline-block; padding: 10px 20px; background: var(--neon-blue);
-    color: black; text-decoration: none; border-radius: 20px; font-weight: bold;
-}
+.neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
