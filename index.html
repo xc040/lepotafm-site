@@ -5,44 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LepotaFM</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/@barba/core"></script>
-    <script src="https://unpkg.com/gsap@latest/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body data-barba="wrapper">
+<body>
 
-    <header>
-        <div class="logo">LEPOTA<span style="color:#ff0055">FM</span></div>
-        <nav>
-            <a href="index.html">Эфир</a>
-            <a href="chat.html">Чат</a>
-        </nav>
+    <!-- Живой фон -->
+    <div class="bg-layer" id="bg-art"></div>
+    <div class="overlay"></div>
+
+    <!-- ВЕРХНЯЯ ШАПКА -->
+    <header class="app-header">
+        <div class="station-name">LEPOTA<span style="color:#deb887">FM</span></div>
     </header>
 
-    <main data-barba="container" data-barba-namespace="home">
-        <div class="content-box">
-            <div class="dj-info">
-                <!-- ГЛАВНОЕ: onerror вернет логотип, если новая картинка не грузится -->
-                <img id="album-art" src="logo.jpg" alt="Обложка" onerror="this.onerror=null; this.src='logo.jpg';">
-                
-                <div class="track-text-box">
-                    <h2 id="track-name">LepotaFM</h2>
-                    <p id="artist-name">Лучшая музыка</p>
+    <!-- ВКЛАДКИ (TABS) -->
+    <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="openTab('ether')">Эфир</button>
+        <button class="tab-btn" onclick="openTab('chat')">Чат</button>
+        <button class="tab-btn" onclick="openTab('features')">Фичи</button>
+        <button class="tab-btn" onclick="alert('Скоро!')">Shop</button>
+        <button class="tab-btn" onclick="alert('Скоро!')">Info</button>
+    </nav>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ (Скроллится) -->
+    <div class="main-container">
+        
+        <!-- Вкладка 1: ЭФИР (История песен) -->
+        <div id="ether" class="tab-content active">
+            <div class="history-list" id="history-container">
+                <!-- Сюда скрипт будет вставлять песни -->
+                <div class="loading-text">Загрузка истории...</div>
+            </div>
+        </div>
+
+        <!-- Вкладка 2: ЧАТ -->
+        <div id="chat" class="tab-content">
+            <!-- Вставьте сюда код виджета CBOX или Telegram -->
+            <div class="chat-placeholder">
+                <i class="fab fa-telegram-plane" style="font-size: 50px; color: #40B3E0;"></i>
+                <p>Наш Telegram чат</p>
+                <a href="https://t.me/lepotafm" target="_blank" class="chat-link-btn">Перейти</a>
+            </div>
+        </div>
+
+        <!-- Вкладка 3: ФИЧИ -->
+        <div id="features" class="tab-content">
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span>🔔 Будильник</span>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+                </div>
+                <div class="setting-item">
+                    <span>🌙 Темная тема</span>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+                <div class="setting-item">
+                    <span>📡 Высокое качество</span>
+                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
                 </div>
             </div>
-
-            <div class="social-links">
-                <a href="https://t.me/lepotafm" target="_blank" class="social-btn">TG</a>
-            </div>
         </div>
-    </main>
 
-    <div class="fixed-player">
-        <button id="play-btn">
-            <span id="play-icon">▶</span>
+    </div>
+
+    <!-- НИЖНИЙ ПЛЕЕР (Всегда виден) -->
+    <div class="bottom-player">
+        <!-- Маленькая картинка сбоку -->
+        <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
+        
+        <!-- Название и автор -->
+        <div class="player-text">
+            <div id="track-name">Загрузка...</div>
+            <div id="artist-name">LepotaFM</div>
+        </div>
+
+        <!-- Кнопка Play -->
+        <button id="play-btn" class="mini-play-btn">
+            <i class="fas fa-play" id="play-icon"></i>
         </button>
-        <div class="track-info-mini">
-            <span id="mini-track-name">Нажмите Play</span>
-        </div>
     </div>
 
     <script src="main.js"></script>
