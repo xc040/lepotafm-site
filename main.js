@@ -147,16 +147,33 @@ function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Восстанавливаем сохраненную громкость
-    const savedVol = localStorage.getItem('savedVolume');
+    // 1. Проверяем сохраненную громкость
+    let savedVol = localStorage.getItem('savedVolume');
+    
+    // Значение по умолчанию (если запустили первый раз) = 100%
+    let finalVol = 1.0; 
+
     if (savedVol !== null) {
-        slider.value = savedVol;
-        audio.volume = savedVol;
-        if (isApp && window.Android && window.Android.setVolume) {
-            try { window.Android.setVolume(parseFloat(savedVol)); } catch(e){}
+        finalVol = parseFloat(savedVol);
+        
+        // --- ЛОГИКА "НЕ МЕНЕЕ 25%" ---
+        // Если сохранено меньше 0.25 (25%), поднимаем до 0.25
+        if (finalVol < 0.25) {
+            finalVol = 0.25;
         }
+        // Если больше 0.25 - оставляем как есть
     }
 
+    // 2. Применяем вычисленную громкость
+    slider.value = finalVol;
+    audio.volume = finalVol;
+
+    // Отправляем в приложение (если это оно)
+    if (isApp && window.Android && window.Android.setVolume) {
+        try { window.Android.setVolume(finalVol); } catch(e){}
+    }
+
+    // 3. Слушаем изменения (как раньше)
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
@@ -168,7 +185,6 @@ function initVolume() {
         }
     });
 }
-
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -186,3 +202,4 @@ window.openSku = function(title, artist, art) {
     const params = new URLSearchParams({ title: title, artist: artist, art: art });
     window.location.href = 'song-info.html?' + params.toString();
 };
+
