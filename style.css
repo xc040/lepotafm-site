@@ -1,139 +1,160 @@
 :root {
-    --primary: #deb887; /* Золотой */
-    --dark: #121212;
-    --player-bg: #1E1E1E;
+    --bg: #050510;
+    --card: #151525;
+    --neon-blue: #00f3ff;
+    --neon-pink: #bc13fe;
+    --text: #ffffff;
 }
 
 body {
     margin: 0; padding: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: var(--dark);
-    color: white;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
     height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Блокируем скролл всей страницы */
+    overflow: hidden;
 }
 
 /* Фон */
-.bg-layer {
+.neon-bg {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url('logo.jpg');
-    background-size: cover; background-position: center;
-    filter: blur(40px) brightness(0.3); z-index: -2;
-    transition: 1s;
+    background: radial-gradient(circle at 50% -20%, #1a1a40, #050510);
+    z-index: -2;
+}
+/* Эффект старого монитора (еле заметные полоски) */
+.scanlines {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%);
+    background-size: 100% 4px;
+    pointer-events: none; z-index: -1;
 }
 
 /* Шапка */
-.app-header {
+.top-section {
+    background: rgba(21, 21, 37, 0.9);
+    border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+    padding-bottom: 5px;
+    z-index: 10;
+}
+
+header {
+    display: flex; justify-content: space-between; align-items: center;
     padding: 15px 20px;
-    text-align: center;
-    background: rgba(0,0,0,0.2);
 }
-.station-name { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
-
-/* Вкладки (Скролл по горизонтали) */
-.tabs-nav {
-    display: flex;
-    overflow-x: auto;
-    background: rgba(0,0,0,0.3);
-    padding: 0 10px;
-    /* Скрываем полосу прокрутки */
-    scrollbar-width: none; 
+.logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; }
+.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+.live-indicator { 
+    background: red; font-size: 10px; padding: 2px 6px; 
+    border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
 }
-.tabs-nav::-webkit-scrollbar { display: none; }
 
+/* Табы */
+.tabs {
+    display: flex; gap: 15px; padding: 0 15px;
+    overflow-x: auto; scrollbar-width: none;
+}
 .tab-btn {
-    background: none; border: none;
-    color: #aaa; padding: 15px 20px;
+    background: none; border: none; color: #888;
     font-size: 14px; font-weight: 600; text-transform: uppercase;
-    white-space: nowrap; cursor: pointer;
+    padding: 10px 5px; cursor: pointer; transition: 0.3s;
     border-bottom: 2px solid transparent;
 }
-.tab-btn.active { color: white; border-bottom: 2px solid var(--primary); }
-
-/* Контейнер контента */
-.main-container {
-    flex: 1; /* Занимает все доступное место */
-    overflow-y: auto; /* Скроллится внутри */
-    padding-bottom: 90px; /* Место под плеер */
-    position: relative;
+.tab-btn.active {
+    color: var(--neon-blue);
+    border-bottom: 2px solid var(--neon-blue);
+    text-shadow: 0 0 8px var(--neon-blue);
 }
 
-.tab-content { display: none; padding: 15px; }
-.tab-content.active { display: block; animation: fadein 0.3s; }
+/* Контент */
+.main-content {
+    flex: 1; overflow-y: auto; padding: 15px;
+    padding-bottom: 90px; /* Место под плеер */
+}
+.tab-pane { display: none; animation: fadeIn 0.3s; }
+.tab-pane.active { display: block; }
 
-/* СПИСОК ИСТОРИИ */
+/* История треков */
 .history-item {
     display: flex; align-items: center;
-    background: rgba(255,255,255,0.05);
-    margin-bottom: 10px;
-    padding: 10px;
-    border-radius: 12px;
+    background: var(--card);
+    margin-bottom: 10px; padding: 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
 }
-.hist-art {
-    width: 50px; height: 50px;
-    border-radius: 8px; object-fit: cover;
-    margin-right: 15px;
+.hist-img {
+    width: 50px; height: 50px; border-radius: 6px;
+    object-fit: cover; margin-right: 15px;
 }
 .hist-info { flex: 1; }
-.hist-title { font-size: 15px; font-weight: bold; display: block; }
-.hist-artist { font-size: 13px; color: #ccc; }
-
+.hist-title { font-size: 14px; font-weight: bold; display: block; color: white; }
+.hist-artist { font-size: 12px; color: #aaa; }
 .sku-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: var(--primary);
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+    background: none; border: 1px solid var(--neon-blue);
+    color: var(--neon-blue); width: 35px; height: 35px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
     cursor: pointer;
 }
 
-/* НИЖНИЙ ПЛЕЕР */
+/* Чат и настройки */
+.placeholder-box {
+    text-align: center; padding: 40px;
+    background: var(--card); border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+.neon-btn {
+    display: inline-block; padding: 10px 25px; margin-top: 15px;
+    background: transparent; color: var(--neon-blue);
+    border: 1px solid var(--neon-blue); border-radius: 20px;
+    text-decoration: none; font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+}
+.setting-row {
+    display: flex; justify-content: space-between;
+    padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Нижний плеер */
 .bottom-player {
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    height: 80px;
-    background: rgba(30, 30, 30, 0.95);
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+    background: rgba(21, 21, 37, 0.95);
     backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid var(--neon-pink);
     display: flex; align-items: center;
-    padding: 0 20px;
-    box-sizing: border-box;
+    padding: 0 15px; box-sizing: border-box;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
     z-index: 100;
 }
-
 #mini-art {
-    width: 50px; height: 50px;
-    border-radius: 8px; object-fit: cover;
-    margin-right: 15px;
+    width: 50px; height: 50px; border-radius: 50%;
+    object-fit: cover; margin-right: 15px;
+    border: 2px solid var(--neon-pink);
+    animation: spin 10s linear infinite;
+    animation-play-state: paused;
 }
+.playing #mini-art { animation-play-state: running; }
 
-.player-text { flex: 1; overflow: hidden; }
-#track-name { font-size: 16px; font-weight: bold; white-space: nowrap; }
-#artist-name { font-size: 14px; color: #aaa; }
+.player-info { flex: 1; overflow: hidden; }
+#track-name { font-size: 15px; font-weight: bold; white-space: nowrap; color: white; }
+#artist-name { font-size: 13px; color: var(--neon-blue); }
 
-.mini-play-btn {
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    background: var(--primary);
-    border: none;
-    font-size: 20px; color: black;
+.control-btn {
+    background: var(--neon-blue); border: none;
+    width: 45px; height: 45px; border-radius: 50%;
+    font-size: 18px; color: #000;
     display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 15px var(--neon-blue);
+    cursor: pointer;
 }
 
-/* Настройки (Features) */
-.setting-item {
-    display: flex; justify-content: space-between;
-    padding: 15px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-/* Переключатель */
-.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+/* Свитч */
+.switch { position: relative; display: inline-block; width: 46px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--primary); }
-input:checked + .slider:before { transform: translateX(24px); }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--neon-pink); }
+input:checked + .slider:before { transform: translateX(22px); }
 
-@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
