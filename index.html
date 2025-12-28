@@ -9,78 +9,72 @@
 </head>
 <body>
 
-    <!-- Живой фон -->
-    <div class="bg-layer" id="bg-art"></div>
-    <div class="overlay"></div>
+    <!-- Неоновый фон -->
+    <div class="neon-bg"></div>
+    <div class="scanlines"></div>
 
-    <!-- ВЕРХНЯЯ ШАПКА -->
-    <header class="app-header">
-        <div class="station-name">LEPOTA<span style="color:#deb887">FM</span></div>
-    </header>
+    <!-- ВЕРХНЯЯ ЧАСТЬ: Шапка + Табы -->
+    <div class="top-section">
+        <header>
+            <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
+            <div class="live-indicator">LIVE</div>
+        </header>
 
-    <!-- ВКЛАДКИ (TABS) -->
-    <nav class="tabs-nav">
-        <button class="tab-btn active" onclick="openTab('ether')">Эфир</button>
-        <button class="tab-btn" onclick="openTab('chat')">Чат</button>
-        <button class="tab-btn" onclick="openTab('features')">Фичи</button>
-        <button class="tab-btn" onclick="alert('Скоро!')">Shop</button>
-        <button class="tab-btn" onclick="alert('Скоро!')">Info</button>
-    </nav>
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
+            <button class="tab-btn" onclick="openTab('chat', this)">Чат</button>
+            <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
+            <button class="tab-btn" onclick="alert('Скоро!')">Shop</button>
+        </nav>
+    </div>
 
-    <!-- ОСНОВНОЙ КОНТЕНТ (Скроллится) -->
-    <div class="main-container">
+    <!-- ЦЕНТР: Контент -->
+    <div class="main-content">
         
-        <!-- Вкладка 1: ЭФИР (История песен) -->
-        <div id="ether" class="tab-content active">
+        <!-- Вкладка ЭФИР (История треков) -->
+        <div id="ether" class="tab-pane active">
             <div class="history-list" id="history-container">
-                <!-- Сюда скрипт будет вставлять песни -->
-                <div class="loading-text">Загрузка истории...</div>
+                <div class="loading-msg">
+                    <i class="fas fa-circle-notch fa-spin"></i> Загрузка истории...
+                </div>
             </div>
         </div>
 
-        <!-- Вкладка 2: ЧАТ -->
-        <div id="chat" class="tab-content">
-            <!-- Вставьте сюда код виджета CBOX или Telegram -->
-            <div class="chat-placeholder">
-                <i class="fab fa-telegram-plane" style="font-size: 50px; color: #40B3E0;"></i>
-                <p>Наш Telegram чат</p>
-                <a href="https://t.me/lepotafm" target="_blank" class="chat-link-btn">Перейти</a>
+        <!-- Вкладка ЧАТ -->
+        <div id="chat" class="tab-pane">
+            <div class="placeholder-box">
+                <i class="fab fa-telegram-plane"></i>
+                <p>Общайся с нами в Telegram</p>
+                <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Перейти</a>
             </div>
         </div>
 
-        <!-- Вкладка 3: ФИЧИ -->
-        <div id="features" class="tab-content">
-            <div class="settings-list">
-                <div class="setting-item">
-                    <span>🔔 Будильник</span>
+        <!-- Вкладка ФИЧИ -->
+        <div id="features" class="tab-pane">
+            <div class="settings-box">
+                <div class="setting-row">
+                    <span>Высокое качество</span>
                     <label class="switch"><input type="checkbox"><span class="slider"></span></label>
                 </div>
-                <div class="setting-item">
-                    <span>🌙 Темная тема</span>
+                <div class="setting-row">
+                    <span>Уведомления</span>
                     <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
-                </div>
-                <div class="setting-item">
-                    <span>📡 Высокое качество</span>
-                    <label class="switch"><input type="checkbox"><span class="slider"></span></label>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- НИЖНИЙ ПЛЕЕР (Всегда виден) -->
+    <!-- НИЗ: Плеер -->
     <div class="bottom-player">
-        <!-- Маленькая картинка сбоку -->
         <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
         
-        <!-- Название и автор -->
-        <div class="player-text">
+        <div class="player-info">
             <div id="track-name">Загрузка...</div>
             <div id="artist-name">LepotaFM</div>
         </div>
 
-        <!-- Кнопка Play -->
-        <button id="play-btn" class="mini-play-btn">
+        <button id="play-btn" class="control-btn">
             <i class="fas fa-play" id="play-icon"></i>
         </button>
     </div>
