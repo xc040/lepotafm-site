@@ -83,22 +83,37 @@ function initPlayer() {
     });
 }
 
-// --- ЛОГИКА ГРОМКОСТИ ---
+// --- ЛОГИКА ГРОМКОСТИ (С СОХРАНЕНИЕМ) ---
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
+    // 1. Проверяем память: была ли сохранена громкость?
+    const savedVol = localStorage.getItem('savedVolume');
+    
+    if (savedVol !== null) {
+        // Если была - применяем её сразу
+        slider.value = savedVol;
+        audio.volume = savedVol;
+        // Если мы в приложении - отправляем команду и туда
+        if (isApp && window.Android && window.Android.setVolume) {
+            try { window.Android.setVolume(parseFloat(savedVol)); } catch(e){}
+        }
+    }
+
+    // 2. Слушаем изменения
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         
-        // 1. ЕСЛИ ПРИЛОЖЕНИЕ: Отправляем команду в Java
+        // Сохраняем в память телефона/браузера
+        localStorage.setItem('savedVolume', vol);
+
+        // Применяем
         if (isApp && window.Android) {
             try {
                 window.Android.setVolume(vol); 
             } catch(e) { console.log(e); }
-        } 
-        // 2. ЕСЛИ БРАУЗЕР: Меняем громкость HTML5
-        else {
+        } else {
             audio.volume = vol;
         }
     });
@@ -181,4 +196,5 @@ window.openSku = function(title, artist, art) {
     // Открываем файл свойств
     window.location.href = 'song-info.html?' + params.toString();
 };
+
 
