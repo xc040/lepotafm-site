@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 5000 
+    refreshTime: 5000 // 5 секунд
 };
 
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
@@ -14,116 +14,36 @@ if (isApp) isPlaying = true;
 
 window.onload = function() {
     initPlayer();
-    updateMetadata(); 
-    setInterval(updateMetadata, CONFIG.refreshTime);
-    initVolume(); // Инициализация громкости
+    initVolume(); 
+    
+    // ЗАПУСК ВЕЧНОГО ЦИКЛА ОБНОВЛЕНИЯ
+    updateMetadataLoop();
 };
 
+// Пробуждение экрана - обновляем немедленно
 document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) updateMetadata();
+    if (!document.hidden) {
+        updateMetadata(); 
+    }
 });
 
-// Управление вкладками
-window.openTab = function(tabName, btnElement) {
-    const contents = document.querySelectorAll('.tab-pane');
-    contents.forEach(el => el.classList.remove('active'));
-    
-    const btns = document.querySelectorAll('.tab-btn');
-    btns.forEach(el => el.classList.remove('active'));
-
-    document.getElementById(tabName).classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
-};
-
-function initPlayer() {
-    const playBtn = document.getElementById('play-btn');
-    const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player'); // Ищем новый плеер
-
-    if (!playBtn) return;
-
-    if (isApp) {
-        if(icon) icon.className = "fas fa-pause";
-        // Сразу запускаем вращение в приложении
-        if(playerDiv) playerDiv.classList.add('playing');
-    }
-
-    playBtn.addEventListener('click', () => {
-        // Приложение
-        if (isApp && window.Android) {
-            try {
-                if (isPlaying) {
-                    window.Android.pauseAudio();
-                    if(icon) icon.className = "fas fa-play";
-                    if(playerDiv) playerDiv.classList.remove('playing'); // Стоп вращение
-                    isPlaying = false;
-                } else {
-                    window.Android.playAudio();
-                    if(icon) icon.className = "fas fa-pause";
-                    if(playerDiv) playerDiv.classList.add('playing'); // Старт вращение
-                    isPlaying = true;
-                }
-            } catch(e) { console.log(e); }
-            return;
-        }
-
-        // Браузер
-        if (isPlaying) {
-            audio.pause();
-            if(icon) icon.className = "fas fa-play";
-            if(playerDiv) playerDiv.classList.remove('playing');
-            isPlaying = false;
-        } else {
-            audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-            audio.play().catch(e => console.log("Блок автоплея"));
-            if(icon) icon.className = "fas fa-pause";
-            if(playerDiv) playerDiv.classList.add('playing');
-            isPlaying = true;
-        }
-    });
+// --- ВЕЧНЫЙ ЦИКЛ (Защита от зависания) ---
+function updateMetadataLoop() {
+    updateMetadata();
+    // Запускаем следующий раз через 5 сек, что бы ни случилось
+    setTimeout(updateMetadataLoop, CONFIG.refreshTime);
 }
 
-// --- ЛОГИКА ГРОМКОСТИ (С СОХРАНЕНИЕМ) ---
-function initVolume() {
-    const slider = document.getElementById('vol-slider');
-    if (!slider) return;
-
-    // 1. Проверяем память: была ли сохранена громкость?
-    const savedVol = localStorage.getItem('savedVolume');
-    
-    if (savedVol !== null) {
-        // Если была - применяем её сразу
-        slider.value = savedVol;
-        audio.volume = savedVol;
-        // Если мы в приложении - отправляем команду и туда
-        if (isApp && window.Android && window.Android.setVolume) {
-            try { window.Android.setVolume(parseFloat(savedVol)); } catch(e){}
-        }
-    }
-
-    // 2. Слушаем изменения
-    slider.addEventListener('input', (e) => {
-        let vol = parseFloat(e.target.value);
-        
-        // Сохраняем в память телефона/браузера
-        localStorage.setItem('savedVolume', vol);
-
-        // Применяем
-        if (isApp && window.Android) {
-            try {
-                window.Android.setVolume(vol); 
-            } catch(e) { console.log(e); }
-        } else {
-            audio.volume = vol;
-        }
-    });
-}
-
+// --- ФУНКЦИЯ ОБНОВЛЕНИЯ ---
 function updateMetadata() {
+    // Добавляем случайное число, чтобы пробить кэш
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error("Server error");
+            return res.json();
+        })
         .then(data => {
-            // Текущий трек
+            // 1. ТЕКУЩИЙ ТРЕК
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 
@@ -136,31 +56,35 @@ function updateMetadata() {
                 if (img && img.src !== artUrl) img.src = artUrl;
             }
 
-            // История
+            // 2. ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
         .catch(err => {
-            document.getElementById('track-name').innerText = "LepotaFM";
+            // Если ошибка сети - просто молчим и пробуем в следующий раз
+            // Не меняем текст на "Ошибка", чтобы не пугать пользователя
+            console.log("Ждем сеть...");
         });
 }
 
-/* --- ИЗМЕНЕННАЯ ОТРИСОВКА ИСТОРИИ --- */
+// --- ОТРИСОВКА ИСТОРИИ (Новая верстка) ---
 function renderHistory(history) {
     const container = document.getElementById('history-container');
     if (!container) return;
 
     let html = '';
     
-    history.forEach(item => {
+    // Берем последние 10 песен
+    history.slice(0, 10).forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
         
-        // Экранируем кавычки, чтобы скрипт не ломался, если в названии есть '
+        // Защита кавычек для JS
         const safeTitle = song.title.replace(/'/g, "\\'");
         const safeArtist = song.artist.replace(/'/g, "\\'");
-        
+        const safeArt = art;
+
         html += `
         <div class="history-item">
             <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
@@ -168,8 +92,7 @@ function renderHistory(history) {
                 <span class="hist-title">${song.title}</span>
                 <span class="hist-artist">${song.artist}</span>
             </div>
-            <!-- Передаем данные на новую страницу -->
-            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')">
+            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
                 <i class="fas fa-info"></i>
             </button>
         </div>
@@ -179,22 +102,87 @@ function renderHistory(history) {
     container.innerHTML = html;
 }
 
+// --- ОСТАЛЬНОЙ КОД (Плеер, Громкость, Табы) ---
+
+function initPlayer() {
+    const playBtn = document.getElementById('play-btn');
+    const icon = document.getElementById('play-icon');
+
+    if (!playBtn) return;
+
+    if (isApp) {
+        if(icon) icon.className = "fas fa-pause";
+    }
+
+    playBtn.addEventListener('click', () => {
+        if (isApp && window.Android) {
+            try {
+                if (isPlaying) {
+                    window.Android.pauseAudio();
+                    if(icon) icon.className = "fas fa-play";
+                    isPlaying = false;
+                } else {
+                    window.Android.playAudio();
+                    if(icon) icon.className = "fas fa-pause";
+                    isPlaying = true;
+                }
+            } catch(e) {}
+            return;
+        }
+
+        if (isPlaying) {
+            audio.pause();
+            if(icon) icon.className = "fas fa-play";
+            isPlaying = false;
+        } else {
+            audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+            audio.play().catch(e => console.log("Block"));
+            if(icon) icon.className = "fas fa-pause";
+            isPlaying = true;
+        }
+    });
+}
+
+function initVolume() {
+    const slider = document.getElementById('vol-slider');
+    if (!slider) return;
+
+    // Восстанавливаем сохраненную громкость
+    const savedVol = localStorage.getItem('savedVolume');
+    if (savedVol !== null) {
+        slider.value = savedVol;
+        audio.volume = savedVol;
+        if (isApp && window.Android && window.Android.setVolume) {
+            try { window.Android.setVolume(parseFloat(savedVol)); } catch(e){}
+        }
+    }
+
+    slider.addEventListener('input', (e) => {
+        let vol = parseFloat(e.target.value);
+        localStorage.setItem('savedVolume', vol);
+
+        if (isApp && window.Android) {
+            try { window.Android.setVolume(vol); } catch(e) {}
+        } else {
+            audio.volume = vol;
+        }
+    });
+}
+
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+};
+
 function fixUrl(url) {
     if (!url || url.includes('generic')) return CONFIG.defaultImage;
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
 
-/* --- ПЕРЕХОД НА ОТДЕЛЬНУЮ СТРАНИЦУ --- */
 window.openSku = function(title, artist, art) {
-    // Упаковываем данные в ссылку
-    const params = new URLSearchParams({
-        title: title,
-        artist: artist,
-        art: art
-    });
-    // Открываем файл свойств
+    const params = new URLSearchParams({ title: title, artist: artist, art: art });
     window.location.href = 'song-info.html?' + params.toString();
 };
-
-
