@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Свойства трека</title>
+    <!-- Подключаем тот же стиль, чтобы было красиво -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Дополнительные стили конкретно для этой страницы */
+        .info-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        /* Кнопка Назад */
+        .back-nav {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            background: none; border: none; color: var(--neon-blue);
+            font-size: 18px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* Большая обложка */
+        .big-cover {
+            width: 250px; height: 250px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            margin-bottom: 25px;
+            border: 2px solid var(--neon-pink);
+            object-fit: cover;
+        }
+
+        .song-title-large { font-size: 24px; font-weight: bold; margin-bottom: 5px; color: white; }
+        .song-artist-large { font-size: 18px; color: var(--neon-blue); margin-bottom: 30px; }
+
+        /* Блок с информацией/текстом */
+        .details-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .details-box h3 { margin-top: 0; color: #888; font-size: 14px; text-transform: uppercase; }
+        .lyrics-text { color: #ccc; line-height: 1.6; font-style: italic; }
+
+        /* Кнопки магазина */
+        .store-buttons { display: flex; gap: 15px; width: 100%; justify-content: center; }
+        .store-btn {
+            flex: 1; padding: 15px; border-radius: 12px;
+            text-decoration: none; color: white; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: 0.2s;
+        }
+        .apple { background: #fa2d48; }
+        .spotify { background: #1db954; }
+        .store-btn:active { transform: scale(0.95); }
+
+    </style>
+</head>
+<body>
+
+    <div class="neon-bg"></div>
+    <div class="scanlines"></div>
+
+    <div class="info-container">
+        
+        <!-- Кнопка Назад -->
+        <nav class="back-nav">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i> Назад
+            </button>
+        </nav>
+
+        <!-- Информация (заполняется скриптом) -->
+        <img id="page-art" src="logo.jpg" class="big-cover">
+        <div class="song-title-large" id="page-title">Название</div>
+        <div class="song-artist-large" id="page-artist">Артист</div>
+
+        <!-- Текст / Инфо -->
+        <div class="details-box">
+            <h3>О треке</h3>
+            <p class="lyrics-text">
+                Здесь могла бы быть информация об исполнителе, год выпуска или текст песни.
+                <br><br>
+                (Данные загружаются автоматически)
+            </p>
+        </div>
+
+        <!-- Кнопки купить/слушать -->
+        <div class="store-buttons">
+            <a href="#" class="store-btn spotify" id="link-spotify">
+                <i class="fab fa-spotify"></i> Spotify
+            </a>
+            <a href="#" class="store-btn apple" id="link-apple">
+                <i class="fab fa-apple"></i> Music
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        // Скрипт, который ловит данные из ссылки
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            const title = params.get('title');
+            const artist = params.get('artist');
+            const art = params.get('art');
+
+            // Заполняем страницу
+            if(title) document.getElementById('page-title').innerText = title;
+            if(artist) document.getElementById('page-artist').innerText = artist;
+            if(art && art !== 'undefined') document.getElementById('page-art').src = art;
+
+            // Генерируем ссылки на поиск в магазинах (так как реальных ссылок API не дает)
+            const query = encodeURIComponent(artist + " " + title);
+            document.getElementById('link-spotify').href = "https://open.spotify.com/search/" + query;
+            document.getElementById('link-apple').href = "https://music.apple.com/us/search?term=" + query;
+        };
+    </script>
+
+</body>
+</html>
