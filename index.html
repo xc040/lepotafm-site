@@ -63,78 +63,10 @@
         <div id="features" class="tab-pane">
             <div class="settings-box">
                 
-                <!-- 1. ТАЙМЕР СНА (СЛАЙДЕР) -->
+                <!-- ТАЙМЕР СНА -->
                 <div class="feature-card">
-                    <div class="feature-header">
-                        <i class="fas fa-moon"></i> Таймер сна
-                    </div>
-                    
+                    <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
                     <div class="timer-slider-box">
-                        <div class="timer-display">
-                            <span id="timer-val-display">Off</span>
-                        </div>
+                        <div class="timer-display"><span id="timer-val-display">Off</span></div>
                         <input type="range" id="sleep-slider" min="0" max="180" step="15" value="0" oninput="updateSleepLabel(this.value)" onchange="setSleepTimer(this.value)">
-                        <div class="slider-labels">
-                            <span>0</span>
-                            <span>3ч</span>
-                        </div>
-                    </div>
-
-                    <div id="sleep-status" class="status-hidden">
-                        Выкл через: <span id="sleep-countdown" class="neon-text">00:00</span>
-                    </div>
-                </div>
-
-                <!-- 2. БУДИЛЬНИК (СПИСОК) -->
-                <div class="feature-card">
-                    <div class="feature-header">
-                        <i class="fas fa-clock"></i> Будильники
-                    </div>
-                    
-                    <!-- Форма создания -->
-                    <div class="alarm-create-box">
-                        <input type="time" id="new-alarm-time" class="neon-input">
-                        <div class="days-selector">
-                            <span class="day-check" data-day="1" onclick="toggleDay(this)">Пн</span>
-                            <span class="day-check" data-day="2" onclick="toggleDay(this)">Вт</span>
-                            <span class="day-check" data-day="3" onclick="toggleDay(this)">Ср</span>
-                            <span class="day-check" data-day="4" onclick="toggleDay(this)">Чт</span>
-                            <span class="day-check" data-day="5" onclick="toggleDay(this)">Пт</span>
-                            <span class="day-check" data-day="6" onclick="toggleDay(this)">Сб</span>
-                            <span class="day-check" data-day="0" onclick="toggleDay(this)">Вс</span>
-                        </div>
-                        <button class="add-alarm-btn" onclick="addAlarm()">+ Добавить</button>
-                    </div>
-
-                    <!-- Список будильников -->
-                    <div id="alarms-list">
-                        <!-- Сюда JS добавит будильники -->
-                    </div>
-                    
-                    <div id="alarm-msg" class="status-hidden">⏰ ПОДЪЕМ!</div>
-                </div>
-
-                <!-- 3. ГРОМКОСТЬ -->
-                <div class="setting-row volume-row">
-                    <span>Громкость</span>
-                    <div class="vol-control">
-                        <i class="fas fa-volume-down"></i>
-                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-                        <i class="fas fa-volume-up"></i>
-                    </div>
-                </div>
-
-                <div class="setting-row">
-                    <span>Высокое качество</span>
-                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    <script src="main.js"></script>
-    <script src="features.js"></script>
-</body>
-</html>
+                        <div class="slider-labels"><span>0</span><span>3ч</span></div>
