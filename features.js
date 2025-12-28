@@ -1,185 +1,204 @@
-/* --- ТАЙМЕР СНА (СЛАЙДЕР) --- */
-let sleepInterval = null;
-
-function updateSleepLabel(minutes) {
-    const display = document.getElementById('timer-val-display');
-    if (minutes == 0) display.innerText = "Off";
-    else display.innerText = minutes + " мин";
+:root {
+    --bg: #050510;
+    --card: #151525;
+    --neon-blue: #00f3ff;
+    --neon-pink: #bc13fe;
+    --text: #ffffff;
 }
 
-function setSleepTimer(minutes) {
-    cancelSleepTimer(); // Сброс
-
-    if (minutes == 0) return; // Если 0 - просто выключили
-
-    const targetTime = Date.now() + (minutes * 60 * 1000);
-    const statusDiv = document.getElementById('sleep-status');
-    const countdownSpan = document.getElementById('sleep-countdown');
-
-    statusDiv.style.display = "block"; 
-
-    sleepInterval = setInterval(() => {
-        const diff = targetTime - Date.now();
-
-        if (diff <= 0) {
-            // Время вышло!
-            stopRadio();
-            cancelSleepTimer();
-            // Сбрасываем слайдер
-            document.getElementById('sleep-slider').value = 0;
-            document.getElementById('timer-val-display').innerText = "Off";
-        } else {
-            const m = Math.floor(diff / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-    }, 1000);
+body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
 }
 
-function cancelSleepTimer() {
-    if (sleepInterval) clearInterval(sleepInterval);
-    const statusDiv = document.getElementById('sleep-status');
-    if(statusDiv) statusDiv.style.display = "none";
+.neon-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% -20%, #1a1a40, #050510);
+    z-index: -2;
+}
+.scanlines {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%);
+    background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* --- БУДИЛЬНИК (СПИСОК) --- */
-let alarms = []; // Массив будильников
-let alarmChecker = null;
-
-window.addEventListener('load', () => {
-    loadAlarms();
-    startAlarmClock();
-});
-
-// Загрузка из памяти
-function loadAlarms() {
-    const stored = localStorage.getItem('myAlarms');
-    if (stored) {
-        alarms = JSON.parse(stored);
-        renderAlarms();
-    }
+/* ШАПКА */
+.fixed-top-area {
+    background: rgba(21, 21, 37, 0.98);
+    border-bottom: 1px solid var(--neon-blue);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+    z-index: 100;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px;
+}
+.logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+.live-indicator { 
+    background: red; font-size: 10px; padding: 2px 6px; 
+    border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
 }
 
-// Сохранение
-function saveAlarms() {
-    localStorage.setItem('myAlarms', JSON.stringify(alarms));
-    renderAlarms();
+/* ТАБЫ */
+.tabs {
+    display: flex; gap: 5px; padding: 0 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.tab-btn {
+    flex: 1; background: none; border: none; color: #888;
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    padding: 10px 0; cursor: pointer; transition: 0.3s;
+    border-bottom: 2px solid transparent;
+}
+.tab-btn.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); }
+
+/* ПЛЕЕР */
+.inline-player {
+    display: flex; align-items: center;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.02);
+}
+#mini-art {
+    width: 50px; height: 50px; border-radius: 50%; 
+    object-fit: cover; margin-right: 12px;
+    border: 2px solid var(--neon-pink);
+    box-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
+    animation: spin 5s linear infinite; animation-play-state: paused; 
+}
+.inline-player.playing #mini-art { animation-play-state: running; }
+
+.player-info { flex: 1; overflow: hidden; margin-right: 10px; }
+#track-name { font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#artist-name { font-size: 13px; color: var(--neon-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.control-btn {
+    background: var(--neon-blue); border: none;
+    width: 45px; height: 45px; border-radius: 50%;
+    font-size: 18px; color: #000;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 10px var(--neon-blue);
+    cursor: pointer;
 }
 
-// Выбор дней при создании
-let selectedDays = []; // 0=Вс, 1=Пн...
-function toggleDay(el) {
-    const day = parseInt(el.getAttribute('data-day'));
-    if (selectedDays.includes(day)) {
-        selectedDays = selectedDays.filter(d => d !== day);
-        el.classList.remove('selected');
-    } else {
-        selectedDays.push(day);
-        el.classList.add('selected');
-    }
+/* КОНТЕНТ */
+.main-content {
+    flex: 1; overflow-y: auto; padding: 15px;
+    padding-bottom: 50px;
 }
+.tab-pane { display: none; animation: fadeIn 0.3s; }
+.tab-pane.active { display: block; }
 
-// Добавить будильник
-function addAlarm() {
-    const timeInput = document.getElementById('new-alarm-time');
-    const time = timeInput.value;
-
-    if (!time) { alert("Выберите время!"); return; }
-    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
-
-    alarms.push({
-        time: time,
-        days: [...selectedDays], // Копия массива
-        active: true
-    });
-
-    saveAlarms();
-    
-    // Сброс формы
-    timeInput.value = "";
-    selectedDays = [];
-    document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
+/* ИСТОРИЯ */
+.loading-msg { text-align: center; color: #666; margin-top: 20px; }
+.history-item {
+    display: flex; align-items: center;
+    background: var(--card);
+    margin-bottom: 8px; padding: 10px;
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
 }
+.hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
+.hist-info { flex: 1; overflow: hidden; }
+.hist-title { font-size: 14px; font-weight: bold; display: block; margin-bottom: 2px; color:white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-// Удалить будильник
-function deleteAlarm(index) {
-    alarms.splice(index, 1);
-    saveAlarms();
+.sku-btn {
+    background: transparent; border: 1px solid var(--neon-blue);
+    color: var(--neon-blue); width: 35px; height: 35px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; margin-left: 10px; transition: 0.2s;
 }
+.sku-btn:active { background: var(--neon-blue); color: #000; }
 
-// Отрисовка списка
-function renderAlarms() {
-    const container = document.getElementById('alarms-list');
-    container.innerHTML = "";
-    
-    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-
-    alarms.forEach((alarm, index) => {
-        // Формируем строку дней
-        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
-        if (alarm.days.length === 7) daysStr = "Каждый день";
-
-        const div = document.createElement('div');
-        div.className = "alarm-item";
-        div.innerHTML = `
-            <div>
-                <div class="alarm-time">${alarm.time}</div>
-                <div class="alarm-days">${daysStr}</div>
-            </div>
-            <button class="alarm-del-btn" onclick="deleteAlarm(${index})">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        container.appendChild(div);
-    });
+/* ФИЧИ */
+.feature-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px; padding: 15px; margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
+.feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
 
-// ГЛАВНЫЙ ЦИКЛ ПРОВЕРКИ
-function startAlarmClock() {
-    if (alarmChecker) clearInterval(alarmChecker);
-    
-    alarmChecker = setInterval(() => {
-        const now = new Date();
-        const currentDay = now.getDay(); // 0-6
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${h}:${m}`;
-        const seconds = now.getSeconds();
+.timer-slider-box { width: 100%; padding: 10px 0; }
+.timer-display { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--neon-pink); }
+#sleep-slider { width: 100%; accent-color: var(--neon-pink); height: 5px; }
+.slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px; }
+.status-hidden { display: none; margin-top: 10px; text-align: center; color: #aaa; }
 
-        // Проверяем только в 00 секунд (чтобы не орало минуту)
-        if (seconds !== 0) return;
+.alarm-create-box { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 10px; }
+.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 18px; outline: none; }
+.neon-input::-webkit-calendar-picker-indicator { filter: invert(1); }
 
-        alarms.forEach(alarm => {
-            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
-                triggerAlarm();
-            }
-        });
-
-    }, 1000);
+.days-selector { display: flex; gap: 5px; margin: 10px 0; justify-content: space-between; }
+.day-check { 
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #444; border-radius: 50%; font-size: 12px; color: #666; cursor: pointer;
 }
+.day-check.selected { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); font-weight: bold; }
 
-function triggerAlarm() {
-    playRadio();
-    // Громкость на макс
-    const slider = document.getElementById('vol-slider');
-    if (slider) {
-        slider.value = 1.0;
-        slider.dispatchEvent(new Event('input'));
-    }
-    
-    const msg = document.getElementById('alarm-msg');
-    msg.style.display = 'block';
-    setTimeout(() => { msg.style.display = 'none'; }, 60000);
-}
+.add-alarm-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.add-alarm-btn:active { background: var(--neon-blue); color: black; }
 
-/* --- СВЯЗЬ --- */
-function stopRadio() {
-    if (typeof isPlaying !== 'undefined' && isPlaying) {
-        document.getElementById('play-btn').click();
-    }
+.alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
+.alarm-time { font-size: 18px; font-weight: bold; color: white; }
+.alarm-days { font-size: 11px; color: #888; }
+.alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
+
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.vol-control { display: flex; align-items: center; gap: 10px; }
+#vol-slider { width: 120px; accent-color: var(--neon-blue); }
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--neon-pink); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.placeholder-box { text-align: center; padding: 40px 20px; }
+.neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; }
+
+/* --- МОДАЛЬНОЕ ОКНО --- */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+    z-index: 2000; display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s;
 }
-function playRadio() {
-    if (typeof isPlaying !== 'undefined' && !isPlaying) {
-        document.getElementById('play-btn').click();
-    }
+.modal.hidden { display: none; }
+.modal-content {
+    background: #151525; border: 1px solid var(--neon-blue);
+    padding: 30px; border-radius: 20px; text-align: center;
+    width: 80%; max-width: 300px; position: relative;
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
 }
+.close-modal {
+    position: absolute; top: 10px; right: 15px;
+    background: none; border: none; color: #666; font-size: 24px; cursor: pointer;
+}
+#modal-art {
+    width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover;
+    margin-bottom: 15px; border: 2px solid var(--neon-pink);
+}
+#modal-title { margin: 0 0 5px; font-size: 18px; color: white; }
+#modal-artist { margin: 0 0 20px; color: var(--neon-blue); }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; }
+.action-btn {
+    display: block; padding: 10px; border-radius: 10px;
+    background: #333; color: white; text-decoration: none; font-weight: bold;
+    border: 1px solid #444; transition: 0.2s;
+}
+.action-btn:hover { background: #444; }
+.action-btn.vk { color: #0077FF; border-color: rgba(0, 119, 255, 0.3); }
+.action-btn.tg { color: #0088cc; border-color: rgba(0, 136, 204, 0.3); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spin { 100% { transform: rotate(360deg); } }
