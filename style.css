@@ -99,7 +99,7 @@ header {
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* ИСТОРИЯ (Вернули кнопку Инфо) */
+/* ИСТОРИЯ */
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .history-item {
     display: flex; align-items: center;
@@ -112,7 +112,6 @@ header {
 .hist-title { font-size: 14px; font-weight: bold; display: block; margin-bottom: 2px; color:white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Кнопка ИНФО */
 .sku-btn {
     background: transparent; border: 1px solid var(--neon-blue);
     color: var(--neon-blue); width: 35px; height: 35px;
@@ -121,7 +120,7 @@ header {
 }
 .sku-btn:active { background: var(--neon-blue); color: #000; }
 
-/* ФИЧИ: ТАЙМЕР СНА */
+/* ФИЧИ */
 .feature-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px; padding: 15px; margin-bottom: 15px;
@@ -135,7 +134,6 @@ header {
 .slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px; }
 .status-hidden { display: none; margin-top: 10px; text-align: center; color: #aaa; }
 
-/* ФИЧИ: БУДИЛЬНИК */
 .alarm-create-box { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 10px; }
 .neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 18px; outline: none; }
 .neon-input::-webkit-calendar-picker-indicator { filter: invert(1); }
@@ -150,13 +148,11 @@ header {
 .add-alarm-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 .add-alarm-btn:active { background: var(--neon-blue); color: black; }
 
-/* Элемент списка будильника */
 .alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
 .alarm-time { font-size: 18px; font-weight: bold; color: white; }
 .alarm-days { font-size: 11px; color: #888; }
 .alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
 
-/* Общие */
 .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .vol-control { display: flex; align-items: center; gap: 10px; }
 #vol-slider { width: 120px; accent-color: var(--neon-blue); }
@@ -169,6 +165,40 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .placeholder-box { text-align: center; padding: 40px 20px; }
 .neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; }
+
+/* --- МОДАЛЬНОЕ ОКНО --- */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+    z-index: 2000; display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s;
+}
+.modal.hidden { display: none; }
+.modal-content {
+    background: #151525; border: 1px solid var(--neon-blue);
+    padding: 30px; border-radius: 20px; text-align: center;
+    width: 80%; max-width: 300px; position: relative;
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+}
+.close-modal {
+    position: absolute; top: 10px; right: 15px;
+    background: none; border: none; color: #666; font-size: 24px; cursor: pointer;
+}
+#modal-art {
+    width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover;
+    margin-bottom: 15px; border: 2px solid var(--neon-pink);
+}
+#modal-title { margin: 0 0 5px; font-size: 18px; color: white; }
+#modal-artist { margin: 0 0 20px; color: var(--neon-blue); }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; }
+.action-btn {
+    display: block; padding: 10px; border-radius: 10px;
+    background: #333; color: white; text-decoration: none; font-weight: bold;
+    border: 1px solid #444; transition: 0.2s;
+}
+.action-btn:hover { background: #444; }
+.action-btn.vk { color: #0077FF; border-color: rgba(0, 119, 255, 0.3); }
+.action-btn.tg { color: #0088cc; border-color: rgba(0, 136, 204, 0.3); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
