@@ -6,18 +6,17 @@ const CONFIG = {
     refreshTime: 5000 
 };
 
+// Глобальные переменные (доступны для features.js)
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
-// В приложении автостарт
+// Автостарт в приложении
 if (isApp) isPlaying = true;
 
 window.onload = function() {
     initPlayer();
-    initVolume(); // Запускаем умную громкость
-    
-    // Запуск вечного цикла обновлений
+    initVolume();
     updateMetadataLoop();
 };
 
@@ -25,7 +24,6 @@ document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateMetadata();
 });
 
-// Вечный цикл (защита от зависания)
 function updateMetadataLoop() {
     updateMetadata();
     setTimeout(updateMetadataLoop, CONFIG.refreshTime);
@@ -35,49 +33,57 @@ function updateMetadataLoop() {
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player'); // Блок для анимации
+    const playerDiv = document.querySelector('.inline-player');
 
     if (!playBtn) return;
 
-    // Старт в приложении
+    // Визуальный старт если приложение
     if (isApp) {
         if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing'); // Вращение!
+        if(playerDiv) playerDiv.classList.add('playing');
     }
 
     playBtn.addEventListener('click', () => {
-        // ПРИЛОЖЕНИЕ
-        if (isApp && window.Android) {
-            try {
-                if (isPlaying) {
-                    window.Android.pauseAudio();
-                    if(icon) icon.className = "fas fa-play";
-                    if(playerDiv) playerDiv.classList.remove('playing');
-                    isPlaying = false;
-                } else {
-                    window.Android.playAudio();
-                    if(icon) icon.className = "fas fa-pause";
-                    if(playerDiv) playerDiv.classList.add('playing');
-                    isPlaying = true;
-                }
-            } catch(e) {}
-            return;
-        }
-
-        // БРАУЗЕР
-        if (isPlaying) {
-            audio.pause();
-            if(icon) icon.className = "fas fa-play";
-            if(playerDiv) playerDiv.classList.remove('playing');
-            isPlaying = false;
-        } else {
-            audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-            audio.play().catch(e => console.log("Block"));
-            if(icon) icon.className = "fas fa-pause";
-            if(playerDiv) playerDiv.classList.add('playing');
-            isPlaying = true;
-        }
+        togglePlayState();
     });
+}
+
+// Вынесли функцию переключения, чтобы будильник мог её нажимать
+function togglePlayState() {
+    const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
+
+    // ПРИЛОЖЕНИЕ
+    if (isApp && window.Android) {
+        try {
+            if (isPlaying) {
+                window.Android.pauseAudio();
+                if(icon) icon.className = "fas fa-play";
+                if(playerDiv) playerDiv.classList.remove('playing');
+                isPlaying = false;
+            } else {
+                window.Android.playAudio();
+                if(icon) icon.className = "fas fa-pause";
+                if(playerDiv) playerDiv.classList.add('playing');
+                isPlaying = true;
+            }
+        } catch(e) {}
+        return;
+    }
+
+    // БРАУЗЕР
+    if (isPlaying) {
+        audio.pause();
+        if(icon) icon.className = "fas fa-play";
+        if(playerDiv) playerDiv.classList.remove('playing');
+        isPlaying = false;
+    } else {
+        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+        audio.play().catch(e => console.log("Autoplay block"));
+        if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing');
+        isPlaying = true;
+    }
 }
 
 /* --- УМНАЯ ГРОМКОСТЬ --- */
@@ -85,32 +91,24 @@ function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // 1. Восстанавливаем
     let savedVol = localStorage.getItem('savedVolume');
-    let finalVol = 1.0; 
+    let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
+    if (finalVol < 0.1) finalVol = 0.5; // Защита от тишины
 
-    if (savedVol !== null) {
-        finalVol = parseFloat(savedVol);
-        // Если меньше 25% -> ставим 25%
-        if (finalVol < 0.25) finalVol = 0.25;
-    }
-
-    // 2. Применяем
     slider.value = finalVol;
     audio.volume = finalVol;
+    
+    // Попытка установить громкость в приложении (если поддерживается)
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
 
-    // 3. Слушаем
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
-
+        audio.volume = vol;
         if (isApp && window.Android) {
             try { window.Android.setVolume(vol); } catch(e) {}
-        } else {
-            audio.volume = vol;
         }
     });
 }
@@ -127,11 +125,10 @@ window.openTab = function(tabName, btnElement) {
 function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => {
-            if (!res.ok) throw new Error("Server error");
+            if (!res.ok) throw new Error("Err");
             return res.json();
         })
         .then(data => {
-            // ТЕКУЩИЙ ТРЕК
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 document.getElementById('track-name').innerText = song.title;
@@ -141,40 +138,26 @@ function updateMetadata() {
                 const img = document.getElementById('mini-art');
                 if (img && img.src !== artUrl) img.src = artUrl;
             }
-
-            // ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => console.log("Waiting..."));
+        .catch(err => {});
 }
 
 function renderHistory(history) {
     const container = document.getElementById('history-container');
     if (!container) return;
-
     let html = '';
-    // Берем 10 последних
     history.slice(0, 10).forEach(item => {
-        const song = item.song;
-        const art = fixUrl(song.art);
-        const safeTitle = song.title.replace(/'/g, "\\'");
-        const safeArtist = song.artist.replace(/'/g, "\\'");
-        const safeArt = art;
-
         html += `
         <div class="history-item">
-            <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
+            <img src="${fixUrl(item.song.art)}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
             <div class="hist-info">
-                <span class="hist-title">${song.title}</span>
-                <span class="hist-artist">${song.artist}</span>
+                <span class="hist-title">${item.song.title}</span>
+                <span class="hist-artist">${item.song.artist}</span>
             </div>
-            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
-                <i class="fas fa-info"></i>
-            </button>
-        </div>
-        `;
+        </div>`;
     });
     container.innerHTML = html;
 }
@@ -184,8 +167,3 @@ function fixUrl(url) {
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
-
-window.openSku = function(title, artist, art) {
-    const params = new URLSearchParams({ title: title, artist: artist, art: art });
-    window.location.href = 'song-info.html?' + params.toString();
-};
