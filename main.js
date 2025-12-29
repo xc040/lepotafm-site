@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 8000 // Обновляем раз в 8 сек
+    refreshTime: 10000 // Обновление раз в 10 сек
 };
 
 // Глобальные переменные
@@ -21,8 +21,9 @@ window.onload = function() {
     loadAlarms(); 
     startAlarmClock(); 
     
-    // Простая загрузка (без наворотов)
+    // Запускаем обновление данных сразу
     updateMetadata();
+    // И ставим таймер
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -48,7 +49,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ (Командуем Java-коду)
+    // ПРИЛОЖЕНИЕ
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -69,14 +70,13 @@ function togglePlayState() {
     // БРАУЗЕР
     if (isPlaying) {
         audio.pause();
-        audio.src = ""; // Сброс буфера
+        audio.src = ""; 
         audio.load();
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
-        // Добавляем время, чтобы браузер не брал кэш
-        audio.src = CONFIG.streamUrl + "?ts=" + Date.now();
+        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
         audio.play().catch(e => console.log("Block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
@@ -84,10 +84,24 @@ function togglePlayState() {
     }
 }
 
-// Функции для будильника
+// Вспомогательные функции для будильника
 function playRadioForce() {
-    if (!isPlaying) togglePlayState();
+    // Принудительно включаем, даже если система думает что играет
+    if (isApp && window.Android) {
+        try { 
+            window.Android.playAudio(); 
+            // Обновляем визуальное состояние
+            const icon = document.getElementById('play-icon');
+            const playerDiv = document.querySelector('.inline-player');
+            if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
+            isPlaying = true;
+        } catch(e) {}
+    } else {
+        if (!isPlaying) togglePlayState();
+    }
 }
+
 function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
@@ -118,9 +132,8 @@ function initVolume() {
     });
 }
 
-/* ================== МЕТАДАННЫЕ (УПРОЩЕНО) ================== */
+/* ================== МЕТАДАННЫЕ ================== */
 function updateMetadata() {
-    // Простой fetch без таймаутов
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
@@ -141,7 +154,7 @@ function updateMetadata() {
             }
         })
         .catch(err => {
-            // Ошибки игнорируем, просто попробуем в следующий раз
+            console.log("Waiting for data...");
         });
 }
 
@@ -170,7 +183,9 @@ function renderHistory(history) {
         </div>`;
     });
     
-    if (container.innerHTML !== html) container.innerHTML = html;
+    if (container.innerHTML !== html) {
+        container.innerHTML = html;
+    }
 }
 
 function fixUrl(url) {
@@ -179,13 +194,15 @@ function fixUrl(url) {
     return url;
 }
 
-/* ================== МОДАЛЬНОЕ ОКНО ================== */
+// МОДАЛЬНОЕ ОКНО
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
+    
     if(mArt) mArt.src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
+    
     if(modal) modal.classList.remove('hidden');
 };
 
@@ -194,7 +211,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
+/* ================== ТАЙМЕР И БУДИЛЬНИК (ИСПРАВЛЕНО) ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -238,6 +255,7 @@ window.cancelSleepTimer = function() {
 
 let alarms = []; 
 let alarmChecker = null;
+let lastTriggeredTime = ""; // Защита от повторного срабатывания в одну минуту
 
 function loadAlarms() {
     const stored = localStorage.getItem('myAlarms');
@@ -313,19 +331,22 @@ function renderAlarms() {
 
 function startAlarmClock() {
     if (alarmChecker) clearInterval(alarmChecker);
+    
+    // Проверка каждую секунду
     alarmChecker = setInterval(() => {
         const now = new Date();
         const currentDay = now.getDay();
         const h = String(now.getHours()).padStart(2, '0');
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
-        const seconds = now.getSeconds();
 
-        if (seconds !== 0) return;
+        // Если в эту минуту уже сработал - пропускаем
+        if (currentTime === lastTriggeredTime) return;
 
         alarms.forEach(alarm => {
             if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
                 triggerAlarm();
+                lastTriggeredTime = currentTime; // Запоминаем, что сработали
             }
         });
     }, 1000);
@@ -335,9 +356,11 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
+    // Сброс громкости перед стартом
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
+    // Включаем радио (принудительно)
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -346,6 +369,7 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
+    // Плавное нарастание громкости
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
@@ -357,11 +381,3 @@ function triggerAlarm() {
         slider.dispatchEvent(new Event('input'));
     }, 250);
 }
-
-/* ================== UI ================== */
-window.openTab = function(tabName, btnElement) {
-    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
-};
