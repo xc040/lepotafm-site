@@ -19,10 +19,14 @@
             <div class="live-indicator">LIVE</div>
         </header>
 
+        <!-- ВКЛАДКИ (3 в ряд, 2 ряда) -->
         <nav class="tabs">
             <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
-            <button class="tab-btn" onclick="openTab('chat', this)">Студия</button>
+            <button class="tab-btn" onclick="openTab('message', this)">Послание</button>
+            <button class="tab-btn" onclick="openTab('walkie', this)">Рация</button>
             <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
+            <button class="tab-btn" onclick="openTab('price', this)">Цена</button>
+            <button class="tab-btn" onclick="openTab('blog', this)">Блог</button>
         </nav>
 
         <div class="inline-player">
@@ -40,7 +44,7 @@
     <!-- НИЖНЯЯ ЗОНА -->
     <div class="main-content">
         
-        <!-- Вкладка ЭФИР -->
+        <!-- 1. ЭФИР -->
         <div id="ether" class="tab-pane active">
             <div class="history-list" id="history-container">
                 <div class="loading-msg">
@@ -49,17 +53,25 @@
             </div>
         </div>
 
-        <!-- Вкладка СТУДИЯ -->
-        <div id="chat" class="tab-pane">
+        <!-- 2. ПОСЛАНИЕ (Бывшая Студия) -->
+        <div id="message" class="tab-pane">
             <div class="placeholder-box">
                 <i class="fab fa-telegram-plane" style="font-size: 40px; color: #0088cc; margin-bottom: 15px;"></i>
                 <h3>Связь со студией</h3>
-                <p>Пишите приветы и заказывайте песни</p>
+                <p>Заявки и приветы через Telegram</p>
                 <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Написать</a>
             </div>
         </div>
 
-        <!-- Вкладка ФИЧИ -->
+        <!-- 3. РАЦИЯ -->
+        <div id="walkie" class="tab-pane">
+            <div class="placeholder-box">
+                <h3>Рация</h3>
+                <p>Раздел в разработке...</p>
+            </div>
+        </div>
+
+        <!-- 4. ФИЧИ -->
         <div id="features" class="tab-pane">
             <div class="settings-box">
                 
@@ -106,8 +118,29 @@
                     </div>
                 </div>
 
+                <div class="setting-row">
+                    <span>Высокое качество</span>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
             </div>
         </div>
+
+        <!-- 5. ЦЕНА -->
+        <div id="price" class="tab-pane">
+            <div class="placeholder-box">
+                <h3>Цена</h3>
+                <p>Раздел в разработке...</p>
+            </div>
+        </div>
+
+        <!-- 6. БЛОГ -->
+        <div id="blog" class="tab-pane">
+            <div class="placeholder-box">
+                <h3>Блог</h3>
+                <p>Раздел в разработке...</p>
+            </div>
+        </div>
+
     </div>
 
     <!-- МОДАЛЬНОЕ ОКНО ИНФОРМАЦИИ -->
