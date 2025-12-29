@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 10000 
+    refreshTime: 8000 // Чуть чаще (8 сек), чтобы быстрее обновлялось
 };
 
 // Глобальные переменные
@@ -20,7 +20,8 @@ window.onload = function() {
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    updateMetadata(); 
+    
+    updateMetadata(); // Грузим сразу
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -127,19 +128,14 @@ function initVolume() {
     });
 }
 
-/* ================== ВКЛАДКИ ================== */
-window.openTab = function(tabName, btnElement) {
-    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
-};
-
-/* ================== МЕТАДАННЫЕ ================== */
+/* ================== МЕТАДАННЫЕ (ИСПРАВЛЕНО) ================== */
 function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
+    // Убрал заголовки Headers, оставил только простой GET запрос с таймстемпом
+    // Это работает быстрее всего на мобильных сетях
+    fetch(CONFIG.apiUrl + "?nocache=" + Date.now())
         .then(res => res.json())
         .then(data => {
+            // ТЕКУЩИЙ ТРЕК
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 const titleEl = document.getElementById('track-name');
@@ -150,13 +146,17 @@ function updateMetadata() {
                 if (artistEl) artistEl.innerText = song.artist;
                 
                 let artUrl = fixUrl(song.art);
+                // Проверка src исключает мерцание
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
+            // ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => {});
+        .catch(err => {
+            // Тихо игнорируем ошибку, чтобы не засорять консоль
+        });
 }
 
 function renderHistory(history) {
@@ -208,6 +208,14 @@ window.openSku = function(title, artist, art) {
 window.closeSku = function() {
     const modal = document.getElementById('info-modal');
     if(modal) modal.classList.add('hidden');
+};
+
+/* ================== ВКЛАДКИ ================== */
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
 };
 
 /* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
@@ -353,11 +361,11 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Сброс громкости в 0 (обязательно)
+    // Сброс громкости в 0
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
-    // Включаем радио
+    // Включение
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -366,16 +374,15 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание до 1.0 (МАКСИМУМ)
+    // Плавное нарастание до МАКСИМУМА (1.0)
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
-        // ГАРАНТИЯ МАКСИМУМА: Идем ровно до 1.0, без учета прошлых настроек
         if (vol >= 1.0) {
             vol = 1.0;
             clearInterval(fadeInterval);
         }
         slider.value = vol;
-        slider.dispatchEvent(new Event('input')); // Отправляем 1.0 в приложение
+        slider.dispatchEvent(new Event('input'));
     }, 250);
 }
