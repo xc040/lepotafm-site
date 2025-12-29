@@ -20,7 +20,9 @@ window.onload = function() {
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    updateMetadata(); 
+    
+    // Запускаем обновление данных СРАЗУ (как в рабочей версии)
+    updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -64,7 +66,7 @@ function togglePlayState() {
         return;
     }
 
-    // БРАУЗЕР
+    // БРАУЗЕР (Сброс буфера)
     if (isPlaying) {
         audio.pause();
         audio.src = ""; 
@@ -81,21 +83,22 @@ function togglePlayState() {
     }
 }
 
-// ПРИНУДИТЕЛЬНОЕ ВКЛЮЧЕНИЕ (ИСПРАВЛЕНО)
+/* --- ФУНКЦИЯ ДЛЯ БУДИЛЬНИКА (ПРИНУДИТЕЛЬНЫЙ СТАРТ) --- */
 function playRadioForce() {
-    // Если это приложение - шлем команду ИГРАТЬ в любом случае
+    const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
+
+    // Если это Приложение - шлем команду playAudio ВСЕГДА
     if (isApp && window.Android) {
         try {
             window.Android.playAudio();
-            // Обновляем визуал, если он был выключен
-            const icon = document.getElementById('play-icon');
-            const playerDiv = document.querySelector('.inline-player');
+            isPlaying = true;
             if(icon) icon.className = "fas fa-pause";
             if(playerDiv) playerDiv.classList.add('playing');
-            isPlaying = true;
         } catch(e) {}
-    } else {
-        // В браузере проверяем, если не играет - включаем
+    } 
+    // Если Браузер - включаем только если выключено
+    else {
         if (!isPlaying) togglePlayState();
     }
 }
@@ -130,11 +133,13 @@ function initVolume() {
     });
 }
 
-/* ================== МЕТАДАННЫЕ ================== */
+/* ================== ЗАГРУЗКА КАРТИНОК (СТАРАЯ РАБОЧАЯ ВЕРСИЯ) ================== */
 function updateMetadata() {
+    // Простой fetch, который работал быстро
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
+            // 1. ТЕКУЩАЯ ПЕСНЯ
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 const titleEl = document.getElementById('track-name');
@@ -147,6 +152,8 @@ function updateMetadata() {
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
+
+            // 2. ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
@@ -179,11 +186,14 @@ function renderHistory(history) {
         </div>`;
     });
     
-    if (container.innerHTML !== html) container.innerHTML = html;
+    if (container.innerHTML !== html) {
+        container.innerHTML = html;
+    }
 }
 
 function fixUrl(url) {
     if (!url || url.includes('generic')) return CONFIG.defaultImage;
+    // ВАЖНО: Замена HTTP на HTTPS для Андроида
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
@@ -192,9 +202,11 @@ function fixUrl(url) {
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
+    
     if(mArt) mArt.src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
+    
     if(modal) modal.classList.remove('hidden');
 };
 
@@ -344,16 +356,14 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // 1. Сбрасываем громкость визуально и фактически
+    // 1. Сброс громкости
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(0); } catch(e){}
-    } else {
-        audio.volume = 0;
     }
     
-    // 2. Включаем радио ПРИНУДИТЕЛЬНО
+    // 2. Включаем радио ПРИНУДИТЕЛЬНО (исправлено)
     playRadioForce();
     
     // 3. Сообщение
@@ -372,7 +382,7 @@ function triggerAlarm() {
             clearInterval(fadeInterval);
         }
         
-        // Применяем громкость везде
+        // Применяем громкость
         slider.value = vol;
         slider.dispatchEvent(new Event('input'));
         
