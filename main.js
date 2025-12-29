@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 8000 // Чуть чаще (8 сек), чтобы быстрее обновлялось
+    refreshTime: 8000 
 };
 
 // Глобальные переменные
@@ -21,11 +21,12 @@ window.onload = function() {
     loadAlarms(); 
     startAlarmClock(); 
     
-    updateMetadata(); // Грузим сразу
+    // Запускаем обновление данных ПРОСТЫМ методом
+    updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== ПЛЕЕР ================== */
+/* ================== ПЛЕЕР (С ФИКСОМ БУФЕРА) ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
@@ -47,7 +48,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ
+    // ПРИЛОЖЕНИЕ (Android)
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -65,17 +66,21 @@ function togglePlayState() {
         return;
     }
 
-    // БРАУЗЕР
+    // БРАУЗЕР (ФИКС БУФЕРА)
     if (isPlaying) {
+        // Когда нажимаем Паузу - ОБРЫВАЕМ соединение, чтобы не копился буфер
         audio.pause();
         audio.src = ""; 
         audio.load();
+        
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
+        // Когда нажимаем Плей - ПОДКЛЮЧАЕМСЯ ЗАНОВО
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Block"));
+        audio.play().catch(e => console.log("Autoplay block"));
+        
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
@@ -84,21 +89,11 @@ function togglePlayState() {
 
 // Вспомогательные функции для будильника
 function playRadioForce() {
-    if (isApp && window.Android) {
-        try { 
-            window.Android.playAudio(); 
-            const icon = document.getElementById('play-icon');
-            const playerDiv = document.querySelector('.inline-player');
-            if(icon) icon.className = "fas fa-pause";
-            if(playerDiv) playerDiv.classList.add('playing');
-            isPlaying = true;
-        } catch(e) {}
-    } else {
-        if (!isPlaying) togglePlayState();
-    }
+    // Включаем, если не играет
+    if (!isPlaying) togglePlayState();
 }
-
 function stopRadioForce() {
+    // Выключаем, если играет
     if (isPlaying) togglePlayState();
 }
 
@@ -114,6 +109,7 @@ function initVolume() {
     slider.value = finalVol;
     audio.volume = finalVol;
     
+    // Передаем в Android
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -128,14 +124,13 @@ function initVolume() {
     });
 }
 
-/* ================== МЕТАДАННЫЕ (ИСПРАВЛЕНО) ================== */
+/* ================== ЗАГРУЗКА ДАННЫХ (СТАБИЛЬНАЯ) ================== */
 function updateMetadata() {
-    // Убрал заголовки Headers, оставил только простой GET запрос с таймстемпом
-    // Это работает быстрее всего на мобильных сетях
-    fetch(CONFIG.apiUrl + "?nocache=" + Date.now())
+    // Самый простой fetch без заголовков, чтобы не злить Android
+    fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // ТЕКУЩИЙ ТРЕК
+            // Текущий трек
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 const titleEl = document.getElementById('track-name');
@@ -146,16 +141,15 @@ function updateMetadata() {
                 if (artistEl) artistEl.innerText = song.artist;
                 
                 let artUrl = fixUrl(song.art);
-                // Проверка src исключает мерцание
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-            // ИСТОРИЯ
+            // История
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
         .catch(err => {
-            // Тихо игнорируем ошибку, чтобы не засорять консоль
+            // Тихо падаем, чтобы не спамить в лог
         });
 }
 
@@ -184,6 +178,7 @@ function renderHistory(history) {
         </div>`;
     });
     
+    // Обновляем HTML только если он изменился
     if (container.innerHTML !== html) {
         container.innerHTML = html;
     }
@@ -210,7 +205,9 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ВКЛАДКИ ================== */
+/* ================== ЛОГИКА ФИЧ (БУДИЛЬНИК, ТАЙМЕР) ================== */
+
+// ВКЛАДКИ
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -218,7 +215,7 @@ window.openTab = function(tabName, btnElement) {
     if (btnElement) btnElement.classList.add('active');
 };
 
-/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
+// ТАЙМЕР СНА
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -260,6 +257,7 @@ window.cancelSleepTimer = function() {
     if(statusDiv) statusDiv.style.display = "none";
 }
 
+// БУДИЛЬНИК
 let alarms = []; 
 let alarmChecker = null;
 let lastTriggeredTime = "";
@@ -339,6 +337,7 @@ function renderAlarms() {
 function startAlarmClock() {
     if (alarmChecker) clearInterval(alarmChecker);
     
+    // Проверка каждую секунду
     alarmChecker = setInterval(() => {
         const now = new Date();
         const currentDay = now.getDay();
@@ -357,6 +356,7 @@ function startAlarmClock() {
     }, 1000);
 }
 
+// ПЛАВНЫЙ СТАРТ (5 СЕКУНД)
 function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -374,7 +374,7 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание до МАКСИМУМА (1.0)
+    // Плавное нарастание до 1.0 за 5 сек
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
