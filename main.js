@@ -6,20 +6,17 @@ const CONFIG = {
     refreshTime: 5000 
 };
 
-// Глобальные переменные
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
-// Автостарт только в приложении
 if (isApp) isPlaying = true;
 
-/* --- ЗАПУСК --- */
 window.onload = function() {
     initPlayer();
     initVolume();
-    loadAlarms(); // Будильники
-    startAlarmClock(); // Запуск часов
+    loadAlarms();
+    startAlarmClock();
     updateMetadataLoop();
 };
 
@@ -32,7 +29,6 @@ function updateMetadataLoop() {
     setTimeout(updateMetadataLoop, CONFIG.refreshTime);
 }
 
-/* ================== ПЛЕЕР ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
@@ -54,7 +50,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ЛОГИКА ДЛЯ ПРИЛОЖЕНИЯ
+    // ПРИЛОЖЕНИЕ
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -72,30 +68,27 @@ function togglePlayState() {
         return;
     }
 
-    // ЛОГИКА ДЛЯ БРАУЗЕРА
+    // БРАУЗЕР (ИСПРАВЛЕНО ДЛЯ LIVE)
     if (isPlaying) {
+        // ПАУЗА: Останавливаем и СБРАСЫВАЕМ ссылку, чтобы не кэшировал буфер
         audio.pause();
+        audio.src = ""; 
+        audio.load(); // Полный сброс
+        
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
+        // ПЛЕЙ: Подключаемся заново с новым временем
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
         audio.play().catch(e => console.log("Block"));
+        
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
 }
 
-// Вспомогательные функции для будильника
-function playRadioForce() {
-    if (!isPlaying) togglePlayState();
-}
-function stopRadioForce() {
-    if (isPlaying) togglePlayState();
-}
-
-/* ================== ГРОМКОСТЬ ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -121,7 +114,78 @@ function initVolume() {
     });
 }
 
-/* ================== ТАЙМЕР СНА ================== */
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+};
+
+function updateMetadata() {
+    fetch(CONFIG.apiUrl + "?t=" + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            if (data.now_playing && data.now_playing.song) {
+                const song = data.now_playing.song;
+                document.getElementById('track-name').innerText = song.title;
+                document.getElementById('artist-name').innerText = song.artist;
+                
+                let artUrl = fixUrl(song.art);
+                const img = document.getElementById('mini-art');
+                if (img && img.src !== artUrl) img.src = artUrl;
+            }
+            if (data.song_history && data.song_history.length > 0) {
+                renderHistory(data.song_history);
+            }
+        })
+        .catch(err => {});
+}
+
+function renderHistory(history) {
+    const container = document.getElementById('history-container');
+    if (!container) return;
+    let html = '';
+    history.forEach(item => {
+        const song = item.song;
+        const art = fixUrl(song.art);
+        const safeTitle = song.title.replace(/'/g, "\\'"); 
+        const safeArtist = song.artist.replace(/'/g, "\\'"); 
+        const safeArt = art;
+
+        html += `
+        <div class="history-item">
+            <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
+            <div class="hist-info">
+                <span class="hist-title">${song.title}</span>
+                <span class="hist-artist">${song.artist}</span>
+            </div>
+            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
+                <i class="fas fa-info"></i>
+            </button>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function fixUrl(url) {
+    if (!url || url.includes('generic')) return CONFIG.defaultImage;
+    if (url.startsWith('http:')) return url.replace('http:', 'https:');
+    return url;
+}
+
+window.openSku = function(title, artist, art) {
+    const modal = document.getElementById('info-modal');
+    document.getElementById('modal-art').src = art;
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-artist').innerText = artist;
+    modal.classList.remove('hidden');
+};
+
+window.closeSku = function() {
+    document.getElementById('info-modal').classList.add('hidden');
+};
+
+/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -161,7 +225,6 @@ window.cancelSleepTimer = function() {
     if(statusDiv) statusDiv.style.display = "none";
 }
 
-/* ================== БУДИЛЬНИК ================== */
 let alarms = []; 
 let alarmChecker = null;
 
@@ -261,11 +324,9 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Сброс громкости
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
-    // Включение
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -274,7 +335,6 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание (5 сек)
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
@@ -287,76 +347,9 @@ function triggerAlarm() {
     }, 250);
 }
 
-/* ================== UI ================== */
-window.openTab = function(tabName, btnElement) {
-    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
-};
-
-/* ================== API & MODAL ================== */
-function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(res => res.json())
-        .then(data => {
-            if (data.now_playing && data.now_playing.song) {
-                const song = data.now_playing.song;
-                document.getElementById('track-name').innerText = song.title;
-                document.getElementById('artist-name').innerText = song.artist;
-                
-                let artUrl = fixUrl(song.art);
-                const img = document.getElementById('mini-art');
-                if (img && img.src !== artUrl) img.src = artUrl;
-            }
-            if (data.song_history && data.song_history.length > 0) {
-                renderHistory(data.song_history);
-            }
-        })
-        .catch(err => {});
+function playRadioForce() {
+    if (!isPlaying) togglePlayState();
 }
-
-function renderHistory(history) {
-    const container = document.getElementById('history-container');
-    if (!container) return;
-    let html = '';
-    history.forEach(item => {
-        const song = item.song;
-        const art = fixUrl(song.art);
-        const safeTitle = song.title.replace(/'/g, "\\'"); 
-        const safeArtist = song.artist.replace(/'/g, "\\'"); 
-        const safeArt = art;
-
-        html += `
-        <div class="history-item">
-            <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
-            <div class="hist-info">
-                <span class="hist-title">${song.title}</span>
-                <span class="hist-artist">${song.artist}</span>
-            </div>
-            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
-                <i class="fas fa-info"></i>
-            </button>
-        </div>`;
-    });
-    container.innerHTML = html;
+function stopRadioForce() {
+    if (isPlaying) togglePlayState();
 }
-
-function fixUrl(url) {
-    if (!url || url.includes('generic')) return CONFIG.defaultImage;
-    if (url.startsWith('http:')) return url.replace('http:', 'https:');
-    return url;
-}
-
-// Модальное окно
-window.openSku = function(title, artist, art) {
-    const modal = document.getElementById('info-modal');
-    document.getElementById('modal-art').src = art;
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-artist').innerText = artist;
-    modal.classList.remove('hidden');
-};
-
-window.closeSku = function() {
-    document.getElementById('info-modal').classList.add('hidden');
-};
