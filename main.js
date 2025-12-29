@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 10000 // Обновление раз в 10 сек
+    refreshTime: 8000 // Обновляем раз в 8 сек
 };
 
 // Глобальные переменные
@@ -21,9 +21,8 @@ window.onload = function() {
     loadAlarms(); 
     startAlarmClock(); 
     
-    // Запускаем обновление данных сразу
+    // Простая загрузка (без наворотов)
     updateMetadata();
-    // И ставим таймер
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -49,7 +48,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ
+    // ПРИЛОЖЕНИЕ (Командуем Java-коду)
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -70,13 +69,14 @@ function togglePlayState() {
     // БРАУЗЕР
     if (isPlaying) {
         audio.pause();
-        audio.src = ""; 
+        audio.src = ""; // Сброс буфера
         audio.load();
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
-        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+        // Добавляем время, чтобы браузер не брал кэш
+        audio.src = CONFIG.streamUrl + "?ts=" + Date.now();
         audio.play().catch(e => console.log("Block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
@@ -84,7 +84,7 @@ function togglePlayState() {
     }
 }
 
-// Вспомогательные функции для будильника
+// Функции для будильника
 function playRadioForce() {
     if (!isPlaying) togglePlayState();
 }
@@ -118,13 +118,12 @@ function initVolume() {
     });
 }
 
-/* ================== ЗАГРУЗКА ДАННЫХ (ВЕРНУЛ КАК БЫЛО) ================== */
+/* ================== МЕТАДАННЫЕ (УПРОЩЕНО) ================== */
 function updateMetadata() {
-    // Простой запрос без таймаутов и отмен
+    // Простой fetch без таймаутов
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // 1. ТЕКУЩАЯ ПЕСНЯ
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 const titleEl = document.getElementById('track-name');
@@ -137,14 +136,12 @@ function updateMetadata() {
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-
-            // 2. ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
         .catch(err => {
-            console.log("Waiting for data...");
+            // Ошибки игнорируем, просто попробуем в следующий раз
         });
 }
 
@@ -156,7 +153,6 @@ function renderHistory(history) {
     history.forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
-        // Защита кавычек
         const safeTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const safeArtist = song.artist.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const safeArt = art;
@@ -174,28 +170,22 @@ function renderHistory(history) {
         </div>`;
     });
     
-    // Меняем HTML только если он отличается (чтобы не моргало)
-    if (container.innerHTML !== html) {
-        container.innerHTML = html;
-    }
+    if (container.innerHTML !== html) container.innerHTML = html;
 }
 
 function fixUrl(url) {
     if (!url || url.includes('generic')) return CONFIG.defaultImage;
-    // Обязательно меняем HTTP на HTTPS для Андроида
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
 
-// МОДАЛЬНОЕ ОКНО
+/* ================== МОДАЛЬНОЕ ОКНО ================== */
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
-    
     if(mArt) mArt.src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
-    
     if(modal) modal.classList.remove('hidden');
 };
 
