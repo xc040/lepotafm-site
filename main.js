@@ -102,7 +102,7 @@ function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
 
-/* ================== ГРОМКОСТЬ ================== */
+/* ================== ГРОМКОСТЬ (ИСПРАВЛЕНО) ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -114,6 +114,7 @@ function initVolume() {
     slider.value = finalVol;
     audio.volume = finalVol;
     
+    // Отправляем громкость в приложение при старте
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -122,7 +123,8 @@ function initVolume() {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
         audio.volume = vol;
-        if (isApp && window.Android) {
+        // Отправляем громкость в приложение при изменении
+        if (isApp && window.Android && window.Android.setVolume) {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
     });
@@ -157,9 +159,7 @@ function updateMetadata() {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => {
-            console.log("Waiting for data...");
-        });
+        .catch(err => {});
 }
 
 function renderHistory(history) {
@@ -213,7 +213,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
+/* ================== ТАЙМЕР И БУДИЛЬНИК (ИСПРАВЛЕНО) ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -257,7 +257,7 @@ window.cancelSleepTimer = function() {
 
 let alarms = []; 
 let alarmChecker = null;
-let lastTriggeredTime = "";
+let lastTriggeredTime = ""; // Защита от дублей
 
 function loadAlarms() {
     const stored = localStorage.getItem('myAlarms');
@@ -342,12 +342,13 @@ function startAlarmClock() {
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
 
+        // Если уже сработало в эту минуту - не повторяем
         if (currentTime === lastTriggeredTime) return;
 
         alarms.forEach(alarm => {
             if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
                 triggerAlarm();
-                lastTriggeredTime = currentTime;
+                lastTriggeredTime = currentTime; // Запоминаем срабатывание
             }
         });
     }, 1000);
@@ -358,9 +359,11 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
+    // Сброс громкости в ноль
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
+    // Включаем радио
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -369,8 +372,8 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
+    // Плавное нарастание
     let vol = 0;
-    // 20 шагов по 250мс = 5000мс = 5 секунд
     let fadeInterval = setInterval(() => {
         vol += 0.05;
         if (vol >= 1.0) {
@@ -379,5 +382,5 @@ function triggerAlarm() {
         }
         slider.value = vol;
         slider.dispatchEvent(new Event('input'));
-    }, 250);
+    }, 250); // Каждые 250мс увеличиваем на 5%
 }
