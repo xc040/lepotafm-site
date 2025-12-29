@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 10000 
+    refreshTime: 8000 // Обновляем раз в 8 сек
 };
 
 // Глобальные переменные
@@ -21,7 +21,7 @@ window.onload = function() {
     loadAlarms(); 
     startAlarmClock(); 
     
-    // Запускаем обновление данных СРАЗУ (как в рабочей версии)
+    // Простая загрузка (без наворотов)
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
@@ -48,7 +48,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ
+    // ПРИЛОЖЕНИЕ (Командуем Java-коду)
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
@@ -66,16 +66,17 @@ function togglePlayState() {
         return;
     }
 
-    // БРАУЗЕР (Сброс буфера)
+    // БРАУЗЕР
     if (isPlaying) {
         audio.pause();
-        audio.src = ""; 
+        audio.src = ""; // Сброс буфера
         audio.load();
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
-        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+        // Добавляем время, чтобы браузер не брал кэш
+        audio.src = CONFIG.streamUrl + "?ts=" + Date.now();
         audio.play().catch(e => console.log("Block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
@@ -83,26 +84,10 @@ function togglePlayState() {
     }
 }
 
-/* --- ФУНКЦИЯ ДЛЯ БУДИЛЬНИКА (ПРИНУДИТЕЛЬНЫЙ СТАРТ) --- */
+// Функции для будильника
 function playRadioForce() {
-    const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
-
-    // Если это Приложение - шлем команду playAudio ВСЕГДА
-    if (isApp && window.Android) {
-        try {
-            window.Android.playAudio();
-            isPlaying = true;
-            if(icon) icon.className = "fas fa-pause";
-            if(playerDiv) playerDiv.classList.add('playing');
-        } catch(e) {}
-    } 
-    // Если Браузер - включаем только если выключено
-    else {
-        if (!isPlaying) togglePlayState();
-    }
+    if (!isPlaying) togglePlayState();
 }
-
 function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
@@ -133,13 +118,12 @@ function initVolume() {
     });
 }
 
-/* ================== ЗАГРУЗКА КАРТИНОК (СТАРАЯ РАБОЧАЯ ВЕРСИЯ) ================== */
+/* ================== МЕТАДАННЫЕ (УПРОЩЕНО) ================== */
 function updateMetadata() {
-    // Простой fetch, который работал быстро
+    // Простой fetch без таймаутов
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // 1. ТЕКУЩАЯ ПЕСНЯ
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 const titleEl = document.getElementById('track-name');
@@ -152,13 +136,13 @@ function updateMetadata() {
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-
-            // 2. ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => {});
+        .catch(err => {
+            // Ошибки игнорируем, просто попробуем в следующий раз
+        });
 }
 
 function renderHistory(history) {
@@ -186,14 +170,11 @@ function renderHistory(history) {
         </div>`;
     });
     
-    if (container.innerHTML !== html) {
-        container.innerHTML = html;
-    }
+    if (container.innerHTML !== html) container.innerHTML = html;
 }
 
 function fixUrl(url) {
     if (!url || url.includes('generic')) return CONFIG.defaultImage;
-    // ВАЖНО: Замена HTTP на HTTPS для Андроида
     if (url.startsWith('http:')) return url.replace('http:', 'https:');
     return url;
 }
@@ -202,11 +183,9 @@ function fixUrl(url) {
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
-    
     if(mArt) mArt.src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
-    
     if(modal) modal.classList.remove('hidden');
 };
 
@@ -356,24 +335,17 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // 1. Сброс громкости
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
-    if (isApp && window.Android && window.Android.setVolume) {
-        try { window.Android.setVolume(0); } catch(e){}
-    }
     
-    // 2. Включаем радио ПРИНУДИТЕЛЬНО (исправлено)
     playRadioForce();
     
-    // 3. Сообщение
     const msg = document.getElementById('alarm-msg');
     if (msg) {
         msg.style.display = 'block';
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // 4. Плавное нарастание (5 сек)
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
@@ -381,15 +353,15 @@ function triggerAlarm() {
             vol = 1.0;
             clearInterval(fadeInterval);
         }
-        
-        // Применяем громкость
         slider.value = vol;
         slider.dispatchEvent(new Event('input'));
-        
-        if (isApp && window.Android && window.Android.setVolume) {
-            try { window.Android.setVolume(vol); } catch(e){}
-        } else {
-            audio.volume = vol;
-        }
     }, 250);
 }
+
+/* ================== UI ================== */
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+};
