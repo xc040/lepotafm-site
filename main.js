@@ -3,7 +3,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
-    refreshTime: 10000 // Обновление раз в 10 сек
+    refreshTime: 10000 
 };
 
 // Глобальные переменные
@@ -20,10 +20,7 @@ window.onload = function() {
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    
-    // Запускаем обновление данных сразу
-    updateMetadata();
-    // И ставим таймер
+    updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -86,11 +83,10 @@ function togglePlayState() {
 
 // Вспомогательные функции для будильника
 function playRadioForce() {
-    // Принудительно включаем, даже если система думает что играет
+    // Принудительно включаем
     if (isApp && window.Android) {
         try { 
             window.Android.playAudio(); 
-            // Обновляем визуальное состояние
             const icon = document.getElementById('play-icon');
             const playerDiv = document.querySelector('.inline-player');
             if(icon) icon.className = "fas fa-pause";
@@ -132,7 +128,7 @@ function initVolume() {
     });
 }
 
-/* ================== УПРАВЛЕНИЕ ВКЛАДКАМИ (ВЕРНУЛ!) ================== */
+/* ================== ВКЛАДКИ ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -206,11 +202,9 @@ function fixUrl(url) {
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
-    
     if(mArt) mArt.src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
-    
     if(modal) modal.classList.remove('hidden');
 };
 
@@ -263,7 +257,7 @@ window.cancelSleepTimer = function() {
 
 let alarms = []; 
 let alarmChecker = null;
-let lastTriggeredTime = ""; // Защита от повторного срабатывания
+let lastTriggeredTime = "";
 
 function loadAlarms() {
     const stored = localStorage.getItem('myAlarms');
@@ -348,7 +342,6 @@ function startAlarmClock() {
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
 
-        // Если уже сработало в эту минуту - пропускаем
         if (currentTime === lastTriggeredTime) return;
 
         alarms.forEach(alarm => {
@@ -360,6 +353,7 @@ function startAlarmClock() {
     }, 1000);
 }
 
+// Плавный запуск будильника (5 секунд)
 function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -376,6 +370,7 @@ function triggerAlarm() {
     }
 
     let vol = 0;
+    // 20 шагов по 250мс = 5000мс = 5 секунд
     let fadeInterval = setInterval(() => {
         vol += 0.05;
         if (vol >= 1.0) {
