@@ -20,8 +20,7 @@ window.onload = function() {
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    
-    updateMetadata();
+    updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -82,7 +81,25 @@ function togglePlayState() {
     }
 }
 
-// Вспомогательные функции
+// ПРИНУДИТЕЛЬНОЕ ВКЛЮЧЕНИЕ (ИСПРАВЛЕНО)
+function playRadioForce() {
+    // Если это приложение - шлем команду ИГРАТЬ в любом случае
+    if (isApp && window.Android) {
+        try {
+            window.Android.playAudio();
+            // Обновляем визуал, если он был выключен
+            const icon = document.getElementById('play-icon');
+            const playerDiv = document.querySelector('.inline-player');
+            if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
+            isPlaying = true;
+        } catch(e) {}
+    } else {
+        // В браузере проверяем, если не играет - включаем
+        if (!isPlaying) togglePlayState();
+    }
+}
+
 function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
@@ -120,12 +137,15 @@ function updateMetadata() {
         .then(data => {
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
-                document.getElementById('track-name').innerText = song.title;
-                document.getElementById('artist-name').innerText = song.artist;
+                const titleEl = document.getElementById('track-name');
+                const artistEl = document.getElementById('artist-name');
+                const imgEl = document.getElementById('mini-art');
+
+                if (titleEl) titleEl.innerText = song.title;
+                if (artistEl) artistEl.innerText = song.artist;
                 
                 let artUrl = fixUrl(song.art);
-                const img = document.getElementById('mini-art');
-                if (img && img.src !== artUrl) img.src = artUrl;
+                if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
@@ -320,61 +340,46 @@ function startAlarmClock() {
     }, 1000);
 }
 
-// ИСПРАВЛЕННЫЙ ТРИГГЕР БУДИЛЬНИКА
 function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
-    
-    // 1. Принудительно включаем радио (без проверки if playing)
-    // Эмулируем нажатие кнопки, если еще не играет
-    if (isApp && window.Android) {
-        try { window.Android.playAudio(); } catch(e){}
-        // Обновляем визуально
-        const icon = document.getElementById('play-icon');
-        const playerDiv = document.querySelector('.inline-player');
-        if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
-        isPlaying = true;
+    if (!slider) return;
+
+    // 1. Сбрасываем громкость визуально и фактически
+    slider.value = 0;
+    slider.dispatchEvent(new Event('input'));
+    if (isApp && window.Android && window.Android.setVolume) {
+        try { window.Android.setVolume(0); } catch(e){}
     } else {
-        // Браузер
-        audio.src = CONFIG.streamUrl + "?alarm=" + Date.now();
-        audio.play().catch(e => console.log("Alarm Block"));
-        const icon = document.getElementById('play-icon');
-        if(icon) icon.className = "fas fa-pause";
-        isPlaying = true;
+        audio.volume = 0;
+    }
+    
+    // 2. Включаем радио ПРИНУДИТЕЛЬНО
+    playRadioForce();
+    
+    // 3. Сообщение
+    const msg = document.getElementById('alarm-msg');
+    if (msg) {
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // 2. Сбрасываем громкость в 0 и плавно поднимаем
-    if (slider) {
-        let vol = 0;
-        slider.value = 0;
+    // 4. Плавное нарастание (5 сек)
+    let vol = 0;
+    let fadeInterval = setInterval(() => {
+        vol += 0.05;
+        if (vol >= 1.0) {
+            vol = 1.0;
+            clearInterval(fadeInterval);
+        }
         
-        // Прямая установка громкости (минуя слушатель, для надежности)
+        // Применяем громкость везде
+        slider.value = vol;
+        slider.dispatchEvent(new Event('input'));
+        
         if (isApp && window.Android && window.Android.setVolume) {
-            try { window.Android.setVolume(0); } catch(e){}
+            try { window.Android.setVolume(vol); } catch(e){}
         } else {
-            audio.volume = 0;
+            audio.volume = vol;
         }
-
-        const msg = document.getElementById('alarm-msg');
-        if (msg) {
-            msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 60000);
-        }
-
-        // Fade In
-        let fadeInterval = setInterval(() => {
-            vol += 0.05;
-            if (vol >= 1.0) {
-                vol = 1.0;
-                clearInterval(fadeInterval);
-            }
-            slider.value = vol;
-            // Применяем громкость
-            if (isApp && window.Android && window.Android.setVolume) {
-                try { window.Android.setVolume(vol); } catch(e){}
-            } else {
-                audio.volume = vol;
-            }
-        }, 250);
-    }
+    }, 250);
 }
