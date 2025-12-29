@@ -29,7 +29,7 @@ body {
     background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* --- ШАПКА --- */
+/* ШАПКА */
 .fixed-top-area {
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
@@ -49,27 +49,23 @@ header {
     border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
 }
 
-/* --- ТАБЫ (3 В РЯД) --- */
+/* ТАБЫ (2 РЯДА ПО 3) */
 .tabs {
-    display: flex; 
-    flex-wrap: wrap; /* Разрешаем перенос на новую строку */
-    gap: 0; 
-    padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0; padding: 0;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 .tab-btn {
-    flex: 0 0 33.33%; /* 1/3 ширины */
-    width: 33.33%;
+    flex: 0 0 33.33%; width: 33.33%;
     background: none; border: none; color: #888;
     font-size: 13px; font-weight: 600; text-transform: uppercase;
     padding: 10px 0; cursor: pointer; transition: 0.3s;
     border-bottom: 2px solid transparent;
-    border-right: 1px solid rgba(255,255,255,0.05); /* Разделитель */
+    border-right: 1px solid rgba(255,255,255,0.05);
     box-sizing: border-box;
 }
 .tab-btn.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); }
 
-/* --- ПЛЕЕР --- */
+/* ПЛЕЕР */
 .inline-player {
     display: flex; align-items: center;
     padding: 10px 15px;
@@ -97,7 +93,7 @@ header {
     cursor: pointer;
 }
 
-/* --- КОНТЕНТ --- */
+/* КОНТЕНТ */
 .main-content {
     flex: 1; overflow-y: auto; padding: 15px;
     padding-bottom: 50px;
@@ -105,7 +101,7 @@ header {
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* --- ИСТОРИЯ --- */
+/* ИСТОРИЯ */
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .history-item {
     display: flex; align-items: center;
@@ -126,41 +122,7 @@ header {
 }
 .sku-btn:active { background: var(--neon-blue); color: #000; }
 
-/* --- МОДАЛЬНОЕ ОКНО --- */
-.modal {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
-    z-index: 2000; display: flex; align-items: center; justify-content: center;
-    animation: fadeIn 0.3s;
-}
-.modal.hidden { display: none; }
-.modal-content {
-    background: #151525; border: 1px solid var(--neon-blue);
-    padding: 30px; border-radius: 20px; text-align: center;
-    width: 80%; max-width: 300px; position: relative;
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
-}
-.close-modal {
-    position: absolute; top: 10px; right: 15px;
-    background: none; border: none; color: #666; font-size: 24px; cursor: pointer;
-}
-#modal-art {
-    width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover;
-    margin-bottom: 15px; border: 2px solid var(--neon-pink);
-}
-#modal-title { margin: 0 0 5px; font-size: 18px; color: white; }
-#modal-artist { margin: 0 0 20px; color: var(--neon-blue); }
-.modal-actions { display: flex; flex-direction: column; gap: 10px; }
-.action-btn {
-    display: block; padding: 12px; border-radius: 10px;
-    background: #333; color: white; text-decoration: none; font-weight: bold;
-    border: 1px solid #444; transition: 0.2s;
-}
-.action-btn:hover { background: #444; }
-.action-btn.vk { color: #fff; background-color: #0077FF; border-color: #0077FF; }
-.action-btn.tg { color: #fff; background-color: #0088cc; border-color: #0088cc; }
-
-/* --- ФИЧИ (ТАЙМЕР/БУДИЛЬНИК) --- */
+/* ФИЧИ (ТАЙМЕР/БУДИЛЬНИК) */
 .feature-card {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px; padding: 15px; margin-bottom: 15px;
@@ -205,6 +167,20 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .placeholder-box { text-align: center; padding: 40px 20px; }
 .neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; }
+
+/* МОДАЛКА */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+.modal.hidden { display: none; }
+.modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; box-shadow: 0 0 30px rgba(0, 243, 255, 0.2); }
+.close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; }
+#modal-art { width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover; margin-bottom: 15px; border: 2px solid var(--neon-pink); }
+#modal-title { margin: 0 0 5px; font-size: 18px; color: white; }
+#modal-artist { margin: 0 0 20px; color: var(--neon-blue); }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; }
+.action-btn { display: block; padding: 12px; border-radius: 10px; background: #333; color: white; text-decoration: none; font-weight: bold; border: 1px solid #444; transition: 0.2s; }
+.action-btn:hover { background: #444; }
+.action-btn.vk { color: #fff; background-color: #0077FF; border-color: #0077FF; }
+.action-btn.tg { color: #fff; background-color: #0088cc; border-color: #0088cc; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
