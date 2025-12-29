@@ -83,7 +83,6 @@ function togglePlayState() {
 
 // Вспомогательные функции для будильника
 function playRadioForce() {
-    // Принудительно включаем
     if (isApp && window.Android) {
         try { 
             window.Android.playAudio(); 
@@ -102,7 +101,7 @@ function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
 
-/* ================== ГРОМКОСТЬ (ИСПРАВЛЕНО) ================== */
+/* ================== ГРОМКОСТЬ ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -114,7 +113,6 @@ function initVolume() {
     slider.value = finalVol;
     audio.volume = finalVol;
     
-    // Отправляем громкость в приложение при старте
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -123,8 +121,7 @@ function initVolume() {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
         audio.volume = vol;
-        // Отправляем громкость в приложение при изменении
-        if (isApp && window.Android && window.Android.setVolume) {
+        if (isApp && window.Android) {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
     });
@@ -213,7 +210,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕР И БУДИЛЬНИК (ИСПРАВЛЕНО) ================== */
+/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -257,7 +254,7 @@ window.cancelSleepTimer = function() {
 
 let alarms = []; 
 let alarmChecker = null;
-let lastTriggeredTime = ""; // Защита от дублей
+let lastTriggeredTime = "";
 
 function loadAlarms() {
     const stored = localStorage.getItem('myAlarms');
@@ -334,7 +331,6 @@ function renderAlarms() {
 function startAlarmClock() {
     if (alarmChecker) clearInterval(alarmChecker);
     
-    // Проверка каждую секунду
     alarmChecker = setInterval(() => {
         const now = new Date();
         const currentDay = now.getDay();
@@ -342,24 +338,22 @@ function startAlarmClock() {
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
 
-        // Если уже сработало в эту минуту - не повторяем
         if (currentTime === lastTriggeredTime) return;
 
         alarms.forEach(alarm => {
             if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
                 triggerAlarm();
-                lastTriggeredTime = currentTime; // Запоминаем срабатывание
+                lastTriggeredTime = currentTime;
             }
         });
     }, 1000);
 }
 
-// Плавный запуск будильника (5 секунд)
 function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Сброс громкости в ноль
+    // Сброс громкости в 0 (обязательно)
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
@@ -372,15 +366,16 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание
+    // Плавное нарастание до 1.0 (МАКСИМУМ)
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
+        // ГАРАНТИЯ МАКСИМУМА: Идем ровно до 1.0, без учета прошлых настроек
         if (vol >= 1.0) {
             vol = 1.0;
             clearInterval(fadeInterval);
         }
         slider.value = vol;
-        slider.dispatchEvent(new Event('input'));
-    }, 250); // Каждые 250мс увеличиваем на 5%
+        slider.dispatchEvent(new Event('input')); // Отправляем 1.0 в приложение
+    }, 250);
 }
