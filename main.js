@@ -132,6 +132,14 @@ function initVolume() {
     });
 }
 
+/* ================== УПРАВЛЕНИЕ ВКЛАДКАМИ (ВЕРНУЛ!) ================== */
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+};
+
 /* ================== МЕТАДАННЫЕ ================== */
 function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
@@ -211,7 +219,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕР И БУДИЛЬНИК (ИСПРАВЛЕНО) ================== */
+/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -255,7 +263,7 @@ window.cancelSleepTimer = function() {
 
 let alarms = []; 
 let alarmChecker = null;
-let lastTriggeredTime = ""; // Защита от повторного срабатывания в одну минуту
+let lastTriggeredTime = ""; // Защита от повторного срабатывания
 
 function loadAlarms() {
     const stored = localStorage.getItem('myAlarms');
@@ -340,13 +348,13 @@ function startAlarmClock() {
         const m = String(now.getMinutes()).padStart(2, '0');
         const currentTime = `${h}:${m}`;
 
-        // Если в эту минуту уже сработал - пропускаем
+        // Если уже сработало в эту минуту - пропускаем
         if (currentTime === lastTriggeredTime) return;
 
         alarms.forEach(alarm => {
             if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
                 triggerAlarm();
-                lastTriggeredTime = currentTime; // Запоминаем, что сработали
+                lastTriggeredTime = currentTime;
             }
         });
     }, 1000);
@@ -356,11 +364,9 @@ function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Сброс громкости перед стартом
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
-    // Включаем радио (принудительно)
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -369,7 +375,6 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание громкости
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
