@@ -6,21 +6,19 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
-// Глобальные переменные
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
-// Автостарт только в приложении
 if (isApp) isPlaying = true;
 
-/* --- ЗАПУСК --- */
 window.onload = function() {
     initPlayer();
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    updateMetadata(); // Запуск загрузки
+    
+    updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -74,7 +72,7 @@ function togglePlayState() {
     }
 }
 
-// Вспомогательные функции для будильника
+// Вспомогательные функции
 function playRadioForce() {
     if (isApp && window.Android) {
         try { 
@@ -92,7 +90,7 @@ function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
 
-/* ================== ГРОМКОСТЬ (ЧЕСТНАЯ СТАТИСТИКА) ================== */
+/* ================== ГРОМКОСТЬ ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -116,7 +114,7 @@ function initVolume() {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
 
-        // Если громкость 0 - стоп
+        // Честная статистика: 0 = стоп
         if (vol <= 0.01) {
             if (isPlaying) stopRadioForce();
         } else {
@@ -125,22 +123,24 @@ function initVolume() {
     });
 }
 
-/* ================== МЕТАДАННЫЕ (ИСПРАВЛЕНО) ================== */
+/* ================== МЕТАДАННЫЕ (ВОССТАНОВЛЕНО) ================== */
 function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?nocache=" + Date.now())
+    // Используем параметр 't', который работал стабильно
+    fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
             // ТЕКУЩИЙ ТРЕК
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 
-                // Формируем строку без тире в начале
+                // Формируем строку: Название
                 let tickerText = song.title;
+                // Если есть артист, добавляем его без тире в начале
                 if (song.artist && song.artist.trim() !== "") {
                     tickerText = `${song.artist} - ${song.title}`;
                 }
                 
-                // Обновляем бегущую строку (БЕЗ ЗВЕЗД)
+                // Бегущая строка
                 const ticker = document.getElementById('track-ticker');
                 if (ticker) ticker.innerText = tickerText + "       "; 
                 
@@ -208,7 +208,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== UI (ВКЛАДКИ) ================== */
+/* ================== UI ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
