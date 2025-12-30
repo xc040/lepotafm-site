@@ -6,20 +6,17 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
-// Глобальные переменные
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
 if (isApp) isPlaying = true;
 
-/* --- ЗАПУСК --- */
 window.onload = function() {
     initPlayer();
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    
     updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
@@ -74,7 +71,7 @@ function togglePlayState() {
     }
 }
 
-// Вспомогательные функции
+// Функции для будильника
 function playRadioForce() {
     if (isApp && window.Android) {
         try { 
@@ -92,15 +89,14 @@ function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
 
-/* ================== ГРОМКОСТЬ ================== */
+/* ================== ГРОМКОСТЬ (ЧЕСТНАЯ СТАТИСТИКА) ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    if (finalVol < 0.1) finalVol = 0.5;
-
+    
     slider.value = finalVol;
     audio.volume = finalVol;
     
@@ -112,13 +108,23 @@ function initVolume() {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
         audio.volume = vol;
+        
         if (isApp && window.Android) {
             try { window.Android.setVolume(vol); } catch(e) {}
+        }
+
+        // ЛОГИКА ЭКОНОМИИ ТРАФИКА
+        if (vol <= 0.01) {
+            // Если громкость 0 - выключаем радио совсем
+            if (isPlaying) stopRadioForce();
+        } else {
+            // Если громкость появилась, а радио молчит - включаем
+            if (!isPlaying) playRadioForce();
         }
     });
 }
 
-/* ================== МЕТАДАННЫЕ (ОБНОВЛЕНО ДЛЯ БЕГУЩЕЙ СТРОКИ) ================== */
+/* ================== МЕТАДАННЫЕ (ИСПРАВЛЕН ТЕКСТ) ================== */
 function updateMetadata() {
     fetch(CONFIG.apiUrl + "?nocache=" + Date.now())
         .then(res => res.json())
@@ -127,13 +133,17 @@ function updateMetadata() {
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 
-                // ОБНОВЛЕНИЕ БЕГУЩЕЙ СТРОКИ
-                const ticker = document.getElementById('track-ticker');
-                if (ticker) {
-                    ticker.innerText = `${song.artist} - ${song.title}   ***   `;
+                // Формируем строку: если нет артиста, только название
+                let tickerText = song.title;
+                if (song.artist && song.artist.trim() !== "") {
+                    tickerText = `${song.artist} - ${song.title}`;
                 }
                 
-                // Если есть другие элементы (на всякий случай)
+                // Бегущая строка
+                const ticker = document.getElementById('track-ticker');
+                if (ticker) ticker.innerText = tickerText + "       "; // Просто пробелы, без звезд
+                
+                // Картинка (если где-то есть)
                 const imgEl = document.getElementById('mini-art');
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
@@ -207,168 +217,3 @@ window.openTab = function(tabName, btnElement) {
     
     if (btnElement) btnElement.classList.add('active');
 };
-
-/* ================== ТАЙМЕР И БУДИЛЬНИК (СОХРАНЕНО) ================== */
-let sleepInterval = null;
-
-window.updateSleepLabel = function(minutes) {
-    const display = document.getElementById('timer-val-display');
-    if (minutes == 0) display.innerText = "Off";
-    else display.innerText = minutes + " мин";
-}
-
-window.setSleepTimer = function(minutes) {
-    window.cancelSleepTimer(); 
-    if (minutes == 0) return; 
-
-    const targetTime = Date.now() + (minutes * 60 * 1000);
-    const statusDiv = document.getElementById('sleep-status');
-    const countdownSpan = document.getElementById('sleep-countdown');
-
-    if(statusDiv) statusDiv.style.display = "block"; 
-
-    sleepInterval = setInterval(() => {
-        const diff = targetTime - Date.now();
-        if (diff <= 0) {
-            stopRadioForce();
-            window.cancelSleepTimer();
-            const slider = document.getElementById('sleep-slider');
-            const display = document.getElementById('timer-val-display');
-            if(slider) slider.value = 0;
-            if(display) display.innerText = "Off";
-        } else {
-            const m = Math.floor(diff / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            if(countdownSpan) countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-        }
-    }, 1000);
-}
-
-window.cancelSleepTimer = function() {
-    if (sleepInterval) clearInterval(sleepInterval);
-    const statusDiv = document.getElementById('sleep-status');
-    if(statusDiv) statusDiv.style.display = "none";
-}
-
-let alarms = []; 
-let alarmChecker = null;
-let lastTriggeredTime = "";
-
-function loadAlarms() {
-    const stored = localStorage.getItem('myAlarms');
-    if (stored) {
-        alarms = JSON.parse(stored);
-        renderAlarms();
-    }
-}
-
-function saveAlarms() {
-    localStorage.setItem('myAlarms', JSON.stringify(alarms));
-    renderAlarms();
-}
-
-let selectedDays = [];
-window.toggleDay = function(el) {
-    const day = parseInt(el.getAttribute('data-day'));
-    if (selectedDays.includes(day)) {
-        selectedDays = selectedDays.filter(d => d !== day);
-        el.classList.remove('selected');
-    } else {
-        selectedDays.push(day);
-        el.classList.add('selected');
-    }
-}
-
-window.addAlarm = function() {
-    const timeInput = document.getElementById('new-alarm-time');
-    const time = timeInput.value;
-    if (!time) { alert("Выберите время!"); return; }
-    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
-
-    alarms.push({
-        time: time,
-        days: [...selectedDays],
-        active: true
-    });
-    saveAlarms();
-    timeInput.value = "";
-    selectedDays = [];
-    document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
-}
-
-window.deleteAlarm = function(index) {
-    alarms.splice(index, 1);
-    saveAlarms();
-}
-
-function renderAlarms() {
-    const container = document.getElementById('alarms-list');
-    if (!container) return;
-    container.innerHTML = "";
-    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-
-    alarms.forEach((alarm, index) => {
-        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
-        if (alarm.days.length === 7) daysStr = "Каждый день";
-
-        const div = document.createElement('div');
-        div.className = "alarm-item";
-        div.innerHTML = `
-            <div>
-                <div class="alarm-time">${alarm.time}</div>
-                <div class="alarm-days">${daysStr}</div>
-            </div>
-            <button class="alarm-del-btn" onclick="deleteAlarm(${index})">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function startAlarmClock() {
-    if (alarmChecker) clearInterval(alarmChecker);
-    alarmChecker = setInterval(() => {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${h}:${m}`;
-
-        if (currentTime === lastTriggeredTime) return;
-
-        alarms.forEach(alarm => {
-            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
-                triggerAlarm();
-                lastTriggeredTime = currentTime;
-            }
-        });
-    }, 1000);
-}
-
-function triggerAlarm() {
-    const slider = document.getElementById('vol-slider');
-    if (!slider) return;
-
-    slider.value = 0;
-    slider.dispatchEvent(new Event('input'));
-    
-    playRadioForce();
-    
-    const msg = document.getElementById('alarm-msg');
-    if (msg) {
-        msg.style.display = 'block';
-        setTimeout(() => { msg.style.display = 'none'; }, 60000);
-    }
-
-    let vol = 0;
-    let fadeInterval = setInterval(() => {
-        vol += 0.05;
-        if (vol >= 1.0) {
-            vol = 1.0;
-            clearInterval(fadeInterval);
-        }
-        slider.value = vol;
-        slider.dispatchEvent(new Event('input'));
-    }, 250);
-}
