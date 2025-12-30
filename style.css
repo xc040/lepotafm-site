@@ -39,22 +39,11 @@ body {
     display: flex; flex-direction: column;
 }
 
-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 20px;
-}
-.logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
-.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
-.live-indicator { 
-    background: red; font-size: 10px; padding: 2px 6px; 
-    border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
-}
-
-/* --- НОВЫЙ ПЛЕЕР (Компактный) --- */
+/* Плеер-бар */
 .compact-player-bar {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 15px 10px 15px; /* Чуть меньше отступ сверху */
-    height: 60px;
+    padding: 10px 15px;
+    height: 70px; /* Чуть выше для комфорта */
     gap: 15px;
 }
 
@@ -71,8 +60,9 @@ header {
 .player-top-row {
     display: flex; 
     align-items: center; 
-    gap: 15px; /* Отступ между именем и громкостью */
-    margin-bottom: 4px;
+    gap: 15px;
+    margin-bottom: 6px;
+    width: 100%;
 }
 
 .station-name {
@@ -80,10 +70,11 @@ header {
     white-space: nowrap;
 }
 
-/* Мини-громкость */
+/* Мини-громкость (Растягиваем) */
 .volume-mini {
-    width: 80px;
+    flex: 1; /* Занимает все место до края */
     display: flex; align-items: center;
+    min-width: 50px;
 }
 .volume-mini input[type=range] {
     width: 100%;
@@ -100,14 +91,18 @@ header {
     display: inline-block;
     padding-left: 100%;
     animation: ticker 15s linear infinite;
-    font-size: 13px; color: #ddd; /* Чуть меньше шрифт */
+    font-size: 13px; color: #ddd; 
+}
+@keyframes ticker {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
 }
 
 /* Кнопка Play */
 .play-btn-round {
-    width: 50px; height: 50px; border-radius: 50%;
+    width: 55px; height: 55px; border-radius: 50%;
     background: var(--neon-blue); border: none;
-    color: black; font-size: 20px;
+    color: black; font-size: 22px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
     flex-shrink: 0;
