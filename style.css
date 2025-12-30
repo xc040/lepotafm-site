@@ -29,7 +29,7 @@ body {
     background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* ШАПКА */
+/* --- НОВАЯ ВЕРХНЯЯ ЗОНА --- */
 .fixed-top-area {
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
@@ -38,62 +38,66 @@ body {
     flex-shrink: 0;
     display: flex; flex-direction: column;
 }
-header {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 20px;
-}
-.logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
-.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
-.live-indicator { 
-    background: red; font-size: 10px; padding: 2px 6px; 
-    border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
+
+/* Плеер-бар */
+.compact-player-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 15px;
+    height: 60px;
 }
 
-/* ТАБЫ (2 РЯДА ПО 3) */
-.tabs {
-    display: flex; flex-wrap: wrap; gap: 0; padding: 0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+.station-info {
+    flex: 1; overflow: hidden; margin-right: 15px;
+}
+
+.station-name {
+    font-size: 18px; font-weight: 800; color: var(--neon-pink);
+    margin-bottom: 4px;
+}
+
+/* Бегущая строка */
+.ticker-wrap {
+    width: 100%; overflow: hidden; white-space: nowrap;
+}
+.ticker {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 15s linear infinite;
+    font-size: 14px; color: white;
+}
+@keyframes ticker {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-100%, 0, 0); }
+}
+
+/* Кнопка Play */
+.play-btn-round {
+    width: 45px; height: 45px; border-radius: 50%;
+    background: var(--neon-blue); border: none;
+    color: black; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
+}
+
+/* --- НАВИГАЦИЯ (4 кнопки) --- */
+.tabs-4 {
+    display: flex; width: 100%;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 .tab-btn {
-    flex: 0 0 33.33%; width: 33.33%;
+    flex: 1; /* Равно 25% */
     background: none; border: none; color: #888;
-    font-size: 13px; font-weight: 600; text-transform: uppercase;
-    padding: 10px 0; cursor: pointer; transition: 0.3s;
-    border-bottom: 2px solid transparent;
-    border-right: 1px solid rgba(255,255,255,0.05);
-    box-sizing: border-box;
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    padding: 12px 0; cursor: pointer; transition: 0.3s;
+    border-bottom: 3px solid transparent;
 }
-.tab-btn.active { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); }
-
-/* ПЛЕЕР */
-.inline-player {
-    display: flex; align-items: center;
-    padding: 10px 15px;
-    background: rgba(255,255,255,0.02);
-}
-#mini-art {
-    width: 50px; height: 50px; border-radius: 50%; 
-    object-fit: cover; margin-right: 12px;
-    border: 2px solid var(--neon-pink);
-    box-shadow: 0 0 10px rgba(188, 19, 254, 0.3);
-    animation: spin 5s linear infinite; animation-play-state: paused; 
-}
-.inline-player.playing #mini-art { animation-play-state: running; }
-
-.player-info { flex: 1; overflow: hidden; margin-right: 10px; }
-#track-name { font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#artist-name { font-size: 13px; color: var(--neon-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.control-btn {
-    background: var(--neon-blue); border: none;
-    width: 45px; height: 45px; border-radius: 50%;
-    font-size: 18px; color: #000;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 10px var(--neon-blue);
-    cursor: pointer;
+.tab-btn.active { 
+    color: var(--neon-blue); 
+    border-bottom: 3px solid var(--neon-blue); 
+    background: rgba(0, 243, 255, 0.05);
 }
 
-/* КОНТЕНТ */
+/* --- КОНТЕНТ --- */
 .main-content {
     flex: 1; overflow-y: auto; padding: 15px;
     padding-bottom: 50px;
@@ -101,11 +105,38 @@ header {
 .tab-pane { display: none; animation: fadeIn 0.3s; }
 .tab-pane.active { display: block; }
 
-/* ИСТОРИЯ */
-.loading-msg { text-align: center; color: #666; margin-top: 20px; }
+/* Главная */
+.main-logo {
+    width: 150px; height: 150px; border-radius: 20px; 
+    margin-bottom: 20px; border: 2px solid var(--neon-pink);
+    box-shadow: 0 0 30px rgba(188, 19, 254, 0.3);
+}
+
+/* Игры */
+.games-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+}
+.game-card {
+    background: var(--card); border: 1px solid var(--neon-blue);
+    border-radius: 10px; padding: 20px; text-align: center;
+    cursor: pointer; transition: 0.2s;
+}
+.game-card:active { transform: scale(0.95); background: rgba(0, 243, 255, 0.1); }
+.game-card i { font-size: 30px; color: var(--neon-pink); margin-bottom: 10px; display: block; }
+.game-card span { font-weight: bold; font-size: 14px; }
+
+/* Меню и остальное */
+.menu-link {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); padding: 15px; border-radius: 10px;
+    color: white; text-decoration: none; font-weight: bold;
+    border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px;
+}
+.menu-link i { font-size: 20px; color: #0088cc; }
+
+/* История */
 .history-item {
-    display: flex; align-items: center;
-    background: var(--card);
+    display: flex; align-items: center; background: var(--card);
     margin-bottom: 8px; padding: 10px;
     border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
 }
@@ -113,48 +144,30 @@ header {
 .hist-info { flex: 1; overflow: hidden; }
 .hist-title { font-size: 14px; font-weight: bold; display: block; margin-bottom: 2px; color:white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
 .sku-btn {
-    background: transparent; border: 1px solid var(--neon-blue);
-    color: var(--neon-blue); width: 35px; height: 35px;
+    background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
     cursor: pointer; margin-left: 10px; transition: 0.2s;
 }
-.sku-btn:active { background: var(--neon-blue); color: #000; }
 
-/* ФИЧИ (ТАЙМЕР/БУДИЛЬНИК) */
-.feature-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px; padding: 15px; margin-bottom: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
+/* Общие стили (для фич) */
+.feature-card { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.1); }
 .feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
-
 .timer-slider-box { width: 100%; padding: 10px 0; }
 .timer-display { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--neon-pink); }
 #sleep-slider { width: 100%; accent-color: var(--neon-pink); height: 5px; }
 .slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-top: 5px; }
 .status-hidden { display: none; margin-top: 10px; text-align: center; color: #aaa; }
-
 .alarm-create-box { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 10px; }
-.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 18px; outline: none; }
-.neon-input::-webkit-calendar-picker-indicator { filter: invert(1); }
-
+.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 18px; outline: none; width: 100%; box-sizing:border-box;}
 .days-selector { display: flex; gap: 5px; margin: 10px 0; justify-content: space-between; }
-.day-check { 
-    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-    border: 1px solid #444; border-radius: 50%; font-size: 12px; color: #666; cursor: pointer;
-}
+.day-check { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #444; border-radius: 50%; font-size: 12px; color: #666; cursor: pointer; }
 .day-check.selected { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); font-weight: bold; }
-
 .add-alarm-btn { width: 100%; padding: 10px; background: #333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.add-alarm-btn:active { background: var(--neon-blue); color: black; }
-
 .alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
 .alarm-time { font-size: 18px; font-weight: bold; color: white; }
 .alarm-days { font-size: 11px; color: #888; }
 .alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
-
 .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .vol-control { display: flex; align-items: center; gap: 10px; }
 #vol-slider { width: 120px; accent-color: var(--neon-blue); }
@@ -164,11 +177,10 @@ header {
 .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: var(--neon-pink); }
 input:checked + .slider:before { transform: translateX(20px); }
-
 .placeholder-box { text-align: center; padding: 40px 20px; }
-.neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; }
+.neon-btn { display: inline-block; padding: 10px 20px; background: var(--neon-blue); color: black; text-decoration: none; border-radius: 20px; font-weight: bold; border:none; cursor:pointer;}
 
-/* МОДАЛКА */
+/* Модалка */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
 .modal.hidden { display: none; }
 .modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; box-shadow: 0 0 30px rgba(0, 243, 255, 0.2); }
@@ -178,9 +190,15 @@ input:checked + .slider:before { transform: translateX(20px); }
 #modal-artist { margin: 0 0 20px; color: var(--neon-blue); }
 .modal-actions { display: flex; flex-direction: column; gap: 10px; }
 .action-btn { display: block; padding: 12px; border-radius: 10px; background: #333; color: white; text-decoration: none; font-weight: bold; border: 1px solid #444; transition: 0.2s; }
-.action-btn:hover { background: #444; }
 .action-btn.vk { color: #fff; background-color: #0077FF; border-color: #0077FF; }
 .action-btn.tg { color: #fff; background-color: #0088cc; border-color: #0088cc; }
 
+/* Стили рации */
+.mic-wrapper { text-align:center; padding: 20px; }
+#mic-btn { width: 120px; height: 120px; border-radius: 50%; background: #333; border: 3px solid var(--neon-blue); color: var(--neon-blue); font-size: 50px; cursor: pointer; }
+#mic-btn.recording { background: var(--danger); border-color: white; color: white; animation: pulseMic 1s infinite; }
+
+@keyframes pulseMic { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 0, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); } }
+@keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes spin { 100% { transform: rotate(360deg); } }
