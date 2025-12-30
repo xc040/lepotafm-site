@@ -39,15 +39,13 @@
                 </div>
             </div>
 
-            <!-- Правая колонка: ПЛЕЙ (на 2 строки) -->
+            <!-- Правая колонка: ПЛЕЙ (КРУГЛЫЙ С КАРТИНКОЙ) -->
             <div class="player-btn-col">
                 <button id="play-btn" class="big-play-btn">
-                    <i class="fas fa-play" id="play-icon"></i>
+                    <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
+                    <span class="icon-overlay"><i class="fas fa-play" id="play-icon"></i></span>
                 </button>
             </div>
-            
-            <!-- Скрытая картинка (чтобы JS не ругался) -->
-            <img id="mini-art" src="logo.jpg" style="display:none;" alt="Art">
         </div>
 
         <!-- 4 ВКЛАДКИ -->
@@ -133,7 +131,7 @@
                 </div>
                 
                 <div class="placeholder-box" style="padding: 20px 0;">
-                     <p style="font-size: 12px; color: #666;">Версия: Stable Rebuild</p>
+                     <p style="font-size: 12px; color: #666;">Версия: Circular Play + VolStop</p>
                 </div>
             </div>
         </div>
