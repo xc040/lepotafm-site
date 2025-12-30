@@ -121,6 +121,11 @@ function initVolume() {
         if (isApp && window.Android) {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
+        
+        // НОВАЯ ЛОГИКА: Если громкость 0, останавливаем поток
+        if (vol === 0 && isPlaying) {
+            togglePlayState();
+        }
     });
 }
 
