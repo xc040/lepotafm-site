@@ -6,31 +6,37 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
+// Глобальные переменные
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
+// Автостарт только в приложении
 if (isApp) isPlaying = true;
 
+/* --- ЗАПУСК --- */
 window.onload = function() {
     initPlayer();
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
     
-    updateMetadata(); 
+    // Запускаем обновление данных ПРОСТЫМ методом
+    updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== ПЛЕЕР ================== */
+/* ================== ПЛЕЕР (С ФИКСОМ БУФЕРА) ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
 
     if (!playBtn) return;
 
     if (isApp) {
         if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing');
     }
 
     playBtn.addEventListener('click', () => {
@@ -40,53 +46,54 @@ function initPlayer() {
 
 function togglePlayState() {
     const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ
+    // ПРИЛОЖЕНИЕ (Android)
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
                 window.Android.pauseAudio();
                 if(icon) icon.className = "fas fa-play";
+                if(playerDiv) playerDiv.classList.remove('playing');
                 isPlaying = false;
             } else {
                 window.Android.playAudio();
                 if(icon) icon.className = "fas fa-pause";
+                if(playerDiv) playerDiv.classList.add('playing');
                 isPlaying = true;
             }
         } catch(e) {}
         return;
     }
 
-    // БРАУЗЕР
+    // БРАУЗЕР (ФИКС БУФЕРА)
     if (isPlaying) {
+        // Когда нажимаем Паузу - ОБРЫВАЕМ соединение, чтобы не копился буфер
         audio.pause();
         audio.src = ""; 
         audio.load();
+        
         if(icon) icon.className = "fas fa-play";
+        if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
+        // Когда нажимаем Плей - ПОДКЛЮЧАЕМСЯ ЗАНОВО
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Block"));
+        audio.play().catch(e => console.log("Autoplay block"));
+        
         if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
 }
 
-// Вспомогательные функции
+// Вспомогательные функции для будильника
 function playRadioForce() {
-    if (isApp && window.Android) {
-        try { 
-            window.Android.playAudio(); 
-            const icon = document.getElementById('play-icon');
-            if(icon) icon.className = "fas fa-pause";
-            isPlaying = true;
-        } catch(e) {}
-    } else {
-        if (!isPlaying) togglePlayState();
-    }
+    // Включаем, если не играет
+    if (!isPlaying) togglePlayState();
 }
-
 function stopRadioForce() {
+    // Выключаем, если играет
     if (isPlaying) togglePlayState();
 }
 
@@ -97,10 +104,12 @@ function initVolume() {
 
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    
+    if (finalVol < 0.1) finalVol = 0.5;
+
     slider.value = finalVol;
     audio.volume = finalVol;
     
+    // Передаем в Android
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -109,52 +118,39 @@ function initVolume() {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
         audio.volume = vol;
-        
         if (isApp && window.Android) {
             try { window.Android.setVolume(vol); } catch(e) {}
-        }
-
-        // Честная статистика: 0 = стоп
-        if (vol <= 0.01) {
-            if (isPlaying) stopRadioForce();
-        } else {
-            if (!isPlaying) playRadioForce();
         }
     });
 }
 
-/* ================== МЕТАДАННЫЕ (ВОССТАНОВЛЕНО) ================== */
+/* ================== ЗАГРУЗКА ДАННЫХ (СТАБИЛЬНАЯ) ================== */
 function updateMetadata() {
-    // Используем параметр 't', который работал стабильно
+    // Самый простой fetch без заголовков, чтобы не злить Android
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // ТЕКУЩИЙ ТРЕК
+            // Текущий трек
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
-                
-                // Формируем строку: Название
-                let tickerText = song.title;
-                // Если есть артист, добавляем его без тире в начале
-                if (song.artist && song.artist.trim() !== "") {
-                    tickerText = `${song.artist} - ${song.title}`;
-                }
-                
-                // Бегущая строка
-                const ticker = document.getElementById('track-ticker');
-                if (ticker) ticker.innerText = tickerText + "       "; 
-                
-                // Картинка
+                const titleEl = document.getElementById('track-name');
+                const artistEl = document.getElementById('artist-name');
                 const imgEl = document.getElementById('mini-art');
+
+                if (titleEl) titleEl.innerText = song.title;
+                if (artistEl) artistEl.innerText = song.artist;
+                
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-            // ИСТОРИЯ
+            // История
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => {});
+        .catch(err => {
+            // Тихо падаем, чтобы не спамить в лог
+        });
 }
 
 function renderHistory(history) {
@@ -182,6 +178,7 @@ function renderHistory(history) {
         </div>`;
     });
     
+    // Обновляем HTML только если он изменился
     if (container.innerHTML !== html) {
         container.innerHTML = html;
     }
@@ -208,13 +205,184 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== UI ================== */
+/* ================== ЛОГИКА ФИЧ (БУДИЛЬНИК, ТАЙМЕР) ================== */
+
+// ВКЛАДКИ
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
-    const target = document.getElementById(tabName);
-    if (target) target.classList.add('active');
-    
+    document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 };
+
+// ТАЙМЕР СНА
+let sleepInterval = null;
+
+window.updateSleepLabel = function(minutes) {
+    const display = document.getElementById('timer-val-display');
+    if (minutes == 0) display.innerText = "Off";
+    else display.innerText = minutes + " мин";
+}
+
+window.setSleepTimer = function(minutes) {
+    window.cancelSleepTimer(); 
+    if (minutes == 0) return; 
+
+    const targetTime = Date.now() + (minutes * 60 * 1000);
+    const statusDiv = document.getElementById('sleep-status');
+    const countdownSpan = document.getElementById('sleep-countdown');
+
+    if(statusDiv) statusDiv.style.display = "block"; 
+
+    sleepInterval = setInterval(() => {
+        const diff = targetTime - Date.now();
+        if (diff <= 0) {
+            stopRadioForce();
+            window.cancelSleepTimer();
+            const slider = document.getElementById('sleep-slider');
+            const display = document.getElementById('timer-val-display');
+            if(slider) slider.value = 0;
+            if(display) display.innerText = "Off";
+        } else {
+            const m = Math.floor(diff / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            if(countdownSpan) countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+    }, 1000);
+}
+
+window.cancelSleepTimer = function() {
+    if (sleepInterval) clearInterval(sleepInterval);
+    const statusDiv = document.getElementById('sleep-status');
+    if(statusDiv) statusDiv.style.display = "none";
+}
+
+// БУДИЛЬНИК
+let alarms = []; 
+let alarmChecker = null;
+let lastTriggeredTime = "";
+
+function loadAlarms() {
+    const stored = localStorage.getItem('myAlarms');
+    if (stored) {
+        alarms = JSON.parse(stored);
+        renderAlarms();
+    }
+}
+
+function saveAlarms() {
+    localStorage.setItem('myAlarms', JSON.stringify(alarms));
+    renderAlarms();
+}
+
+let selectedDays = [];
+window.toggleDay = function(el) {
+    const day = parseInt(el.getAttribute('data-day'));
+    if (selectedDays.includes(day)) {
+        selectedDays = selectedDays.filter(d => d !== day);
+        el.classList.remove('selected');
+    } else {
+        selectedDays.push(day);
+        el.classList.add('selected');
+    }
+}
+
+window.addAlarm = function() {
+    const timeInput = document.getElementById('new-alarm-time');
+    const time = timeInput.value;
+    if (!time) { alert("Выберите время!"); return; }
+    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
+
+    alarms.push({
+        time: time,
+        days: [...selectedDays],
+        active: true
+    });
+    saveAlarms();
+    timeInput.value = "";
+    selectedDays = [];
+    document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
+}
+
+window.deleteAlarm = function(index) {
+    alarms.splice(index, 1);
+    saveAlarms();
+}
+
+function renderAlarms() {
+    const container = document.getElementById('alarms-list');
+    if (!container) return;
+    container.innerHTML = "";
+    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+    alarms.forEach((alarm, index) => {
+        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
+        if (alarm.days.length === 7) daysStr = "Каждый день";
+
+        const div = document.createElement('div');
+        div.className = "alarm-item";
+        div.innerHTML = `
+            <div>
+                <div class="alarm-time">${alarm.time}</div>
+                <div class="alarm-days">${daysStr}</div>
+            </div>
+            <button class="alarm-del-btn" onclick="deleteAlarm(${index})">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function startAlarmClock() {
+    if (alarmChecker) clearInterval(alarmChecker);
+    
+    // Проверка каждую секунду
+    alarmChecker = setInterval(() => {
+        const now = new Date();
+        const currentDay = now.getDay();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const currentTime = `${h}:${m}`;
+
+        if (currentTime === lastTriggeredTime) return;
+
+        alarms.forEach(alarm => {
+            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
+                triggerAlarm();
+                lastTriggeredTime = currentTime;
+            }
+        });
+    }, 1000);
+}
+
+// ПЛАВНЫЙ СТАРТ (5 СЕКУНД)
+function triggerAlarm() {
+    const slider = document.getElementById('vol-slider');
+    if (!slider) return;
+
+    // Сброс громкости в 0
+    slider.value = 0;
+    slider.dispatchEvent(new Event('input'));
+    
+    // Включение
+    playRadioForce();
+    
+    const msg = document.getElementById('alarm-msg');
+    if (msg) {
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 60000);
+    }
+
+    // Плавное нарастание до 1.0 за 5 сек
+    let vol = 0;
+    let fadeInterval = setInterval(() => {
+        vol += 0.05;
+        if (vol >= 1.0) {
+            vol = 1.0;
+            clearInterval(fadeInterval);
+        }
+        slider.value = vol;
+        slider.dispatchEvent(new Event('input'));
+    }, 250);
+}
