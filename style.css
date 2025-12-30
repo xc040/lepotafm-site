@@ -29,7 +29,7 @@ body {
     background-size: 100% 4px; pointer-events: none; z-index: -1;
 }
 
-/* --- НОВАЯ ВЕРХНЯЯ ЗОНА --- */
+/* --- ВЕРХНЯЯ ЗОНА --- */
 .fixed-top-area {
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
@@ -44,10 +44,11 @@ body {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 15px;
     height: 60px;
+    gap: 10px;
 }
 
 .station-info {
-    flex: 1; overflow: hidden; margin-right: 15px;
+    flex: 1; overflow: hidden;
 }
 
 .station-name {
@@ -70,6 +71,18 @@ body {
     100% { transform: translate3d(-100%, 0, 0); }
 }
 
+/* Громкость в шапке */
+.top-volume {
+    width: 80px;
+    display: flex; align-items: center;
+}
+.top-volume input[type=range] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--neon-blue);
+    cursor: pointer;
+}
+
 /* Кнопка Play */
 .play-btn-round {
     width: 45px; height: 45px; border-radius: 50%;
@@ -77,15 +90,16 @@ body {
     color: black; font-size: 18px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
+    flex-shrink: 0;
 }
 
-/* --- НАВИГАЦИЯ (4 кнопки) --- */
+/* --- НАВИГАЦИЯ --- */
 .tabs-4 {
     display: flex; width: 100%;
     border-top: 1px solid rgba(255,255,255,0.1);
 }
 .tab-btn {
-    flex: 1; /* Равно 25% */
+    flex: 1;
     background: none; border: none; color: #888;
     font-size: 12px; font-weight: 600; text-transform: uppercase;
     padding: 12px 0; cursor: pointer; transition: 0.3s;
@@ -125,7 +139,7 @@ body {
 .game-card i { font-size: 30px; color: var(--neon-pink); margin-bottom: 10px; display: block; }
 .game-card span { font-weight: bold; font-size: 14px; }
 
-/* Меню и остальное */
+/* Меню */
 .menu-link {
     display: flex; align-items: center; gap: 10px;
     background: var(--card); padding: 15px; border-radius: 10px;
@@ -150,7 +164,7 @@ body {
     cursor: pointer; margin-left: 10px; transition: 0.2s;
 }
 
-/* Общие стили (для фич) */
+/* Фичи */
 .feature-card { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.1); }
 .feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
 .timer-slider-box { width: 100%; padding: 10px 0; }
@@ -169,8 +183,6 @@ body {
 .alarm-days { font-size: 11px; color: #888; }
 .alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
 .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.vol-control { display: flex; align-items: center; gap: 10px; }
-#vol-slider { width: 120px; accent-color: var(--neon-blue); }
 .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
@@ -193,7 +205,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 .action-btn.vk { color: #fff; background-color: #0077FF; border-color: #0077FF; }
 .action-btn.tg { color: #fff; background-color: #0088cc; border-color: #0088cc; }
 
-/* Стили рации */
+/* Рация */
 .mic-wrapper { text-align:center; padding: 20px; }
 #mic-btn { width: 120px; height: 120px; border-radius: 50%; background: #333; border: 3px solid var(--neon-blue); color: var(--neon-blue); font-size: 50px; cursor: pointer; }
 #mic-btn.recording { background: var(--danger); border-color: white; color: white; animation: pulseMic 1s infinite; }
