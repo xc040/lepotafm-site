@@ -12,10 +12,14 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- НОВАЯ ВЕРХНЯЯ ЗОНА (Плеер + Навигация) -->
+    <!-- ВЕРХНЯЯ ЗОНА -->
     <div class="fixed-top-area">
-        
-        <!-- Плеер: Имя станции, Бегущая строка, Кнопка -->
+        <header>
+            <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
+            <div class="live-indicator">LIVE</div>
+        </header>
+
+        <!-- Плеер с громкостью -->
         <div class="compact-player-bar">
             <div class="station-info">
                 <div class="station-name">LepotaFM</div>
@@ -24,12 +28,17 @@
                 </div>
             </div>
             
+            <!-- Ползунок громкости (Перенесен сюда) -->
+            <div class="top-volume">
+                <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
+            </div>
+
             <button id="play-btn" class="play-btn-round">
                 <i class="fas fa-play" id="play-icon"></i>
             </button>
         </div>
 
-        <!-- Навигация: 4 кнопки -->
+        <!-- Навигация -->
         <nav class="tabs-4">
             <button class="tab-btn active" onclick="openTab('main', this)">Главная</button>
             <button class="tab-btn" onclick="openTab('games', this)">Игры</button>
@@ -39,7 +48,7 @@
 
     </div>
 
-    <!-- НИЖНЯЯ ЗОНА (Контент) -->
+    <!-- НИЖНЯЯ ЗОНА -->
     <div class="main-content">
         
         <!-- 1. ГЛАВНАЯ -->
@@ -48,14 +57,12 @@
                 <img id="mini-art" src="logo.jpg" alt="Logo" class="main-logo" onerror="this.src='logo.jpg'">
                 <h3>Добро пожаловать!</h3>
                 <p>Лучшая музыка и игры в твоем кармане.</p>
-                <!-- Сюда можно добавить новости или баннеры -->
             </div>
         </div>
 
         <!-- 2. ИГРЫ -->
         <div id="games" class="tab-pane">
             <div class="games-grid">
-                <!-- Пример карточки игры -->
                 <div class="game-card" onclick="alert('Игра скоро будет доступна!')">
                     <i class="fas fa-gamepad"></i>
                     <span>2048</span>
@@ -72,7 +79,7 @@
             </div>
         </div>
 
-        <!-- 3. ЭФИР (История треков) -->
+        <!-- 3. ЭФИР -->
         <div id="ether" class="tab-pane">
             <div class="history-list" id="history-container">
                 <div class="loading-msg">
@@ -81,10 +88,8 @@
             </div>
         </div>
 
-        <!-- 4. МЕНЮ (Фичи, Настройки, Связь) -->
+        <!-- 4. МЕНЮ -->
         <div id="menu" class="tab-pane">
-            
-            <!-- Сюда переехали Фичи -->
             <div class="settings-box">
                 
                 <!-- Связь -->
@@ -125,17 +130,7 @@
                     <div id="alarm-msg" class="status-hidden">⏰ ПОДЪЕМ!</div>
                 </div>
 
-                <!-- Громкость -->
-                <div class="setting-row volume-row">
-                    <span>Громкость</span>
-                    <div class="vol-control">
-                        <i class="fas fa-volume-down"></i>
-                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-                        <i class="fas fa-volume-up"></i>
-                    </div>
-                </div>
-
-                <!-- Рация (Пока здесь) -->
+                <!-- Рация -->
                 <div class="feature-card">
                     <div class="feature-header"><i class="fas fa-microphone"></i> Рация</div>
                     <div id="walkie-login">
@@ -150,12 +145,17 @@
                     </div>
                 </div>
 
+                <div class="setting-row">
+                    <span>Высокое качество</span>
+                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                </div>
+
             </div>
         </div>
 
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ИНФОРМАЦИИ -->
+    <!-- МОДАЛЬНОЕ ОКНО -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
@@ -175,7 +175,7 @@
     </div>
 
     <script src="main.js"></script>
-    <script src="features.js"></script> <!-- Остался для совместимости -->
+    <script src="features.js"></script>
     <script src="walkie.js"></script>
 </body>
 </html>
