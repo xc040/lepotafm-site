@@ -19,20 +19,23 @@
             <div class="live-indicator">LIVE</div>
         </header>
 
-        <!-- Плеер с громкостью -->
+        <!-- ПЛЕЕР (НОВАЯ СТРУКТУРА) -->
         <div class="compact-player-bar">
-            <div class="station-info">
-                <div class="station-name">LepotaFM</div>
+            <!-- Левая часть: Имя+Громкость, ниже Строка -->
+            <div class="player-left-col">
+                <div class="player-top-row">
+                    <div class="station-name">LepotaFM</div>
+                    <!-- Ползунок здесь, в одной строке с именем -->
+                    <div class="volume-mini">
+                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
+                    </div>
+                </div>
                 <div class="ticker-wrap">
                     <div class="ticker" id="track-ticker">Загрузка...</div>
                 </div>
             </div>
             
-            <!-- Ползунок громкости (Перенесен сюда) -->
-            <div class="top-volume">
-                <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-            </div>
-
+            <!-- Правая часть: Кнопка Плей -->
             <button id="play-btn" class="play-btn-round">
                 <i class="fas fa-play" id="play-icon"></i>
             </button>
@@ -92,7 +95,6 @@
         <div id="menu" class="tab-pane">
             <div class="settings-box">
                 
-                <!-- Связь -->
                 <a href="https://t.me/lepotafm" target="_blank" class="menu-link">
                     <i class="fab fa-telegram-plane"></i> Связь со студией
                 </a>
@@ -175,7 +177,7 @@
     </div>
 
     <script src="main.js"></script>
-    <script src="features.js"></script>
+    <script src="features.js"></script> <!-- Оставлено для совместимости -->
     <script src="walkie.js"></script>
 </body>
 </html>
