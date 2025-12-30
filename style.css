@@ -39,21 +39,57 @@ body {
     display: flex; flex-direction: column;
 }
 
-/* Плеер-бар */
-.compact-player-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 15px;
-    height: 60px;
-    gap: 10px;
+header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 20px;
+}
+.logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+.live-indicator { 
+    background: red; font-size: 10px; padding: 2px 6px; 
+    border-radius: 4px; font-weight: bold; box-shadow: 0 0 10px red;
 }
 
-.station-info {
-    flex: 1; overflow: hidden;
+/* --- НОВЫЙ ПЛЕЕР (Компактный) --- */
+.compact-player-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 15px 10px 15px; /* Чуть меньше отступ сверху */
+    height: 60px;
+    gap: 15px;
+}
+
+/* Левая колонка (Имя+Громкость / Строка) */
+.player-left-col {
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Верхняя строка в плеере */
+.player-top-row {
+    display: flex; 
+    align-items: center; 
+    gap: 15px; /* Отступ между именем и громкостью */
+    margin-bottom: 4px;
 }
 
 .station-name {
     font-size: 18px; font-weight: 800; color: var(--neon-pink);
-    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+/* Мини-громкость */
+.volume-mini {
+    width: 80px;
+    display: flex; align-items: center;
+}
+.volume-mini input[type=range] {
+    width: 100%;
+    height: 4px;
+    accent-color: var(--neon-blue);
+    cursor: pointer;
 }
 
 /* Бегущая строка */
@@ -64,36 +100,20 @@ body {
     display: inline-block;
     padding-left: 100%;
     animation: ticker 15s linear infinite;
-    font-size: 14px; color: white;
-}
-@keyframes ticker {
-    0% { transform: translate3d(0, 0, 0); }
-    100% { transform: translate3d(-100%, 0, 0); }
-}
-
-/* Громкость в шапке */
-.top-volume {
-    width: 80px;
-    display: flex; align-items: center;
-}
-.top-volume input[type=range] {
-    width: 100%;
-    height: 4px;
-    accent-color: var(--neon-blue);
-    cursor: pointer;
+    font-size: 13px; color: #ddd; /* Чуть меньше шрифт */
 }
 
 /* Кнопка Play */
 .play-btn-round {
-    width: 45px; height: 45px; border-radius: 50%;
+    width: 50px; height: 50px; border-radius: 50%;
     background: var(--neon-blue); border: none;
-    color: black; font-size: 18px;
+    color: black; font-size: 20px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
     flex-shrink: 0;
 }
 
-/* --- НАВИГАЦИЯ --- */
+/* --- НАВИГАЦИЯ (4 TAB) --- */
 .tabs-4 {
     display: flex; width: 100%;
     border-top: 1px solid rgba(255,255,255,0.1);
@@ -183,6 +203,7 @@ body {
 .alarm-days { font-size: 11px; color: #888; }
 .alarm-del-btn { background: none; border: none; color: red; font-size: 16px; cursor: pointer; }
 .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.vol-control { display: flex; align-items: center; gap: 10px; }
 .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
