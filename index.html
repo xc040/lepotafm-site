@@ -12,40 +12,68 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ВЕРХНЯЯ ЗОНА -->
+    <!-- НОВАЯ ВЕРХНЯЯ ЗОНА (Плеер + Навигация) -->
     <div class="fixed-top-area">
-        <header>
-            <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
-            <div class="live-indicator">LIVE</div>
-        </header>
-
-        <!-- 6 ВКЛАДОК -->
-        <nav class="tabs">
-            <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
-            <button class="tab-btn" onclick="openTab('message', this)">Послание</button>
-            <button class="tab-btn" onclick="openTab('walkie', this)">Рация</button>
-            <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
-            <button class="tab-btn" onclick="openTab('price', this)">Цена</button>
-            <button class="tab-btn" onclick="openTab('blog', this)">Блог</button>
-        </nav>
-
-        <div class="inline-player">
-            <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
-            <div class="player-info">
-                <div id="track-name">Загрузка...</div>
-                <div id="artist-name">LepotaFM</div>
+        
+        <!-- Плеер: Имя станции, Бегущая строка, Кнопка -->
+        <div class="compact-player-bar">
+            <div class="station-info">
+                <div class="station-name">LepotaFM</div>
+                <div class="ticker-wrap">
+                    <div class="ticker" id="track-ticker">Загрузка...</div>
+                </div>
             </div>
-            <button id="play-btn" class="control-btn">
+            
+            <button id="play-btn" class="play-btn-round">
                 <i class="fas fa-play" id="play-icon"></i>
             </button>
         </div>
+
+        <!-- Навигация: 4 кнопки -->
+        <nav class="tabs-4">
+            <button class="tab-btn active" onclick="openTab('main', this)">Главная</button>
+            <button class="tab-btn" onclick="openTab('games', this)">Игры</button>
+            <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
+            <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
+        </nav>
+
     </div>
 
-    <!-- НИЖНЯЯ ЗОНА -->
+    <!-- НИЖНЯЯ ЗОНА (Контент) -->
     <div class="main-content">
         
-        <!-- 1. ЭФИР -->
-        <div id="ether" class="tab-pane active">
+        <!-- 1. ГЛАВНАЯ -->
+        <div id="main" class="tab-pane active">
+            <div class="placeholder-box">
+                <img id="mini-art" src="logo.jpg" alt="Logo" class="main-logo" onerror="this.src='logo.jpg'">
+                <h3>Добро пожаловать!</h3>
+                <p>Лучшая музыка и игры в твоем кармане.</p>
+                <!-- Сюда можно добавить новости или баннеры -->
+            </div>
+        </div>
+
+        <!-- 2. ИГРЫ -->
+        <div id="games" class="tab-pane">
+            <div class="games-grid">
+                <!-- Пример карточки игры -->
+                <div class="game-card" onclick="alert('Игра скоро будет доступна!')">
+                    <i class="fas fa-gamepad"></i>
+                    <span>2048</span>
+                </div>
+                <div class="game-card" onclick="alert('Игра скоро будет доступна!')">
+                    <i class="fas fa-chess"></i>
+                    <span>Шахматы</span>
+                </div>
+                <div class="game-card" onclick="alert('Игра скоро будет доступна!')">
+                    <i class="fas fa-puzzle-piece"></i>
+                    <span>Пазл</span>
+                </div>
+                <p style="text-align:center; color:#666; width:100%;">Скоро больше игр...</p>
+            </div>
+        </div>
+
+        <!-- 3. ЭФИР (История треков) -->
+        <div id="ether" class="tab-pane">
             <div class="history-list" id="history-container">
                 <div class="loading-msg">
                     <i class="fas fa-circle-notch fa-spin"></i> Загрузка...
@@ -53,29 +81,18 @@
             </div>
         </div>
 
-        <!-- 2. ПОСЛАНИЕ -->
-        <div id="message" class="tab-pane">
-            <div class="placeholder-box">
-                <i class="fab fa-telegram-plane" style="font-size: 40px; color: #0088cc; margin-bottom: 15px;"></i>
-                <h3>Студия</h3>
-                <p>Написать ведущему или заказать песню</p>
-                <a href="https://t.me/lepotafm" target="_blank" class="neon-btn">Открыть Telegram</a>
-            </div>
-        </div>
-
-        <!-- 3. РАЦИЯ -->
-        <div id="walkie" class="tab-pane">
-            <div class="placeholder-box">
-                <h3>Рация</h3>
-                <p>Режим в разработке...</p>
-            </div>
-        </div>
-
-        <!-- 4. ФИЧИ -->
-        <div id="features" class="tab-pane">
+        <!-- 4. МЕНЮ (Фичи, Настройки, Связь) -->
+        <div id="menu" class="tab-pane">
+            
+            <!-- Сюда переехали Фичи -->
             <div class="settings-box">
                 
-                <!-- ТАЙМЕР СНА -->
+                <!-- Связь -->
+                <a href="https://t.me/lepotafm" target="_blank" class="menu-link">
+                    <i class="fab fa-telegram-plane"></i> Связь со студией
+                </a>
+
+                <!-- Таймер сна -->
                 <div class="feature-card">
                     <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
                     <div class="timer-slider-box">
@@ -88,7 +105,7 @@
                     </div>
                 </div>
 
-                <!-- БУДИЛЬНИК -->
+                <!-- Будильник -->
                 <div class="feature-card">
                     <div class="feature-header"><i class="fas fa-clock"></i> Будильники</div>
                     <div class="alarm-create-box">
@@ -108,7 +125,7 @@
                     <div id="alarm-msg" class="status-hidden">⏰ ПОДЪЕМ!</div>
                 </div>
 
-                <!-- ГРОМКОСТЬ -->
+                <!-- Громкость -->
                 <div class="setting-row volume-row">
                     <span>Громкость</span>
                     <div class="vol-control">
@@ -118,26 +135,21 @@
                     </div>
                 </div>
 
-                <div class="setting-row">
-                    <span>Высокое качество</span>
-                    <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+                <!-- Рация (Пока здесь) -->
+                <div class="feature-card">
+                    <div class="feature-header"><i class="fas fa-microphone"></i> Рация</div>
+                    <div id="walkie-login">
+                        <input type="text" id="walkie-code" class="neon-input" placeholder="Код комнаты">
+                        <button class="neon-btn full-width" onclick="joinWalkie()">Войти</button>
+                    </div>
+                    <div id="walkie-interface" class="hidden">
+                        <div style="margin-bottom:10px;">Канал: <span id="current-channel" class="neon-text">...</span></div>
+                        <button id="mic-btn" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()">🎙</button>
+                        <div id="mic-status" style="font-size:12px; margin-top:5px;">Удерживайте</div>
+                        <button class="exit-btn" onclick="leaveWalkie()" style="margin-top:10px;">Выйти</button>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 5. ЦЕНА -->
-        <div id="price" class="tab-pane">
-            <div class="placeholder-box">
-                <h3>Цена</h3>
-                <p>Раздел в разработке...</p>
-            </div>
-        </div>
-
-        <!-- 6. БЛОГ -->
-        <div id="blog" class="tab-pane">
-            <div class="placeholder-box">
-                <h3>Блог</h3>
-                <p>Раздел в разработке...</p>
             </div>
         </div>
 
@@ -163,5 +175,7 @@
     </div>
 
     <script src="main.js"></script>
+    <script src="features.js"></script> <!-- Остался для совместимости -->
+    <script src="walkie.js"></script>
 </body>
 </html>
