@@ -122,9 +122,11 @@ function initVolume() {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
         
-        // НОВАЯ ЛОГИКА: Если громкость 0, останавливаем поток
+        // ЛОГИКА ОСТАНОВКИ/ЗАПУСКА ПРИ СМЕНЕ ГРОМКОСТИ
         if (vol === 0 && isPlaying) {
-            togglePlayState();
+            togglePlayState(); // Выключаем поток, если громкость 0
+        } else if (vol > 0 && !isPlaying) {
+            togglePlayState(); // Включаем поток, если поднимаем громкость с 0
         }
     });
 }
@@ -141,9 +143,18 @@ function updateMetadata() {
                 const titleEl = document.getElementById('track-name');
                 const artistEl = document.getElementById('artist-name');
                 const imgEl = document.getElementById('mini-art');
+                const sepEl = document.getElementById('track-sep'); // Находим тире
 
                 if (titleEl) titleEl.innerText = song.title;
-                if (artistEl) artistEl.innerText = song.artist;
+                
+                // Проверяем наличие автора
+                if (song.artist) {
+                    if (artistEl) artistEl.innerText = song.artist;
+                    if (sepEl) sepEl.style.display = "inline"; // Показываем тире
+                } else {
+                    if (artistEl) artistEl.innerText = "";
+                    if (sepEl) sepEl.style.display = "none"; // Скрываем тире
+                }
                 
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
