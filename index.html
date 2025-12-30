@@ -12,49 +12,58 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ВЕРХНЯЯ ЗОНА -->
+    <!-- ВЕРХНЯЯ ЗОНА (НОВЫЙ ДИЗАЙН) -->
     <div class="fixed-top-area">
-        <header>
-            <div class="logo">LEPOTA<span class="neon-text">FM</span></div>
-            <div class="live-indicator">LIVE</div>
-        </header>
-
-        <!-- 6 ВКЛАДОК -->
-        <nav class="tabs">
-            <button class="tab-btn active" onclick="openTab('ether', this)">Эфир</button>
-            <button class="tab-btn" onclick="openTab('message', this)">Послание</button>
-            <button class="tab-btn" onclick="openTab('walkie', this)">Рация</button>
-            <button class="tab-btn" onclick="openTab('features', this)">Фичи</button>
-            <button class="tab-btn" onclick="openTab('price', this)">Цена</button>
-            <button class="tab-btn" onclick="openTab('blog', this)">Блог</button>
-        </nav>
-
-        <div class="inline-player">
-            <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
-            <div class="player-info">
-                <div id="track-name">Загрузка...</div>
-                <div id="artist-name">LepotaFM</div>
+        
+        <!-- ПЛЕЕР: СЕТКА -->
+        <div class="inline-player new-layout">
+            <!-- Левая колонка -->
+            <div class="player-info-col">
+                <!-- Строка 1: Имя + Громкость -->
+                <div class="top-row">
+                    <div class="logo-small">LEPOTA<span class="neon-text">FM</span></div>
+                    <div class="vol-mini-container">
+                        <i class="fas fa-volume-down tiny-icon"></i>
+                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
+                    </div>
+                </div>
+                <!-- Строка 2: Бегущая строка -->
+                <div class="bot-row">
+                    <div class="marquee-container">
+                        <div class="marquee-content">
+                            <span id="track-name">Загрузка...</span>
+                            <span class="separator"> - </span>
+                            <span id="artist-name">LepotaFM</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button id="play-btn" class="control-btn">
-                <i class="fas fa-play" id="play-icon"></i>
-            </button>
+
+            <!-- Правая колонка: ПЛЕЙ (на 2 строки) -->
+            <div class="player-btn-col">
+                <button id="play-btn" class="big-play-btn">
+                    <i class="fas fa-play" id="play-icon"></i>
+                </button>
+            </div>
+            
+            <!-- Скрытая картинка (чтобы JS не ругался) -->
+            <img id="mini-art" src="logo.jpg" style="display:none;" alt="Art">
         </div>
+
+        <!-- 4 ВКЛАДКИ -->
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="openTab('home', this)">Главная</button>
+            <button class="tab-btn" onclick="openTab('games', this)">Игры</button>
+            <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
+            <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
+        </nav>
     </div>
 
     <!-- НИЖНЯЯ ЗОНА -->
     <div class="main-content">
         
-        <!-- 1. ЭФИР -->
-        <div id="ether" class="tab-pane active">
-            <div class="history-list" id="history-container">
-                <div class="loading-msg">
-                    <i class="fas fa-circle-notch fa-spin"></i> Загрузка...
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. ПОСЛАНИЕ -->
-        <div id="message" class="tab-pane">
+        <!-- 1. ГЛАВНАЯ (Бывшее Послание/Студия) -->
+        <div id="home" class="tab-pane active">
             <div class="placeholder-box">
                 <i class="fab fa-telegram-plane" style="font-size: 40px; color: #0088cc; margin-bottom: 15px;"></i>
                 <h3>Студия</h3>
@@ -63,16 +72,26 @@
             </div>
         </div>
 
-        <!-- 3. РАЦИЯ -->
-        <div id="walkie" class="tab-pane">
+        <!-- 2. ИГРЫ (Новая вкладка) -->
+        <div id="games" class="tab-pane">
             <div class="placeholder-box">
-                <h3>Рация</h3>
-                <p>Режим в разработке...</p>
+                <i class="fas fa-gamepad" style="font-size: 40px; color: var(--neon-pink); margin-bottom: 15px;"></i>
+                <h3>Игры</h3>
+                <p>Раздел в разработке...</p>
             </div>
         </div>
 
-        <!-- 4. ФИЧИ -->
-        <div id="features" class="tab-pane">
+        <!-- 3. ЭФИР (История треков) -->
+        <div id="ether" class="tab-pane">
+            <div class="history-list" id="history-container">
+                <div class="loading-msg">
+                    <i class="fas fa-circle-notch fa-spin"></i> Загрузка...
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. МЕНЮ (Бывшие Фичи + Настройки) -->
+        <div id="menu" class="tab-pane">
             <div class="settings-box">
                 
                 <!-- ТАЙМЕР СНА -->
@@ -108,36 +127,14 @@
                     <div id="alarm-msg" class="status-hidden">⏰ ПОДЪЕМ!</div>
                 </div>
 
-                <!-- ГРОМКОСТЬ -->
-                <div class="setting-row volume-row">
-                    <span>Громкость</span>
-                    <div class="vol-control">
-                        <i class="fas fa-volume-down"></i>
-                        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-                        <i class="fas fa-volume-up"></i>
-                    </div>
-                </div>
-
                 <div class="setting-row">
                     <span>Высокое качество</span>
                     <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
                 </div>
-            </div>
-        </div>
-
-        <!-- 5. ЦЕНА -->
-        <div id="price" class="tab-pane">
-            <div class="placeholder-box">
-                <h3>Цена</h3>
-                <p>Раздел в разработке...</p>
-            </div>
-        </div>
-
-        <!-- 6. БЛОГ -->
-        <div id="blog" class="tab-pane">
-            <div class="placeholder-box">
-                <h3>Блог</h3>
-                <p>Раздел в разработке...</p>
+                
+                <div class="placeholder-box" style="padding: 20px 0;">
+                     <p style="font-size: 12px; color: #666;">Версия: Stable Rebuild</p>
+                </div>
             </div>
         </div>
 
