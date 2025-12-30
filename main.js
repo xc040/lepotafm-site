@@ -11,7 +11,6 @@ const isApp = window.location.search.includes('app=true') || (typeof window.Andr
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
-// Автостарт только в приложении
 if (isApp) isPlaying = true;
 
 /* --- ЗАПУСК --- */
@@ -21,22 +20,19 @@ window.onload = function() {
     loadAlarms(); 
     startAlarmClock(); 
     
-    // Запускаем обновление данных ПРОСТЫМ методом
-    updateMetadata();
+    updateMetadata(); 
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== ПЛЕЕР (С ФИКСОМ БУФЕРА) ================== */
+/* ================== ПЛЕЕР ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
 
     if (!playBtn) return;
 
     if (isApp) {
         if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
     }
 
     playBtn.addEventListener('click', () => {
@@ -46,54 +42,53 @@ function initPlayer() {
 
 function togglePlayState() {
     const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
 
-    // ПРИЛОЖЕНИЕ (Android)
+    // ПРИЛОЖЕНИЕ
     if (isApp && window.Android) {
         try {
             if (isPlaying) {
                 window.Android.pauseAudio();
                 if(icon) icon.className = "fas fa-play";
-                if(playerDiv) playerDiv.classList.remove('playing');
                 isPlaying = false;
             } else {
                 window.Android.playAudio();
                 if(icon) icon.className = "fas fa-pause";
-                if(playerDiv) playerDiv.classList.add('playing');
                 isPlaying = true;
             }
         } catch(e) {}
         return;
     }
 
-    // БРАУЗЕР (ФИКС БУФЕРА)
+    // БРАУЗЕР
     if (isPlaying) {
-        // Когда нажимаем Паузу - ОБРЫВАЕМ соединение, чтобы не копился буфер
         audio.pause();
         audio.src = ""; 
         audio.load();
-        
         if(icon) icon.className = "fas fa-play";
-        if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
-        // Когда нажимаем Плей - ПОДКЛЮЧАЕМСЯ ЗАНОВО
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Autoplay block"));
-        
+        audio.play().catch(e => console.log("Block"));
         if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
 }
 
-// Вспомогательные функции для будильника
+// Вспомогательные функции
 function playRadioForce() {
-    // Включаем, если не играет
-    if (!isPlaying) togglePlayState();
+    if (isApp && window.Android) {
+        try { 
+            window.Android.playAudio(); 
+            const icon = document.getElementById('play-icon');
+            if(icon) icon.className = "fas fa-pause";
+            isPlaying = true;
+        } catch(e) {}
+    } else {
+        if (!isPlaying) togglePlayState();
+    }
 }
+
 function stopRadioForce() {
-    // Выключаем, если играет
     if (isPlaying) togglePlayState();
 }
 
@@ -109,7 +104,6 @@ function initVolume() {
     slider.value = finalVol;
     audio.volume = finalVol;
     
-    // Передаем в Android
     if (isApp && window.Android && window.Android.setVolume) {
         try { window.Android.setVolume(finalVol); } catch(e){}
     }
@@ -124,33 +118,32 @@ function initVolume() {
     });
 }
 
-/* ================== ЗАГРУЗКА ДАННЫХ (СТАБИЛЬНАЯ) ================== */
+/* ================== МЕТАДАННЫЕ (ОБНОВЛЕНО ДЛЯ БЕГУЩЕЙ СТРОКИ) ================== */
 function updateMetadata() {
-    // Самый простой fetch без заголовков, чтобы не злить Android
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
+    fetch(CONFIG.apiUrl + "?nocache=" + Date.now())
         .then(res => res.json())
         .then(data => {
-            // Текущий трек
+            // ТЕКУЩИЙ ТРЕК
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
-                const titleEl = document.getElementById('track-name');
-                const artistEl = document.getElementById('artist-name');
-                const imgEl = document.getElementById('mini-art');
-
-                if (titleEl) titleEl.innerText = song.title;
-                if (artistEl) artistEl.innerText = song.artist;
                 
+                // ОБНОВЛЕНИЕ БЕГУЩЕЙ СТРОКИ
+                const ticker = document.getElementById('track-ticker');
+                if (ticker) {
+                    ticker.innerText = `${song.artist} - ${song.title}   ***   `;
+                }
+                
+                // Если есть другие элементы (на всякий случай)
+                const imgEl = document.getElementById('mini-art');
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-            // История
+            // ИСТОРИЯ
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
-        .catch(err => {
-            // Тихо падаем, чтобы не спамить в лог
-        });
+        .catch(err => {});
 }
 
 function renderHistory(history) {
@@ -178,7 +171,6 @@ function renderHistory(history) {
         </div>`;
     });
     
-    // Обновляем HTML только если он изменился
     if (container.innerHTML !== html) {
         container.innerHTML = html;
     }
@@ -205,17 +197,18 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ЛОГИКА ФИЧ (БУДИЛЬНИК, ТАЙМЕР) ================== */
-
-// ВКЛАДКИ
+/* ================== ВКЛАДКИ ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
+    
+    const target = document.getElementById(tabName);
+    if (target) target.classList.add('active');
+    
     if (btnElement) btnElement.classList.add('active');
 };
 
-// ТАЙМЕР СНА
+/* ================== ТАЙМЕР И БУДИЛЬНИК (СОХРАНЕНО) ================== */
 let sleepInterval = null;
 
 window.updateSleepLabel = function(minutes) {
@@ -257,7 +250,6 @@ window.cancelSleepTimer = function() {
     if(statusDiv) statusDiv.style.display = "none";
 }
 
-// БУДИЛЬНИК
 let alarms = []; 
 let alarmChecker = null;
 let lastTriggeredTime = "";
@@ -336,8 +328,6 @@ function renderAlarms() {
 
 function startAlarmClock() {
     if (alarmChecker) clearInterval(alarmChecker);
-    
-    // Проверка каждую секунду
     alarmChecker = setInterval(() => {
         const now = new Date();
         const currentDay = now.getDay();
@@ -356,16 +346,13 @@ function startAlarmClock() {
     }, 1000);
 }
 
-// ПЛАВНЫЙ СТАРТ (5 СЕКУНД)
 function triggerAlarm() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // Сброс громкости в 0
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
     
-    // Включение
     playRadioForce();
     
     const msg = document.getElementById('alarm-msg');
@@ -374,7 +361,6 @@ function triggerAlarm() {
         setTimeout(() => { msg.style.display = 'none'; }, 60000);
     }
 
-    // Плавное нарастание до 1.0 за 5 сек
     let vol = 0;
     let fadeInterval = setInterval(() => {
         vol += 0.05;
