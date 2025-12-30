@@ -6,19 +6,21 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
+// Глобальные переменные
 const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
 let audio = new Audio(CONFIG.streamUrl);
 let isPlaying = false; 
 
+// Автостарт только в приложении
 if (isApp) isPlaying = true;
 
+/* --- ЗАПУСК --- */
 window.onload = function() {
     initPlayer();
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
-    
-    updateMetadata(); 
+    updateMetadata(); // Запуск загрузки
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
@@ -72,7 +74,7 @@ function togglePlayState() {
     }
 }
 
-// Функции для будильника
+// Вспомогательные функции для будильника
 function playRadioForce() {
     if (isApp && window.Android) {
         try { 
@@ -90,7 +92,7 @@ function stopRadioForce() {
     if (isPlaying) togglePlayState();
 }
 
-/* ================== ГРОМКОСТЬ (С ОСТАНОВКОЙ) ================== */
+/* ================== ГРОМКОСТЬ (ЧЕСТНАЯ СТАТИСТИКА) ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
@@ -114,7 +116,7 @@ function initVolume() {
             try { window.Android.setVolume(vol); } catch(e) {}
         }
 
-        // Честная статистика: Громкость 0 = Стоп
+        // Если громкость 0 - стоп
         if (vol <= 0.01) {
             if (isPlaying) stopRadioForce();
         } else {
@@ -132,7 +134,7 @@ function updateMetadata() {
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
                 
-                // Формируем чистую строку
+                // Формируем строку без тире в начале
                 let tickerText = song.title;
                 if (song.artist && song.artist.trim() !== "") {
                     tickerText = `${song.artist} - ${song.title}`;
@@ -142,7 +144,7 @@ function updateMetadata() {
                 const ticker = document.getElementById('track-ticker');
                 if (ticker) ticker.innerText = tickerText + "       "; 
                 
-                // Картинка (если где-то есть мини)
+                // Картинка
                 const imgEl = document.getElementById('mini-art');
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
@@ -206,7 +208,7 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== UI ================== */
+/* ================== UI (ВКЛАДКИ) ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
