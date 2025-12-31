@@ -49,12 +49,14 @@ body {
 .tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
 
 /* КОНТЕНТ */
-.main-content { flex: 1; position: relative; overflow: hidden; background: #000; }
-.tab-pane { display: none; width: 100%; height: 100%; overflow-y: auto; }
-.tab-pane.active { display: block; }
+.content-section { flex-grow: 1; position: relative; overflow: hidden; background: #000; }
 
-/* ИГРА И МЕНЮ (На весь экран) */
-#home.full-height, #menu.full-height { overflow: hidden; display: flex; padding: 0; }
+/* ВАЖНО: Скрытие вкладок */
+.tab-pane { display: none !important; width: 100%; height: 100%; overflow-y: auto; }
+.tab-pane.active { display: block !important; }
+
+/* ИГРА И МЕНЮ (На весь экран при активации) */
+#home.full-height.active, #menu.full-height.active { overflow: hidden; display: flex !important; padding: 0; }
 #game-frame { width: 100%; height: 100%; border: none; display: block; background: #000; }
 
 .scrollable-pad { padding: 15px; box-sizing: border-box; overflow-y: auto; background: var(--bg); }
