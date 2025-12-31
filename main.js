@@ -28,10 +28,11 @@ window.toggleGamePause = function(forceState) {
     isGamePausedSystem = newState;
 
     if (isGamePausedSystem) {
+        // ПАУЗА (Радио НЕ трогаем, только игру)
         overlay.style.display = 'flex';
         btnIcon.className = 'fas fa-play';
-        // ВАЖНО: Мы больше НЕ останавливаем радио здесь, только игру!
     } else {
+        // ИГРАЕМ
         overlay.style.display = 'none';
         btnIcon.className = 'fas fa-pause';
     }
@@ -39,8 +40,7 @@ window.toggleGamePause = function(forceState) {
 
 /* ================== ИНФО О ИГРЕ ================== */
 window.openGameInfo = function() {
-    // Открываем ту же модалку, но с текстом игры
-    window.openSku("О игре", "Лицензия: Open Source", CONFIG.defaultImage);
+    window.openSku("Snake", "Лицензия: Open Source\nВерсия: 1.0", CONFIG.defaultImage);
 };
 
 /* ================== Вкладки ================== */
@@ -50,15 +50,14 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
-    // Авто-пауза при уходе
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
         if (tabName === 'home') {
             gameFrame.contentWindow.setGamePause(false);
-            toggleGamePause(false); // Синхронизация кнопки
+            toggleGamePause(false);
         } else {
             gameFrame.contentWindow.setGamePause(true);
-            toggleGamePause(true); // Синхронизация кнопки
+            toggleGamePause(true);
         }
     }
 };
