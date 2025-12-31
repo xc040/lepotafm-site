@@ -43,7 +43,6 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ -->
             <nav class="tabs">
                 <button class="tab-btn active" onclick="openTab('home', this)">Игра</button>
                 <button class="tab-btn" onclick="openTab('catalog', this)">Каталог</button>
@@ -57,6 +56,7 @@
             
             <!-- 1. ИГРА (Iframe в папку game) -->
             <div id="home" class="tab-pane active full-height">
+                <!-- Игра загружается из папки game/index.html -->
                 <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
             </div>
 
@@ -76,6 +76,7 @@
             </div>
 
             <!-- 4. МЕНЮ (Iframe в папку menu) -->
+            <!-- Тут теперь только окно, которое грузит настройки из папки -->
             <div id="menu" class="tab-pane full-height">
                 <iframe src="menu/index.html" frameborder="0" style="width:100%; height:100%; border:none;"></iframe>
             </div>
