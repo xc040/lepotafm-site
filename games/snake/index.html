@@ -3,141 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lepota Game</title>
-    <!-- Подключаем иконки для красоты -->
+    <title>Snake</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- СТИЛИ (Вшиты сюда, чтобы не зависеть от других файлов) --- */
-        body { margin: 0; padding: 0; background: #050510; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        /* ШАПКА С ПЛЕЕРОМ */
-        .top-bar {
-            flex-shrink: 0; background: rgba(21, 21, 37, 0.98); 
-            border-bottom: 1px solid #00f3ff; 
-            padding: 10px; display: flex; align-items: center; gap: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        
-        /* Лого и инфо */
-        .info { flex: 1; overflow: hidden; }
-        .logo { font-weight: bold; font-size: 14px; color: #fff; margin-bottom: 5px; }
-        .logo span { color: #bc13fe; }
-        .track-name { font-size: 12px; color: #00f3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* Кнопка Play */
-        .play-btn {
-            width: 50px; height: 50px; border-radius: 50%; border: none;
-            background: #00f3ff; color: #000; font-size: 20px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 10px #00f3ff;
-        }
-        
-        /* Слайдер громкости */
-        .vol-slider { width: 80px; accent-color: #bc13fe; height: 3px; }
-
-        /* ИГРОВАЯ ЗОНА (IFRAME) */
-        .game-container { flex: 1; width: 100%; height: 100%; background: #000; }
-        iframe { width: 100%; height: 100%; border: none; }
-        
-        /* ВКЛАДКИ СНИЗУ (Опционально, для выхода) */
-        .tabs { display: flex; background: #151525; border-top: 1px solid #333; }
-        .tab { flex: 1; padding: 15px; text-align: center; color: #888; text-decoration: none; font-size: 12px; }
-        .tab.active { color: #00f3ff; font-weight: bold; }
+        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; touch-action: none; }
+        canvas { border: 1px solid #333; background: #111; box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); max-width: 100%; max-height: 100%; }
+        .start-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #00f3ff; pointer-events: none; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px black; z-index: 10; }
+        .pause-btn { position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1); border: 1px solid #00f3ff; border-radius: 50%; color: #00f3ff; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; backdrop-filter: blur(5px); }
+        .pause-btn:active { background: #00f3ff; color: black; }
+        .paused-text { display: none; position: absolute; top: 40%; font-size: 30px; color: #bc13fe; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; }
     </style>
 </head>
 <body>
-
-    <!-- 1. ПЛЕЕР -->
-    <div class="top-bar">
-        <div class="info">
-            <div class="logo">LEPOTA<span>FM</span></div>
-            <div id="track-info" class="track-name">Загрузка...</div>
-            <input type="range" class="vol-slider" id="vol" min="0" max="1" step="0.1" value="1">
-        </div>
-        <button class="play-btn" id="play"><i class="fas fa-play"></i></button>
-    </div>
-
-    <!-- 2. ИГРА (Грузит файл game.html из этой же папки) -->
-    <div class="game-container">
-        <iframe src="game.html"></iframe>
-    </div>
-
-    <!-- 3. КНОПКИ (Например, вернуться в меню) -->
-    <div class="tabs">
-        <a href="#" class="tab active">ИГРА</a>
-        <!-- Ссылка на главный сайт или каталог -->
-        <a href="https://xc040.github.io/lepotafm-site/?app=true" class="tab">ВЫХОД</a>
-    </div>
-
+    <div class="start-msg" id="msg">Нажми чтобы играть</div>
+    <div class="paused-text" id="paused-msg">ПАУЗА</div>
+    <button class="pause-btn" id="btn-pause" onclick="togglePauseManual(event)"><i class="fas fa-pause" id="icon-pause"></i></button>
+    <canvas width="320" height="320" id="game"></canvas>
     <script>
-        /* --- СКРИПТ (МОСТ К JAVA) --- */
-        
-        // Ссылка на API радио (для названий песен)
-        const API_URL = "https://lepotafm.ru/api/nowplaying/lepotafm";
-        const isApp = (typeof window.Android !== "undefined");
-        let isPlaying = false; // В Java плеере по умолчанию считаем false, пока не нажмем
-
-        // Если открыли в браузере (тест на ПК), создаем фейковый плеер
-        let webAudio = new Audio("https://lepotafm.ru/listen/lepotafm/radio.mp3");
-
-        window.onload = function() {
-            // Если мы в приложении - сразу синхронизируемся
-            // (В твоем Java коде плеер стартует сам, поэтому ставим иконку Pause)
-            if (isApp) {
-                isPlaying = true;
-                updateIcon();
-            }
-            
-            // Запуск обновления названий треков
-            updateMeta();
-            setInterval(updateMeta, 10000);
+        var canvas = document.getElementById('game');
+        var context = canvas.getContext('2d');
+        var grid = 16; var count = 0; var gameLoopId;
+        var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+        var apple = { x: 320, y: 320 };
+        var gameStarted = false; var isGamePaused = false;
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
+        document.body.addEventListener('touchstart', function(e) { if(e.target.closest('.pause-btn')) return; if(!gameStarted) startGame(); });
+        document.body.addEventListener('click', function(e) { if(e.target.closest('.pause-btn')) return; if(!gameStarted) startGame(); });
+        let touchStartX = 0; let touchStartY = 0;
+        document.addEventListener('touchstart', function(e) { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, false);
+        document.addEventListener('touchend', function(e) { let touchEndX = e.changedTouches[0].screenX; let touchEndY = e.changedTouches[0].screenY; handleGesture(touchStartX, touchStartY, touchEndX, touchEndY); }, false);
+        function handleGesture(x1, y1, x2, y2) { if (isGamePaused) return; let xDiff = x2 - x1; let yDiff = y2 - y1; if (Math.abs(xDiff) > Math.abs(yDiff)) { if (xDiff > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; } else if (xDiff < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; } } else { if (yDiff > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; } else if (yDiff < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; } } }
+        function startGame() { if(gameStarted) return; gameStarted = true; document.getElementById('msg').style.display = 'none'; loop(); }
+        function togglePauseManual(e) { e.stopPropagation(); setGamePause(!isGamePaused); }
+        window.setGamePause = function(state) { 
+            if (!gameStarted) return; 
+            isGamePaused = state; 
+            const icon = document.getElementById('icon-pause'); 
+            const msg = document.getElementById('paused-msg'); 
+            if (isGamePaused) { 
+                cancelAnimationFrame(gameLoopId); // Останавливаем цикл
+                icon.className = "fas fa-play"; 
+                msg.style.display = "block"; 
+            } else { 
+                icon.className = "fas fa-pause"; 
+                msg.style.display = "none"; 
+                loop(); // Запускаем цикл заново
+            } 
         };
-
-        // КНОПКА PLAY
-        document.getElementById('play').onclick = function() {
-            if (isApp) {
-                // КОМАНДЫ ДЛЯ ТВОЕГО APK
-                if (isPlaying) {
-                    window.Android.pauseAudio();
-                    isPlaying = false;
-                } else {
-                    window.Android.playAudio();
-                    isPlaying = true;
-                }
-            } else {
-                // ДЛЯ БРАУЗЕРА
-                if (isPlaying) { webAudio.pause(); isPlaying = false; }
-                else { webAudio.play(); isPlaying = true; }
-            }
-            updateIcon();
-        };
-
-        // ГРОМКОСТЬ
-        document.getElementById('vol').oninput = function(e) {
-            let val = parseFloat(e.target.value);
-            if (isApp) {
-                window.Android.setVolume(val);
-            } else {
-                webAudio.volume = val;
-            }
-        };
-
-        // ОБНОВЛЕНИЕ ИКОНКИ
-        function updateIcon() {
-            let btn = document.getElementById('play');
-            if (isPlaying) btn.innerHTML = '<i class="fas fa-pause"></i>';
-            else btn.innerHTML = '<i class="fas fa-play"></i>';
-        }
-
-        // ПОЛУЧЕНИЕ НАЗВАНИЯ ТРЕКА
-        function updateMeta() {
-            fetch(API_URL + "?t=" + Date.now())
-                .then(res => res.json())
-                .then(data => {
-                    let song = data.now_playing.song;
-                    document.getElementById('track-info').innerText = song.text;
-                })
-                .catch(e => console.log(e));
+        function loop() { 
+            if (isGamePaused) return; 
+            gameLoopId = requestAnimationFrame(loop); 
+            if (++count < 6) return; 
+            count = 0; context.clearRect(0,0,canvas.width,canvas.height); 
+            snake.x += snake.dx; snake.y += snake.dy; 
+            if (snake.x < 0) snake.x = canvas.width - grid; else if (snake.x >= canvas.width) snake.x = 0; 
+            if (snake.y < 0) snake.y = canvas.height - grid; else if (snake.y >= canvas.height) snake.y = 0; 
+            snake.cells.unshift({x: snake.x, y: snake.y}); 
+            if (snake.cells.length > snake.maxCells) snake.cells.pop(); 
+            context.fillStyle = '#ff0055'; context.fillRect(apple.x, apple.y, grid-1, grid-1); 
+            context.fillStyle = '#00f3ff'; 
+            snake.cells.forEach(function(cell, index) { 
+                context.fillRect(cell.x, cell.y, grid-1, grid-1); 
+                if (cell.x === apple.x && cell.y === apple.y) { snake.maxCells++; apple.x = getRandomInt(0, 20) * grid; apple.y = getRandomInt(0, 20) * grid; } 
+                for (var i = index + 1; i < snake.cells.length; i++) { 
+                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) { 
+                        snake.x = 160; snake.y = 160; snake.cells = []; snake.maxCells = 4; snake.dx = grid; snake.dy = 0; 
+                        gameStarted = false; cancelAnimationFrame(gameLoopId);
+                        document.getElementById('msg').style.display = 'block'; 
+                        document.getElementById('msg').innerText = "Game Over\nНажми для рестарта"; 
+                    } 
+                } 
+            }); 
         }
     </script>
 </body>
