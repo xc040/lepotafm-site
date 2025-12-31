@@ -1,26 +1,10 @@
-:root {
-    --bg: #050510;
-    --card: #151525;
-    --neon-blue: #00f3ff;
-    --neon-pink: #bc13fe;
-    --text: #ffffff;
-}
-
-body {
-    margin: 0; padding: 0;
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh; overflow: hidden; user-select: none;
-}
-
+:root { --bg: #050510; --card: #151525; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --text: #ffffff; }
+body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; user-select: none; }
 .app-layout { display: flex; flex-direction: column; height: 100%; width: 100%; }
 .neon-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% -20%, #1a1a40, #050510); z-index: -2; }
 .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%); background-size: 100% 4px; pointer-events: none; z-index: -1; }
 
-/* ШАПКА */
 .fixed-top-area { flex-shrink: 0; background: rgba(21, 21, 37, 0.98); border-bottom: 1px solid var(--neon-blue); box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; }
-
 .inline-player { display: flex; padding: 10px 15px; background: rgba(255,255,255,0.02); gap: 15px; }
 .player-info-col { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
 .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
@@ -49,19 +33,42 @@ body {
 .tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
 
 /* КОНТЕНТ */
-.content-section { flex-grow: 1; position: relative; overflow: hidden; background: #000; }
-
-/* ВАЖНО: Скрытие вкладок */
+.main-content { flex: 1; position: relative; overflow: hidden; background: #000; }
 .tab-pane { display: none !important; width: 100%; height: 100%; overflow-y: auto; }
 .tab-pane.active { display: block !important; }
-
-/* ИГРА И МЕНЮ (На весь экран при активации) */
 #home.full-height.active, #menu.full-height.active { overflow: hidden; display: flex !important; padding: 0; }
-#game-frame { width: 100%; height: 100%; border: none; display: block; background: #000; }
-
 .scrollable-pad { padding: 15px; box-sizing: border-box; overflow-y: auto; background: var(--bg); }
 
-/* ИСТОРИЯ */
+/* --- СИСТЕМА ПАУЗЫ И ИГРЫ --- */
+.game-wrapper {
+    position: relative; width: 100%; height: 100%;
+}
+#game-frame { width: 100%; height: 100%; border: none; display: block; background: #000; }
+
+/* Кнопка паузы (сверху игры) */
+.system-pause-btn {
+    position: absolute; top: 15px; right: 15px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(21, 21, 37, 0.8); border: 1px solid var(--neon-blue);
+    color: var(--neon-blue); font-size: 16px; cursor: pointer;
+    z-index: 500; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px);
+}
+.system-pause-btn:active { background: var(--neon-blue); color: black; }
+
+/* Экран паузы (блокирует игру) */
+.pause-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px);
+    z-index: 400; display: none; /* Скрыто по умолчанию */
+    align-items: center; justify-content: center; cursor: pointer;
+}
+.pause-text {
+    font-size: 30px; font-weight: bold; color: var(--neon-pink);
+    text-shadow: 0 0 10px black; text-align: center;
+}
+
+/* ОСТАЛЬНОЕ */
 .history-item { display: flex; align-items: center; background: var(--card); margin-bottom: 8px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
 .hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
 .hist-info { flex: 1; overflow: hidden; }
@@ -69,10 +76,7 @@ body {
 .hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sku-btn { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; margin-left: 10px; }
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
-
 .placeholder-box { text-align: center; padding: 40px 20px; }
-
-/* МОДАЛКА */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
 .modal.hidden { display: none; }
 .modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; }
