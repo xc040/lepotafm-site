@@ -1,22 +1,10 @@
 :root { --bg: #050510; --card: #151525; --neon-blue: #00f3ff; --neon-pink: #bc13fe; --text: #ffffff; }
 body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; user-select: none; }
-
-/* ГЛАВНЫЙ ФЛЕКС-КОНТЕЙНЕР */
 .app-layout { display: flex; flex-direction: column; height: 100%; width: 100%; }
-
 .neon-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% -20%, #1a1a40, #050510); z-index: -2; }
 .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%); background-size: 100% 4px; pointer-events: none; z-index: -1; }
 
-/* --- ШАПКА (ВЕРХ) --- */
-.fixed-top-area {
-    flex-shrink: 0; /* Не сжиматься */
-    background: rgba(21, 21, 37, 0.98);
-    border-bottom: 1px solid var(--neon-blue);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    z-index: 5000; /* ВАЖНО: Самый высокий слой */
-    position: relative;
-}
-
+.fixed-top-area { flex-shrink: 0; background: rgba(21, 21, 37, 0.98); border-bottom: 1px solid var(--neon-blue); box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 1000; }
 .inline-player { display: flex; padding: 10px 15px; background: rgba(255,255,255,0.02); gap: 15px; }
 .player-info-col { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
 .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
@@ -44,83 +32,33 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; backg
 .tab-btn { flex: 1; background: none; border: none; color: #888; font-size: 12px; font-weight: 600; text-transform: uppercase; padding: 12px 0; cursor: pointer; border-bottom: 3px solid transparent; }
 .tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
 
-/* --- КОНТЕНТ (НИЗ) --- */
-.main-content {
-    flex: 1; /* Занимает все оставшееся место */
-    position: relative; /* Чтобы абсолютные дети были внутри него */
-    overflow: hidden; 
-    background: #000;
-    z-index: 1;
-}
-
+.main-content { flex: 1; position: relative; overflow: hidden; background: #000; }
 .tab-pane { display: none !important; width: 100%; height: 100%; overflow-y: auto; }
 .tab-pane.active { display: block !important; }
-
-/* СТИЛИ ДЛЯ ИГРЫ (Оболочка) */
-.game-wrapper {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-}
-#game-frame { 
-    width: 100%; height: 100%; border: none; display: block; background: #000;
-}
-
-/* Панель управления игрой */
-.game-header-controls {
-    position: absolute; top: 15px; left: 15px; right: 15px;
-    display: flex; justify-content: space-between; align-items: center;
-    z-index: 500; pointer-events: none; /* Пропускаем клики сквозь пустоту */
-}
-
-/* Группа слева (i + Title) */
-.game-left {
-    display: flex; align-items: center; gap: 10px; pointer-events: auto;
-}
-.game-title {
-    color: white; font-weight: bold; text-shadow: 0 0 5px black;
-    background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px;
-    font-size: 14px;
-}
-
-/* Кнопки игры */
-.game-btn {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: rgba(21, 21, 37, 0.8); border: 1px solid var(--neon-blue);
-    color: var(--neon-blue); font-size: 16px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(5px); pointer-events: auto;
-}
-.game-btn:active { background: var(--neon-blue); color: black; }
-
-/* Экран паузы */
-.pause-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px);
-    z-index: 400; display: none;
-    align-items: center; justify-content: center; cursor: pointer;
-}
-.pause-text {
-    font-size: 30px; font-weight: bold; color: var(--neon-pink);
-    text-shadow: 0 0 10px black; text-align: center;
-}
-
-/* Скролл для остальных */
+#home.full-height.active, #menu.full-height.active { overflow: hidden; display: flex !important; padding: 0; }
+#game-frame { width: 100%; height: 100%; border: none; display: block; background: #000; }
 .scrollable-pad { padding: 15px; box-sizing: border-box; overflow-y: auto; background: var(--bg); }
 
-/* Полная высота для меню и игры */
-#home.full-height.active, #menu.full-height.active { overflow: hidden; display: flex !important; padding: 0; }
+/* КАТАЛОГ СТИЛИ */
+.catalog-grid { display: flex; flex-direction: column; gap: 10px; }
+.game-card { display: flex; align-items: center; background: var(--card); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: 0.2s; }
+.game-card:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+.game-card-icon { width: 45px; height: 45px; background: rgba(0,0,0,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--neon-blue); margin-right: 12px; }
+.game-card-info { flex: 1; }
+.game-card-title { display: block; font-weight: bold; font-size: 15px; color: white; }
+.game-card-desc { font-size: 11px; color: #777; }
+.play-mini { font-size: 12px; color: var(--neon-blue); opacity: 0.5; }
 
-/* ИСТОРИЯ */
 .history-item { display: flex; align-items: center; background: var(--card); margin-bottom: 8px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
 .hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
 .hist-info { flex: 1; overflow: hidden; }
 .hist-title { font-size: 14px; font-weight: bold; color: white; display: block; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-artist { font-size: 12px; color: var(--neon-blue); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: var(--neon-blue); }
 .sku-btn { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; margin-left: 10px; }
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .placeholder-box { text-align: center; padding: 40px 20px; }
 
-/* МОДАЛКА */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 6000; display: flex; align-items: center; justify-content: center; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
 .modal.hidden { display: none; }
 .modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; }
 .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; }
