@@ -12,21 +12,20 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ГЛАВНЫЙ КОНТЕЙНЕР (На весь экран) -->
+    <!-- ГЛАВНЫЙ КОНТЕЙНЕР -->
     <div class="app-layout">
 
-        <!-- 1. ВЕРХНЯЯ ЗОНА (Плеер + Вкладки) -->
-        <!-- Она не фиксирована, она просто стоит первой и не сжимается -->
+        <!-- ВЕРХНЯЯ ЗОНА -->
         <header class="top-section">
             
             <!-- ПЛЕЕР -->
             <div class="inline-player">
-                <!-- Левая часть: Инфо -->
                 <div class="player-info-col">
                     <div class="top-row">
                         <div class="logo-small">LEPOTA<span class="neon-text">FM</span></div>
                         <div class="vol-mini-container">
                             <i class="fas fa-volume-down tiny-icon"></i>
+                            <!-- ВАЖНО: ID vol-slider используется в main.js -->
                             <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
                         </div>
                     </div>
@@ -41,8 +40,8 @@
                     </div>
                 </div>
 
-                <!-- Правая часть: Кнопка Play (Круглая) -->
                 <div class="player-btn-col">
+                    <!-- ВАЖНО: ID play-btn используется в main.js -->
                     <button id="play-btn" class="big-play-btn">
                         <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
                         <span class="icon-overlay"><i class="fas fa-play" id="play-icon"></i></span>
@@ -59,17 +58,15 @@
             </nav>
         </header>
 
-        <!-- 2. НИЖНЯЯ ЗОНА (Контент) -->
-        <!-- Занимает всё оставшееся место автоматически -->
+        <!-- НИЖНЯЯ ЗОНА -->
         <main class="content-section">
             
-            <!-- ВКЛАДКА 1: ИГРА -->
+            <!-- ИГРА -->
             <div id="game_tab" class="tab-pane active full-height">
-                <!-- IFRAME грузит игру из папки game -->
                 <iframe id="game-frame" src="game/index.html" title="Game"></iframe>
             </div>
 
-            <!-- ВКЛАДКА 2: КАТАЛОГ -->
+            <!-- КАТАЛОГ -->
             <div id="catalog" class="tab-pane scrollable-pad">
                 <div class="placeholder-box">
                     <h3>Другие игры</h3>
@@ -77,18 +74,17 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКА 3: ЭФИР -->
+            <!-- ЭФИР -->
             <div id="ether" class="tab-pane scrollable-pad">
                 <div class="history-list" id="history-container">
                     <div class="loading-msg">Загрузка истории...</div>
                 </div>
             </div>
 
-            <!-- ВКЛАДКА 4: МЕНЮ -->
+            <!-- МЕНЮ -->
             <div id="menu" class="tab-pane scrollable-pad">
                 <div class="settings-box">
                     
-                    <!-- Таймер сна -->
                     <div class="feature-card">
                         <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
                         <div class="timer-slider-box">
@@ -101,7 +97,6 @@
                         </div>
                     </div>
 
-                    <!-- Будильник -->
                     <div class="feature-card">
                         <div class="feature-header"><i class="fas fa-clock"></i> Будильник</div>
                         <div class="alarm-create-box">
@@ -121,7 +116,7 @@
                     </div>
 
                     <div class="placeholder-box" style="padding: 10px;">
-                        <p style="font-size: 12px; color: #666;">v.GameMesh 1.0</p>
+                        <p style="font-size: 12px; color: #666;">v.Fixed 2.0</p>
                     </div>
                 </div>
             </div>
@@ -129,7 +124,7 @@
         </main>
     </div>
 
-    <!-- Модалка инфо -->
+    <!-- Модалка -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
