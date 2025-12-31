@@ -39,28 +39,43 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; backg
 #home.full-height.active, #menu.full-height.active { overflow: hidden; display: flex !important; padding: 0; }
 .scrollable-pad { padding: 15px; box-sizing: border-box; overflow-y: auto; background: var(--bg); }
 
-/* --- СИСТЕМА ПАУЗЫ И ИГРЫ --- */
+/* --- СИСТЕМА ПАУЗЫ И ИГРЫ (ИСПРАВЛЕНО РАСТЯГИВАНИЕ) --- */
 .game-wrapper {
-    position: relative; width: 100%; height: 100%;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
 }
-#game-frame { width: 100%; height: 100%; border: none; display: block; background: #000; }
+#game-frame { 
+    width: 100%; height: 100%; border: none; display: block; background: #000;
+}
 
-/* Кнопка паузы (сверху игры) */
-.system-pause-btn {
-    position: absolute; top: 15px; right: 15px;
+/* Панель управления игрой (Поверх всего) */
+.game-overlay-controls {
+    position: absolute; top: 15px; left: 15px; right: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 500; pointer-events: none; /* Пропускаем клики сквозь пустоту */
+}
+
+/* Кнопки и текст внутри панели */
+.game-info-btn, .system-pause-btn {
     width: 40px; height: 40px; border-radius: 50%;
     background: rgba(21, 21, 37, 0.8); border: 1px solid var(--neon-blue);
     color: var(--neon-blue); font-size: 16px; cursor: pointer;
-    z-index: 500; display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px); pointer-events: auto; /* Включаем клики */
 }
-.system-pause-btn:active { background: var(--neon-blue); color: black; }
+.game-info-btn:active, .system-pause-btn:active { background: var(--neon-blue); color: black; }
 
-/* Экран паузы (блокирует игру) */
+.game-title-display {
+    color: white; font-weight: bold; text-shadow: 0 0 5px black;
+    background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px;
+    font-size: 14px; margin-right: auto; margin-left: 10px; /* Сдвиг влево к инфо */
+    pointer-events: auto;
+}
+
+/* Экран паузы */
 .pause-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px);
-    z-index: 400; display: none; /* Скрыто по умолчанию */
+    z-index: 400; display: none;
     align-items: center; justify-content: center; cursor: pointer;
 }
 .pause-text {
@@ -77,6 +92,7 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; backg
 .sku-btn { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; margin-left: 10px; }
 .loading-msg { text-align: center; color: #666; margin-top: 20px; }
 .placeholder-box { text-align: center; padding: 40px 20px; }
+
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
 .modal.hidden { display: none; }
 .modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; }
