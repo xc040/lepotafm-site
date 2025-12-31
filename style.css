@@ -12,15 +12,15 @@ body {
     font-family: 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
-    height: 100vh; /* Высота экрана 100% */
-    overflow: hidden; /* Запрет прокрутки всего сайта */
+    height: 100vh;
+    overflow: hidden;
     user-select: none;
 }
 
 /* Контейнер приложения */
 .app-layout {
     display: flex;
-    flex-direction: column; /* Вертикальный стек */
+    flex-direction: column;
     height: 100%;
     width: 100%;
 }
@@ -32,9 +32,9 @@ body {
 .neon-bg { background: radial-gradient(circle at 50% -20%, #1a1a40, #050510); }
 .scanlines { background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%); background-size: 100% 4px; }
 
-/* 1. ВЕРХНЯЯ СЕКЦИЯ (Не сжимается) */
+/* 1. ВЕРХНЯЯ СЕКЦИЯ */
 .top-section {
-    flex-shrink: 0; /* Запрет сжатия */
+    flex-shrink: 0;
     background: rgba(21, 21, 37, 0.98);
     border-bottom: 1px solid var(--neon-blue);
     z-index: 10;
@@ -91,35 +91,47 @@ body {
 }
 .tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
 
-/* 2. НИЖНЯЯ СЕКЦИЯ (Растягивается) */
+/* 2. НИЖНЯЯ СЕКЦИЯ */
 .content-section {
-    flex-grow: 1; /* Занимает всё оставшееся место */
+    flex-grow: 1;
     position: relative;
-    overflow: hidden; /* Скроллится только внутри табов */
+    overflow: hidden;
     background: #000;
 }
 
-.tab-pane { display: none; width: 100%; height: 100%; }
-.tab-pane.active { display: block; }
-
-/* Стили для игры (БЕЗ отступов) */
-.full-height {
-    width: 100%; height: 100%;
-    padding: 0; margin: 0;
-    overflow: hidden;
-    display: flex;
+/* БАЗОВЫЙ СТИЛЬ ВКЛАДОК (СКРЫТЫ) */
+.tab-pane { 
+    display: none; /* По умолчанию скрыто */
+    width: 100%; 
+    height: 100%; 
 }
+
+/* ИСПРАВЛЕНИЕ: Показываем только если есть класс ACTIVE */
+/* Для обычных вкладок */
+.tab-pane.active { 
+    display: block; 
+}
+
+/* Спец. стиль для ИГРЫ (Flex, чтобы iframe растянулся) */
+/* Важно: применяется ТОЛЬКО когда есть active */
+#game_tab.active {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
 #game-frame { width: 100%; height: 100%; border: none; }
 
-/* Стили для текста (С отступами и скроллом) */
+/* Стили для текстовых вкладок */
 .scrollable-pad {
     padding: 15px;
     box-sizing: border-box;
-    overflow-y: auto; /* Прокрутка только здесь */
+    overflow-y: auto;
     background: var(--bg);
 }
 
-/* Остальные элементы (История, Фичи) */
+/* Остальные элементы */
 .history-item { display: flex; align-items: center; background: var(--card); margin-bottom: 8px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
 .hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
 .hist-info { flex: 1; overflow: hidden; }
