@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 15px; background: #050510; color: white; font-family: 'Segoe UI', Roboto, sans-serif; }
+        
+        .back-btn { 
+            display: inline-flex; align-items: center; color: #888; 
+            text-decoration: none; font-size: 14px; margin-bottom: 20px; 
+        }
+        .back-btn i { margin-right: 5px; }
+
+        .feature-header { font-size: 18px; font-weight: bold; color: #bc13fe; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        .timer-card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        
+        .timer-display { font-size: 40px; font-weight: bold; color: #bc13fe; margin-bottom: 20px; display: block; }
+        
+        #sleep-slider { width: 100%; accent-color: #bc13fe; height: 5px; cursor: pointer; margin-bottom: 10px; }
+        .slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; }
+        
+        .status-text { color: #aaa; margin-top: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+
+    <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
+
+    <div class="timer-card">
+        <span id="timer-val-display" class="timer-display">Off</span>
+        
+        <input type="range" id="sleep-slider" min="0" max="180" step="15" value="0">
+        <div class="slider-labels"><span>0</span><span>3ч</span></div>
+        
+        <div id="sleep-status" style="display: none;">
+            <div class="status-text">Музыка выключится через:</div>
+            <div id="sleep-countdown" style="font-size: 20px; color: white; margin-top: 5px;">00:00</div>
+        </div>
+    </div>
+
+    <script>
+        let sleepInterval = null;
+        const slider = document.getElementById('sleep-slider');
+        
+        slider.oninput = function() {
+            const val = this.value;
+            document.getElementById('timer-val-display').innerText = (val == 0) ? "Off" : val + " мин";
+        };
+        
+        slider.onchange = function() {
+            setSleepTimer(this.value);
+        };
+
+        function setSleepTimer(minutes) {
+            if (sleepInterval) clearInterval(sleepInterval);
+            
+            const statusDiv = document.getElementById('sleep-status');
+            statusDiv.style.display = (minutes > 0) ? "block" : "none";
+            
+            if (minutes == 0) return;
+            
+            const targetTime = Date.now() + (minutes * 60 * 1000);
+            
+            sleepInterval = setInterval(() => {
+                const diff = targetTime - Date.now();
+                if (diff <= 0) {
+                    clearInterval(sleepInterval);
+                    // КОМАНДА ГЛАВНОМУ ОКНУ: ВЫКЛЮЧИТЬ
+                    if(window.parent && window.parent.stopRadioForce) {
+                        window.parent.stopRadioForce();
+                    }
+                    slider.value = 0;
+                    document.getElementById('timer-val-display').innerText = "Off";
+                    statusDiv.style.display = "none";
+                } else {
+                    const m = Math.floor(diff / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    document.getElementById('sleep-countdown').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
