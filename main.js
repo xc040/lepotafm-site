@@ -9,7 +9,6 @@ const CONFIG = {
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
 let isPlaying = false; 
-// Переменная состояния паузы игры
 let isGamePausedSystem = false; 
 
 window.onload = function() {
@@ -21,32 +20,27 @@ window.onload = function() {
 };
 
 /* ================== СИСТЕМНАЯ ПАУЗА ================== */
-// Эта функция вызывается кнопкой в index.html
 window.toggleGamePause = function(forceState) {
     const overlay = document.getElementById('pause-overlay');
     const btnIcon = document.getElementById('pause-icon');
     
-    // Если передали forceState (true/false) - используем его, иначе инвертируем текущее
     const newState = (forceState !== undefined) ? forceState : !isGamePausedSystem;
-    
     isGamePausedSystem = newState;
 
     if (isGamePausedSystem) {
-        // РЕЖИМ ПАУЗЫ
-        overlay.style.display = 'flex'; // Показать затемнение (блокирует клики по игре)
-        btnIcon.className = 'fas fa-play'; // Иконка на кнопке игры
-        
-        // Останавливаем радио
-        if(isPlaying) togglePlayState(); 
-        
+        overlay.style.display = 'flex';
+        btnIcon.className = 'fas fa-play';
+        // ВАЖНО: Мы больше НЕ останавливаем радио здесь, только игру!
     } else {
-        // РЕЖИМ ИГРЫ
-        overlay.style.display = 'none'; // Убрать затемнение
+        overlay.style.display = 'none';
         btnIcon.className = 'fas fa-pause';
-        
-        // Включаем радио (если оно не играло)
-        if(!isPlaying) togglePlayState();
     }
+};
+
+/* ================== ИНФО О ИГРЕ ================== */
+window.openGameInfo = function() {
+    // Открываем ту же модалку, но с текстом игры
+    window.openSku("О игре", "Лицензия: Open Source", CONFIG.defaultImage);
 };
 
 /* ================== Вкладки ================== */
@@ -56,17 +50,20 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
-    // АВТО-ПАУЗА ПРИ УХОДЕ С ВКЛАДКИ
-    if (tabName !== 'home') {
-        // Ушли с игры -> Ставим паузу
-        toggleGamePause(true);
-    } else {
-        // Вернулись -> Снимаем паузу (можно убрать, если хочешь ручной старт)
-        toggleGamePause(false);
+    // Авто-пауза при уходе
+    const gameFrame = document.getElementById('game-frame');
+    if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
+        if (tabName === 'home') {
+            gameFrame.contentWindow.setGamePause(false);
+            toggleGamePause(false); // Синхронизация кнопки
+        } else {
+            gameFrame.contentWindow.setGamePause(true);
+            toggleGamePause(true); // Синхронизация кнопки
+        }
     }
 };
 
-/* ================== Плеер (Радио) ================== */
+/* ================== Плеер ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     if (playBtn) playBtn.addEventListener('click', togglePlayState);
@@ -79,10 +76,14 @@ function togglePlayState() {
     if (isApp) {
         if (isPlaying) {
             window.Android.pauseAudio();
-            updateRadioUI(false);
+            if(icon) icon.className = "fas fa-play";
+            if(playerDiv) playerDiv.classList.remove('playing');
+            isPlaying = false;
         } else {
             window.Android.playAudio();
-            updateRadioUI(true);
+            if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
+            isPlaying = true;
         }
         return;
     }
@@ -91,25 +92,15 @@ function togglePlayState() {
         audio.pause();
         audio.src = ""; 
         audio.load();
-        updateRadioUI(false);
+        if(icon) icon.className = "fas fa-play";
+        if(playerDiv) playerDiv.classList.remove('playing');
+        isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
         audio.play().catch(e => console.log("Autoplay block"));
-        updateRadioUI(true);
-    }
-}
-
-function updateRadioUI(playing) {
-    isPlaying = playing;
-    const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
-    
-    if (playing) {
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
-    } else {
-        if(icon) icon.className = "fas fa-play";
-        if(playerDiv) playerDiv.classList.remove('playing');
+        isPlaying = true;
     }
 }
 
