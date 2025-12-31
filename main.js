@@ -6,67 +6,48 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
-// Проверка: мы в приложении или в браузере?
+// Глобальные переменные
 const isApp = (typeof window.Android !== "undefined");
-
-// Создаем плеер ПУСТЫМ (чтобы не банило за двойное подключение)
-let audio = new Audio(); 
+let audio = new Audio();
 let isPlaying = false; 
 
-/* --- ЗАПУСК ПРИЛОЖЕНИЯ --- */
+/* --- ЗАПУСК --- */
 window.onload = function() {
-    console.log("App started. Mode: " + (isApp ? "Android" : "Browser"));
-
-    // Если это Браузер - подготавливаем ссылку (но не запускаем, пока не нажмут Play)
+    // ВАЖНО: Если мы в браузере - готовим ссылку. Если в приложении - НЕТ.
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
-    } else {
-        // Если Android - считаем, что Java сама разберется, но ставим флаг
-        // (Хотя по умолчанию Java-плеер тоже ждет нажатия)
-        isPlaying = false; 
     }
 
-    // Инициализация всех модулей (с защитой от ошибок)
-    safeExecute(initPlayer, "Player Init");
-    safeExecute(initVolume, "Volume Init");
-    safeExecute(loadAlarms, "Alarms Load");
-    safeExecute(startAlarmClock, "Alarm Clock");
+    initPlayer();
+    initVolume();
+    loadAlarms(); 
+    startAlarmClock(); 
     
-    // Загрузка данных (Инфо и История)
+    // СТАРЫЙ, ПРОВЕРЕННЫЙ МЕТОД ЗАГРУЗКИ
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
-    
-    // Аналитика (если нужно)
-    // safeExecute(initPulse, "Analytics");
 };
-
-// Функция для безопасного запуска (чтобы одна ошибка не ломала всё)
-function safeExecute(func, name) {
-    try {
-        func();
-    } catch (e) {
-        console.error("Error in " + name + ":", e);
-    }
-}
 
 /* ================== ЛОГИКА ВКЛАДОК ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    
-    const target = document.getElementById(tabName);
-    if (target) target.classList.add('active');
-    
+    document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 };
 
-/* ================== ПЛЕЕР И МОСТ JS <-> JAVA ================== */
+/* ================== ПЛЕЕР (С ЗАЩИТОЙ ОТ БАНА) ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
     if (!playBtn) return;
+
+    if (isApp) {
+        // Если Java-плеер скажет что он играет, можно тут обновить UI
+        // Но пока просто ставим паузу по умолчанию
+    }
 
     playBtn.addEventListener('click', () => {
         togglePlayState();
@@ -77,7 +58,7 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    /* --- СЦЕНАРИЙ 1: ANDROID --- */
+    // 1. ЕСЛИ АНДРОИД (Командуем Java)
     if (isApp) {
         if (isPlaying) {
             window.Android.pauseAudio();
@@ -90,23 +71,20 @@ function togglePlayState() {
             if(playerDiv) playerDiv.classList.add('playing');
             isPlaying = true;
         }
-        return;
+        return; 
     }
 
-    /* --- СЦЕНАРИЙ 2: БРАУЗЕР --- */
+    // 2. ЕСЛИ БРАУЗЕР (Сами играем)
     if (isPlaying) {
         audio.pause();
-        audio.src = ""; // Сброс буфера
-        
+        audio.src = ""; 
+        audio.load();
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
-        // Добавляем время, чтобы избежать кэширования потока
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.load();
-        audio.play().catch(e => console.log("Autoplay blocked by browser"));
-        
+        audio.play().catch(e => console.log("Autoplay block"));
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
@@ -120,79 +98,63 @@ function initVolume() {
 
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    
+    if (finalVol < 0.1) finalVol = 0.5;
+
     slider.value = finalVol;
-    
-    // Если браузер - ставим громкость тегу audio
     if (!isApp) audio.volume = finalVol;
-    // Если Android - шлем команду (с небольшой задержкой, чтобы плеер успел создаться)
+    
+    // Отправляем в Android с задержкой, чтобы он успел инициализироваться
     if (isApp) setTimeout(() => { try { window.Android.setVolume(finalVol); } catch(e){} }, 1000);
 
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
-
+        
         if (isApp) {
             try { window.Android.setVolume(vol); } catch(e) {}
         } else {
             audio.volume = vol;
         }
-        
-        // Логика "Стоп при 0"
-        if (vol === 0 && isPlaying) {
-            togglePlayState();
-        } else if (vol > 0 && !isPlaying) {
-            togglePlayState();
-        }
+
+        if (vol === 0 && isPlaying) togglePlayState();
+        else if (vol > 0 && !isPlaying) togglePlayState();
     });
 }
 
-/* ================== ЗАГРУЗКА ИНФО (FIX) ================== */
+/* ================== ЗАГРУЗКА ДАННЫХ (СТАРАЯ ВЕРСИЯ) ================== */
 function updateMetadata() {
-    // Используем уникальный timestamp чтобы браузер не кэшировал запрос
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(res => {
-            if (!res.ok) throw new Error("API Network Error");
-            return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
-            // 1. Текущий трек
+            // Текущий трек
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
-                
-                // Безопасное обновление DOM (проверяем, есть ли элементы)
-                safeSetText('track-name', song.title);
+                const titleEl = document.getElementById('track-name');
+                const artistEl = document.getElementById('artist-name');
+                const imgEl = document.getElementById('mini-art');
+                const sepEl = document.getElementById('track-sep');
+
+                if (titleEl) titleEl.innerText = song.title;
                 
                 if (song.artist) {
-                    safeSetText('artist-name', song.artist);
-                    const sep = document.getElementById('track-sep');
-                    if(sep) sep.style.display = "inline";
+                    if (artistEl) artistEl.innerText = song.artist;
+                    if (sepEl) sepEl.style.display = "inline";
                 } else {
-                    safeSetText('artist-name', "");
-                    const sep = document.getElementById('track-sep');
-                    if(sep) sep.style.display = "none";
+                    if (artistEl) artistEl.innerText = "";
+                    if (sepEl) sepEl.style.display = "none";
                 }
                 
-                const imgEl = document.getElementById('mini-art');
                 let artUrl = fixUrl(song.art);
                 if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
             }
-            
-            // 2. История
+            // История
             if (data.song_history && data.song_history.length > 0) {
                 renderHistory(data.song_history);
             }
         })
         .catch(err => {
-            console.warn("Metadata load failed:", err);
-            // Можно написать "Ошибка сети" в плеере, если нужно
+            // Тихо падаем
         });
-}
-
-// Вспомогательная функция для текста
-function safeSetText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = text;
 }
 
 function renderHistory(history) {
@@ -203,10 +165,10 @@ function renderHistory(history) {
     history.forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
-        // Экранирование кавычек для onclick
         const safeTitle = (song.title || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
         const safeArtist = (song.artist || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        
+        const safeArt = art;
+
         html += `
         <div class="history-item">
             <img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'">
@@ -214,13 +176,12 @@ function renderHistory(history) {
                 <span class="hist-title">${song.title}</span>
                 <span class="hist-artist">${song.artist}</span>
             </div>
-            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')">
+            <button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')">
                 <i class="fas fa-info"></i>
             </button>
         </div>`;
     });
     
-    // Меняем HTML только если он изменился (чтобы не моргало)
     if (container.innerHTML !== html) {
         container.innerHTML = html;
     }
@@ -232,7 +193,7 @@ function fixUrl(url) {
     return url;
 }
 
-/* ================== МОДАЛКА ================== */
+// МОДАЛКА
 window.openSku = function(title, artist, art) {
     const modal = document.getElementById('info-modal');
     const mArt = document.getElementById('modal-art');
@@ -250,142 +211,79 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕРЫ (С ЗАЩИТОЙ) ================== */
+/* ================== ТАЙМЕР И БУДИЛЬНИК ================== */
+// ... (Тут всё стандартно, без изменений)
 let sleepInterval = null;
-
-window.updateSleepLabel = function(minutes) {
-    const display = document.getElementById('timer-val-display');
-    if(display) display.innerText = (minutes == 0) ? "Off" : minutes + " мин";
+window.updateSleepLabel = function(m) {
+    const d = document.getElementById('timer-val-display');
+    if(d) d.innerText = (m == 0) ? "Off" : m + " мин";
 }
-
-window.setSleepTimer = function(minutes) {
+window.setSleepTimer = function(m) {
     window.cancelSleepTimer(); 
-    if (minutes == 0) return; 
-    
-    const targetTime = Date.now() + (minutes * 60 * 1000);
-    const statusDiv = document.getElementById('sleep-status');
-    const countdownSpan = document.getElementById('sleep-countdown');
-    
-    if(statusDiv) statusDiv.style.display = "block"; 
-    
+    if (m == 0) return; 
+    const t = Date.now() + (m * 60 * 1000);
+    document.getElementById('sleep-status').style.display = "block"; 
     sleepInterval = setInterval(() => {
-        const diff = targetTime - Date.now();
+        const diff = t - Date.now();
         if (diff <= 0) {
-            stopRadioForce();
+            if(isPlaying) togglePlayState();
             window.cancelSleepTimer();
-            const slider = document.getElementById('sleep-slider');
-            const display = document.getElementById('timer-val-display');
-            if(slider) slider.value = 0;
-            if(display) display.innerText = "Off";
+            document.getElementById('sleep-slider').value = 0;
+            document.getElementById('timer-val-display').innerText = "Off";
         } else {
-            const m = Math.floor(diff / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            if(countdownSpan) countdownSpan.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            const min = Math.floor(diff/60000);
+            const sec = Math.floor((diff%60000)/1000);
+            document.getElementById('sleep-countdown').innerText = `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
     }, 1000);
 }
-
 window.cancelSleepTimer = function() {
     if (sleepInterval) clearInterval(sleepInterval);
-    const statusDiv = document.getElementById('sleep-status');
-    if(statusDiv) statusDiv.style.display = "none";
+    document.getElementById('sleep-status').style.display = "none";
 }
 
-// Функции для управления плеером из таймера
-function playRadioForce() { if (!isPlaying) togglePlayState(); }
-function stopRadioForce() { if (isPlaying) togglePlayState(); }
-
-/* ================== БУДИЛЬНИК ================== */
 let alarms = []; 
-let alarmChecker = null;
-let lastTriggeredTime = "";
-
-function loadAlarms() {
-    try {
-        const stored = localStorage.getItem('myAlarms');
-        if (stored) { alarms = JSON.parse(stored); renderAlarms(); }
-    } catch(e) {
-        console.error("Alarms load error", e);
-        alarms = []; // Сброс при ошибке
-    }
-}
-function saveAlarms() {
-    localStorage.setItem('myAlarms', JSON.stringify(alarms));
-    renderAlarms();
-}
-
+function loadAlarms() { const s = localStorage.getItem('myAlarms'); if(s) { alarms = JSON.parse(s); renderAlarms(); } }
+function saveAlarms() { localStorage.setItem('myAlarms', JSON.stringify(alarms)); renderAlarms(); }
 let selectedDays = [];
 window.toggleDay = function(el) {
-    const day = parseInt(el.getAttribute('data-day'));
-    if (selectedDays.includes(day)) {
-        selectedDays = selectedDays.filter(d => d !== day);
-        el.classList.remove('selected');
-    } else {
-        selectedDays.push(day);
-        el.classList.add('selected');
-    }
+    const d = parseInt(el.getAttribute('data-day'));
+    if (selectedDays.includes(d)) { selectedDays = selectedDays.filter(x => x !== d); el.classList.remove('selected'); }
+    else { selectedDays.push(d); el.classList.add('selected'); }
 }
 window.addAlarm = function() {
-    const timeInput = document.getElementById('new-alarm-time');
-    if(!timeInput) return;
-    const time = timeInput.value;
-    if (!time) { alert("Выберите время!"); return; }
-    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
-    alarms.push({ time: time, days: [...selectedDays], active: true });
+    const inp = document.getElementById('new-alarm-time');
+    if(!inp || !inp.value || selectedDays.length === 0) return alert("Время и дни!");
+    alarms.push({ time: inp.value, days: [...selectedDays], active: true });
     saveAlarms();
-    timeInput.value = "";
-    selectedDays = [];
+    inp.value = ""; selectedDays = [];
     document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
 }
-window.deleteAlarm = function(index) {
-    alarms.splice(index, 1);
-    saveAlarms();
-}
+window.deleteAlarm = function(i) { alarms.splice(i, 1); saveAlarms(); }
 function renderAlarms() {
-    const container = document.getElementById('alarms-list');
-    if (!container) return;
-    container.innerHTML = "";
-    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-    alarms.forEach((alarm, index) => {
-        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
-        if (alarm.days.length === 7) daysStr = "Каждый день";
-        const div = document.createElement('div');
-        div.className = "alarm-item";
-        div.innerHTML = `
-            <div><div class="alarm-time">${alarm.time}</div><div class="alarm-days">${daysStr}</div></div>
-            <button class="alarm-del-btn" onclick="deleteAlarm(${index})"><i class="fas fa-trash"></i></button>
-        `;
-        container.appendChild(div);
+    const c = document.getElementById('alarms-list');
+    if(!c) return;
+    c.innerHTML = "";
+    const dn = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+    alarms.forEach((a, i) => {
+        let ds = a.days.length === 7 ? "Каждый день" : a.days.map(d => dn[d]).join(", ");
+        c.innerHTML += `<div class="alarm-item"><div><div class="alarm-time">${a.time}</div><div class="alarm-days">${ds}</div></div><button class="alarm-del-btn" onclick="deleteAlarm(${i})"><i class="fas fa-trash"></i></button></div>`;
     });
 }
 function startAlarmClock() {
-    if (alarmChecker) clearInterval(alarmChecker);
-    alarmChecker = setInterval(() => {
+    setInterval(() => {
         const now = new Date();
-        const currentDay = now.getDay();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${h}:${m}`;
-        if (currentTime === lastTriggeredTime) return;
-        alarms.forEach(alarm => {
-            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
-                triggerAlarm();
-                lastTriggeredTime = currentTime;
-            }
+        const t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        alarms.forEach(a => {
+            if (a.active && a.time === t && a.days.includes(now.getDay()) && now.getSeconds() === 0) triggerAlarm();
         });
     }, 1000);
 }
 function triggerAlarm() {
-    const slider = document.getElementById('vol-slider');
-    if (!slider) return;
-    slider.value = 0;
-    slider.dispatchEvent(new Event('input'));
-    playRadioForce();
-    let vol = 0;
-    let fadeInterval = setInterval(() => {
-        vol += 0.05;
-        if (vol >= 1.0) { vol = 1.0; clearInterval(fadeInterval); }
-        slider.value = vol;
-        slider.dispatchEvent(new Event('input'));
-    }, 250);
+    const s = document.getElementById('vol-slider');
+    if(!s) return;
+    s.value = 0; s.dispatchEvent(new Event('input'));
+    if(!isPlaying) togglePlayState();
+    let v = 0;
+    let i = setInterval(() => { v += 0.05; if(v>=1) {v=1; clearInterval(i);} s.value = v; s.dispatchEvent(new Event('input')); }, 250);
 }
