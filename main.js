@@ -112,7 +112,7 @@ function renderHistory(history) {
         const art = fixUrl(song.art);
         const safeTitle = (song.title || "").replace(/'/g, "\\'");
         const safeArtist = (song.artist || "").replace(/'/g, "\\'");
-        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="window.openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
+        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
     });
     container.innerHTML = html;
 }
@@ -130,4 +130,6 @@ window.openSku = function(title, artist, art) {
     document.getElementById('modal-artist').innerText = artist;
     document.getElementById('info-modal').classList.remove('hidden');
 };
-window.closeSku = function() { document.getElementById('info-modal').classList.add('all-hidden'); document.getElementById('info-modal').classList.add('hidden'); };
+window.closeSku = function() { 
+    document.getElementById('info-modal').classList.add('hidden'); 
+};
