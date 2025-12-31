@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LepotaFM Game</title>
+    <title>LepotaFM</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -12,20 +12,15 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
-    <!-- ГЛАВНЫЙ КОНТЕЙНЕР -->
     <div class="app-layout">
-
-        <!-- ВЕРХНЯЯ ЗОНА -->
+        <!-- ШАПКА -->
         <header class="top-section">
-            
-            <!-- ПЛЕЕР -->
             <div class="inline-player">
                 <div class="player-info-col">
                     <div class="top-row">
                         <div class="logo-small">LEPOTA<span class="neon-text">FM</span></div>
                         <div class="vol-mini-container">
                             <i class="fas fa-volume-down tiny-icon"></i>
-                            <!-- ВАЖНО: ID vol-slider используется в main.js -->
                             <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
                         </div>
                     </div>
@@ -39,9 +34,7 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="player-btn-col">
-                    <!-- ВАЖНО: ID play-btn используется в main.js -->
                     <button id="play-btn" class="big-play-btn">
                         <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
                         <span class="icon-overlay"><i class="fas fa-play" id="play-icon"></i></span>
@@ -49,91 +42,56 @@
                 </div>
             </div>
 
-            <!-- ВКЛАДКИ -->
+            <!-- МЕНЮ ВКЛАДОК -->
             <nav class="tabs">
-                <button class="tab-btn active" onclick="openTab('game_tab', this)">Игра</button>
-                <button class="tab-btn" onclick="openTab('catalog', this)">Каталог</button>
+                <button class="tab-btn active" onclick="openTab('home', this)">Главная</button>
+                <button class="tab-btn" onclick="openTab('games', this)">Игры</button>
                 <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
                 <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
             </nav>
         </header>
 
-        <!-- НИЖНЯЯ ЗОНА -->
+        <!-- КОНТЕНТ -->
         <main class="content-section">
             
-            <!-- ИГРА -->
-            <div id="game_tab" class="tab-pane active full-height">
-                <iframe id="game-frame" src="game/index.html" title="Game"></iframe>
-            </div>
-
-            <!-- КАТАЛОГ -->
-            <div id="catalog" class="tab-pane scrollable-pad">
-                <div class="placeholder-box">
-                    <h3>Другие игры</h3>
-                    <p>Здесь можно разместить ссылки на RuStore</p>
+            <!-- ГЛАВНАЯ (Здесь может быть игра) -->
+            <div id="home" class="tab-pane active full-height">
+                <!-- Если ты хочешь вставить игру, раскомментируй iframe ниже, 
+                     НО создай папку game на сервере или в assets -->
+                <!-- <iframe id="game-frame" src="game/index.html"></iframe> -->
+                
+                <!-- Пока просто заглушка, чтобы не было пусто -->
+                <div class="placeholder-box" style="padding-top: 50px;">
+                    <h3>Добро пожаловать</h3>
+                    <p>Слушайте LepotaFM</p>
                 </div>
             </div>
 
-            <!-- ЭФИР -->
+            <div id="games" class="tab-pane scrollable-pad">
+                <div class="placeholder-box"><h3>Каталог игр</h3><p>Скоро...</p></div>
+            </div>
+
             <div id="ether" class="tab-pane scrollable-pad">
                 <div class="history-list" id="history-container">
-                    <div class="loading-msg">Загрузка истории...</div>
+                    <div class="loading-msg">Загрузка...</div>
                 </div>
             </div>
 
-            <!-- МЕНЮ -->
             <div id="menu" class="tab-pane scrollable-pad">
                 <div class="settings-box">
-                    
-                    <div class="feature-card">
-                        <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
-                        <div class="timer-slider-box">
-                            <div class="timer-display"><span id="timer-val-display">Off</span></div>
-                            <input type="range" id="sleep-slider" min="0" max="180" step="15" value="0" oninput="updateSleepLabel(this.value)" onchange="setSleepTimer(this.value)">
-                            <div class="slider-labels"><span>0</span><span>3ч</span></div>
-                        </div>
-                        <div id="sleep-status" class="status-hidden">
-                            Стоп: <span id="sleep-countdown" class="neon-text">00:00</span>
-                        </div>
-                    </div>
-
-                    <div class="feature-card">
-                        <div class="feature-header"><i class="fas fa-clock"></i> Будильник</div>
-                        <div class="alarm-create-box">
-                            <input type="time" id="new-alarm-time" class="neon-input">
-                            <button class="add-alarm-btn" onclick="addAlarm()">+</button>
-                        </div>
-                        <div class="days-selector">
-                             <span class="day-check" data-day="1" onclick="toggleDay(this)">Пн</span>
-                             <span class="day-check" data-day="2" onclick="toggleDay(this)">Вт</span>
-                             <span class="day-check" data-day="3" onclick="toggleDay(this)">Ср</span>
-                             <span class="day-check" data-day="4" onclick="toggleDay(this)">Чт</span>
-                             <span class="day-check" data-day="5" onclick="toggleDay(this)">Пт</span>
-                             <span class="day-check" data-day="6" onclick="toggleDay(this)">Сб</span>
-                             <span class="day-check" data-day="0" onclick="toggleDay(this)">Вс</span>
-                        </div>
-                        <div id="alarms-list"></div>
-                    </div>
-
-                    <div class="placeholder-box" style="padding: 10px;">
-                        <p style="font-size: 12px; color: #666;">v.Fixed 2.0</p>
-                    </div>
+                    <div class="placeholder-box"><p>Настройки</p></div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <!-- Модалка -->
+    <!-- МОДАЛКА -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
             <img id="modal-art" src="logo.jpg">
-            <h2 id="modal-title">Track</h2>
-            <p id="modal-artist">Artist</p>
-            <div class="modal-actions">
-                <a href="https://t.me/lepotafm" target="_blank" class="action-btn tg">Telegram</a>
-            </div>
+            <h2 id="modal-title">...</h2>
+            <p id="modal-artist">...</p>
         </div>
     </div>
 
