@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lepota Game</title>
+    <!-- Подключаем иконки для красоты -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- СТИЛИ (Вшиты сюда, чтобы не зависеть от других файлов) --- */
+        body { margin: 0; padding: 0; background: #050510; color: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* ШАПКА С ПЛЕЕРОМ */
+        .top-bar {
+            flex-shrink: 0; background: rgba(21, 21, 37, 0.98); 
+            border-bottom: 1px solid #00f3ff; 
+            padding: 10px; display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        
+        /* Лого и инфо */
+        .info { flex: 1; overflow: hidden; }
+        .logo { font-weight: bold; font-size: 14px; color: #fff; margin-bottom: 5px; }
+        .logo span { color: #bc13fe; }
+        .track-name { font-size: 12px; color: #00f3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Кнопка Play */
+        .play-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: none;
+            background: #00f3ff; color: #000; font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px #00f3ff;
+        }
+        
+        /* Слайдер громкости */
+        .vol-slider { width: 80px; accent-color: #bc13fe; height: 3px; }
+
+        /* ИГРОВАЯ ЗОНА (IFRAME) */
+        .game-container { flex: 1; width: 100%; height: 100%; background: #000; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* ВКЛАДКИ СНИЗУ (Опционально, для выхода) */
+        .tabs { display: flex; background: #151525; border-top: 1px solid #333; }
+        .tab { flex: 1; padding: 15px; text-align: center; color: #888; text-decoration: none; font-size: 12px; }
+        .tab.active { color: #00f3ff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. ПЛЕЕР -->
+    <div class="top-bar">
+        <div class="info">
+            <div class="logo">LEPOTA<span>FM</span></div>
+            <div id="track-info" class="track-name">Загрузка...</div>
+            <input type="range" class="vol-slider" id="vol" min="0" max="1" step="0.1" value="1">
+        </div>
+        <button class="play-btn" id="play"><i class="fas fa-play"></i></button>
+    </div>
+
+    <!-- 2. ИГРА (Грузит файл game.html из этой же папки) -->
+    <div class="game-container">
+        <iframe src="game.html"></iframe>
+    </div>
+
+    <!-- 3. КНОПКИ (Например, вернуться в меню) -->
+    <div class="tabs">
+        <a href="#" class="tab active">ИГРА</a>
+        <!-- Ссылка на главный сайт или каталог -->
+        <a href="https://xc040.github.io/lepotafm-site/?app=true" class="tab">ВЫХОД</a>
+    </div>
+
+    <script>
+        /* --- СКРИПТ (МОСТ К JAVA) --- */
+        
+        // Ссылка на API радио (для названий песен)
+        const API_URL = "https://lepotafm.ru/api/nowplaying/lepotafm";
+        const isApp = (typeof window.Android !== "undefined");
+        let isPlaying = false; // В Java плеере по умолчанию считаем false, пока не нажмем
+
+        // Если открыли в браузере (тест на ПК), создаем фейковый плеер
+        let webAudio = new Audio("https://lepotafm.ru/listen/lepotafm/radio.mp3");
+
+        window.onload = function() {
+            // Если мы в приложении - сразу синхронизируемся
+            // (В твоем Java коде плеер стартует сам, поэтому ставим иконку Pause)
+            if (isApp) {
+                isPlaying = true;
+                updateIcon();
+            }
+            
+            // Запуск обновления названий треков
+            updateMeta();
+            setInterval(updateMeta, 10000);
+        };
+
+        // КНОПКА PLAY
+        document.getElementById('play').onclick = function() {
+            if (isApp) {
+                // КОМАНДЫ ДЛЯ ТВОЕГО APK
+                if (isPlaying) {
+                    window.Android.pauseAudio();
+                    isPlaying = false;
+                } else {
+                    window.Android.playAudio();
+                    isPlaying = true;
+                }
+            } else {
+                // ДЛЯ БРАУЗЕРА
+                if (isPlaying) { webAudio.pause(); isPlaying = false; }
+                else { webAudio.play(); isPlaying = true; }
+            }
+            updateIcon();
+        };
+
+        // ГРОМКОСТЬ
+        document.getElementById('vol').oninput = function(e) {
+            let val = parseFloat(e.target.value);
+            if (isApp) {
+                window.Android.setVolume(val);
+            } else {
+                webAudio.volume = val;
+            }
+        };
+
+        // ОБНОВЛЕНИЕ ИКОНКИ
+        function updateIcon() {
+            let btn = document.getElementById('play');
+            if (isPlaying) btn.innerHTML = '<i class="fas fa-pause"></i>';
+            else btn.innerHTML = '<i class="fas fa-play"></i>';
+        }
+
+        // ПОЛУЧЕНИЕ НАЗВАНИЯ ТРЕКА
+        function updateMeta() {
+            fetch(API_URL + "?t=" + Date.now())
+                .then(res => res.json())
+                .then(data => {
+                    let song = data.now_playing.song;
+                    document.getElementById('track-info').innerText = song.text;
+                })
+                .catch(e => console.log(e));
+        }
+    </script>
+</body>
+</html>
