@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; touch-action: none; }
+        
+        /* ВЕРХНЯЯ ПАНЕЛЬ: Инфо | НАЗВАНИЕ + СЧЕТ | Пауза */
+        .game-controls { 
+            position: absolute; 
+            top: 0; left: 0; right: 0; 
+            height: 50px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 0 12px; 
+            background: rgba(21, 21, 37, 0.95); 
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3); 
+            z-index: 1000; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        
+        .control-btn { 
+            width: 38px; height: 38px; 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid #00f3ff; 
+            border-radius: 50%; 
+            color: #00f3ff; 
+            font-size: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            outline: none;
+            transition: 0.2s;
+        }
+        .control-btn:active { background: #00f3ff; color: #000; }
+
+        /* Кликабельное название "СТРАЖ ЭФИРА" */
+        .game-title-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+        }
+        .game-title-mini { 
+            color: #00f3ff; 
+            font-size: 12px; 
+            font-weight: 900; 
+            letter-spacing: 1px; 
+            text-shadow: 0 0 8px #00f3ff;
+            animation: pulse 2s infinite;
+            text-transform: uppercase;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); text-shadow: 0 0 15px #00f3ff; }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
+        .game-score {
+            font-size: 10px;
+            color: #bc13fe;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: -1px;
+        }
+
+        canvas { border: 1px solid #333; background: #111; box-shadow: 0 0 25px rgba(0, 243, 255, 0.15); max-width: 95vw; max-height: 75vh; position: relative; z-index: 1; margin-top: 40px; border-radius: 4px; }
+        
+        .start-msg { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #00f3ff; pointer-events: none; font-size: 18px; font-weight: bold; text-shadow: 0 0 10px black; z-index: 10; background: rgba(0,0,0,0.7); padding: 20px; border-radius: 15px; border: 1px solid #00f3ff; }
+        .paused-text { display: none; position: absolute; top: 50%; font-size: 35px; color: #bc13fe; font-weight: bold; text-shadow: 0 0 15px black; pointer-events: none; z-index: 10; letter-spacing: 5px; }
+    </style>
+</head>
+<body>
+    <div class="game-controls">
+        <button class="control-btn" onclick="openCurrentTrackInfo()">
+            <i class="fas fa-info"></i>
+        </button>
+        
+        <div class="game-title-container" onclick="restartGameManual()">
+            <div class="game-title-mini">СТРАЖ ЭФИРА</div>
+            <div class="game-score">Счет: <span id="score-val">0</span></div>
+        </div>
+
+        <button class="control-btn" onclick="togglePauseManual(event)">
+            <i class="fas fa-pause" id="icon-pause"></i>
+        </button>
+    </div>
+
+    <div class="start-msg" id="msg">Нажми на экран,<br>чтобы начать охоту</div>
+    <div class="paused-text" id="paused-msg">ПАУЗА</div>
+    
+    <canvas width="320" height="320" id="game"></canvas>
+
+    <script>
+        var canvas = document.getElementById('game');
+        var context = canvas.getContext('2d');
+        var grid = 16, count = 0, score = 0, gameLoopId;
+        var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+        var apple = { x: 320, y: 320 };
+        var gameStarted = false, isGamePaused = false;
+
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
+
+        function openCurrentTrackInfo() {
+            if (window.parent && typeof window.parent.openSku === 'function') {
+                const title = window.parent.document.getElementById('track-name').innerText;
+                const artist = window.parent.document.getElementById('artist-name').innerText;
+                const art = window.parent.document.getElementById('mini-art').src;
+                window.parent.openSku(title, artist, art);
+            }
+        }
+
+        function restartGameManual() {
+            cancelAnimationFrame(gameLoopId);
+            snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+            apple = { x: getRandomInt(0, 20) * grid, y: getRandomInt(0, 20) * grid };
+            score = 0;
+            document.getElementById('score-val').innerText = score;
+            gameStarted = false;
+            isGamePaused = false;
+            document.getElementById('msg').style.display = 'block';
+            document.getElementById('msg').innerHTML = "Нажми на экран,<br>чтобы начать охоту";
+            document.getElementById('paused-msg').style.display = 'none';
+            document.getElementById('icon-pause').className = "fas fa-pause";
+            context.clearRect(0,0,canvas.width,canvas.height);
+        }
+
+        document.body.addEventListener('click', function(e) { 
+            if(e.target.closest('.control-btn') || e.target.closest('.game-title-container')) return; 
+            if(!gameStarted) startGame(); 
+        });
+
+        function startGame() { 
+            if(gameStarted) return; 
+            gameStarted = true; 
+            document.getElementById('msg').style.display = 'none'; 
+            loop(); 
+        }
+        
+        function togglePauseManual(e) { 
+            if(e) { e.preventDefault(); e.stopPropagation(); }
+            setGamePause(!isGamePaused); 
+        }
+
+        window.setGamePause = function(state) { 
+            if (!gameStarted) return; 
+            isGamePaused = state; 
+            const icon = document.getElementById('icon-pause'); 
+            const msg = document.getElementById('paused-msg'); 
+            if (isGamePaused) { 
+                cancelAnimationFrame(gameLoopId);
+                icon.className = "fas fa-play"; 
+                msg.style.display = "block"; 
+            } else { 
+                icon.className = "fas fa-pause"; 
+                msg.style.display = "none"; 
+                loop(); 
+            } 
+        };
+
+        function loop() { 
+            if (isGamePaused) return;
+            gameLoopId = requestAnimationFrame(loop); 
+            if (++count < 6) return; 
+            count = 0; context.clearRect(0,0,canvas.width,canvas.height); 
+            
+            snake.x += snake.dx; snake.y += snake.dy; 
+            if (snake.x < 0) snake.x = canvas.width - grid; else if (snake.x >= canvas.width) snake.x = 0; 
+            if (snake.y < 0) snake.y = canvas.height - grid; else if (snake.y >= canvas.height) snake.y = 0; 
+            
+            snake.cells.unshift({x: snake.x, y: snake.y}); 
+            if (snake.cells.length > snake.maxCells) snake.cells.pop(); 
+            
+            context.fillStyle = '#bc13fe'; 
+            context.shadowBlur = 10; context.shadowColor = "#bc13fe";
+            context.fillRect(apple.x, apple.y, grid-1, grid-1);
+            context.shadowBlur = 0;
+
+            context.fillStyle = '#00f3ff'; 
+            snake.cells.forEach(function(cell, index) { 
+                context.fillRect(cell.x, cell.y, grid-1, grid-1); 
+                if (cell.x === apple.x && cell.y === apple.y) { 
+                    snake.maxCells++; 
+                    score++;
+                    document.getElementById('score-val').innerText = score;
+                    apple.x = getRandomInt(0, 20) * grid; 
+                    apple.y = getRandomInt(0, 20) * grid; 
+                } 
+                for (var i = index + 1; i < snake.cells.length; i++) { 
+                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) { 
+                        gameStarted = false; 
+                        cancelAnimationFrame(gameLoopId);
+                        document.getElementById('msg').style.display = 'block'; 
+                        document.getElementById('msg').innerHTML = "ЭФИР ПРЕРВАН<br>Счет: " + score + "<br>Нажми для рестарта"; 
+                    } 
+                } 
+            }); 
+        }
+
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, {passive: false});
+        document.addEventListener('touchmove', (e) => {
+            if (isGamePaused || !gameStarted || e.target.closest('.game-controls')) return;
+            let xDiff = e.touches[0].clientX - touchStartX;
+            let yDiff = e.touches[0].clientY - touchStartY;
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                if (xDiff > 15 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+                else if (xDiff < -15 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+            } else {
+                if (yDiff > 15 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+                else if (yDiff < -15 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+            }
+            if (Math.abs(xDiff) > 10 || Math.abs(yDiff) > 10) e.preventDefault();
+        }, {passive: false});
+    </script>
+</body>
+</html>
