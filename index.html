@@ -54,10 +54,22 @@
         <!-- НИЖНЯЯ ЗОНА -->
         <main class="content-section">
             
-            <!-- 1. ИГРА (Iframe в папку game) -->
+            <!-- 1. ИГРА (СИСТЕМНАЯ ОБЕРТКА) -->
             <div id="home" class="tab-pane active full-height">
-                <!-- Игра загружается из папки game/index.html -->
-                <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
+                <div class="game-wrapper">
+                    <!-- СЛОЙ 1: Игра -->
+                    <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
+                    
+                    <!-- СЛОЙ 2: Экран Паузы (Скрыт) -->
+                    <div id="pause-overlay" class="pause-overlay" onclick="toggleGamePause()">
+                        <div class="pause-text">ПАУЗА<br><span style="font-size:14px; color:#fff">Нажми чтобы продолжить</span></div>
+                    </div>
+
+                    <!-- СЛОЙ 3: Кнопка (Всегда видна) -->
+                    <button id="system-pause-btn" class="system-pause-btn" onclick="toggleGamePause()">
+                        <i class="fas fa-pause" id="pause-icon"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- 2. КАТАЛОГ -->
@@ -75,8 +87,7 @@
                 </div>
             </div>
 
-            <!-- 4. МЕНЮ (Iframe в папку menu) -->
-            <!-- Тут теперь только окно, которое грузит настройки из папки -->
+            <!-- 4. МЕНЮ -->
             <div id="menu" class="tab-pane full-height">
                 <iframe src="menu/index.html" frameborder="0" style="width:100%; height:100%; border:none;"></iframe>
             </div>
