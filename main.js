@@ -6,7 +6,9 @@ const CONFIG = {
     refreshTime: 8000 
 };
 
+// Проверка: мы в приложении или в браузере?
 const isApp = (typeof window.Android !== "undefined");
+
 let audio = new Audio(); 
 let isPlaying = false; 
 
@@ -22,13 +24,26 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== Вкладки ================== */
+/* ================== Вкладки (С АВТО-ПАУЗОЙ ИГРЫ) ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
+
+    // --- УПРАВЛЕНИЕ ПАУЗОЙ ИГРЫ ---
+    const gameFrame = document.getElementById('game-frame');
+    // Проверяем, загрузился ли iframe и есть ли там наша функция
+    if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
+        if (tabName === 'home') {
+            // Если вернулись на вкладку Игры - снимаем паузу
+            gameFrame.contentWindow.setGamePause(false);
+        } else {
+            // Если ушли на другую вкладку - ставим паузу
+            gameFrame.contentWindow.setGamePause(true);
+        }
+    }
 };
 
 /* ================== Плеер ================== */
@@ -162,7 +177,7 @@ function fixUrl(url) {
     return url;
 }
 
-// ЭТИ ФУНКЦИИ ВЫЗЫВАЮТСЯ ИЗ iframe (menu/index.html)
+// ГЛОБАЛЬНЫЕ ФУНКЦИИ ДЛЯ features/index.html
 window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
 window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
 
