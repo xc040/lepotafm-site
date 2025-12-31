@@ -12,8 +12,10 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
 
+    <!-- КОНТЕЙНЕР (ЧТОБЫ ИГРА РАСТЯГИВАЛАСЬ, НО ШАПКА БЫЛА СВЕРХУ) -->
     <div class="app-layout">
-        <!-- ШАПКА -->
+
+        <!-- 1. ВЕРХНЯЯ ЗОНА -->
         <header class="top-section">
             <div class="inline-player">
                 <div class="player-info-col">
@@ -42,44 +44,72 @@
                 </div>
             </div>
 
-            <!-- МЕНЮ ВКЛАДОК -->
             <nav class="tabs">
-                <button class="tab-btn active" onclick="openTab('home', this)">Главная</button>
-                <button class="tab-btn" onclick="openTab('games', this)">Игры</button>
+                <button class="tab-btn active" onclick="openTab('game_tab', this)">Игра</button>
                 <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
+                <button class="tab-btn" onclick="openTab('catalog', this)">Каталог</button>
                 <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
             </nav>
         </header>
 
-        <!-- КОНТЕНТ -->
+        <!-- 2. НИЖНЯЯ ЗОНА -->
         <main class="content-section">
             
-            <!-- ГЛАВНАЯ (Здесь может быть игра) -->
-            <div id="home" class="tab-pane active full-height">
-                <!-- Если ты хочешь вставить игру, раскомментируй iframe ниже, 
-                     НО создай папку game на сервере или в assets -->
-                <!-- <iframe id="game-frame" src="game/index.html"></iframe> -->
-                
-                <!-- Пока просто заглушка, чтобы не было пусто -->
-                <div class="placeholder-box" style="padding-top: 50px;">
-                    <h3>Добро пожаловать</h3>
-                    <p>Слушайте LepotaFM</p>
-                </div>
+            <!-- ИГРА -->
+            <div id="game_tab" class="tab-pane active full-height">
+                <iframe id="game-frame" src="game/index.html" title="Game"></iframe>
             </div>
 
-            <div id="games" class="tab-pane scrollable-pad">
-                <div class="placeholder-box"><h3>Каталог игр</h3><p>Скоро...</p></div>
-            </div>
-
+            <!-- ЭФИР (ИСТОРИЯ) -->
             <div id="ether" class="tab-pane scrollable-pad">
                 <div class="history-list" id="history-container">
-                    <div class="loading-msg">Загрузка...</div>
+                    <div class="loading-msg">
+                        <i class="fas fa-circle-notch fa-spin"></i> Загрузка...
+                    </div>
                 </div>
             </div>
 
+            <!-- КАТАЛОГ -->
+            <div id="catalog" class="tab-pane scrollable-pad">
+                <div class="placeholder-box">
+                    <h3>Другие игры</h3>
+                    <p>Раздел в разработке...</p>
+                </div>
+            </div>
+
+            <!-- МЕНЮ -->
             <div id="menu" class="tab-pane scrollable-pad">
                 <div class="settings-box">
-                    <div class="placeholder-box"><p>Настройки</p></div>
+                    <!-- Таймер сна -->
+                    <div class="feature-card">
+                        <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
+                        <div class="timer-slider-box">
+                            <div class="timer-display"><span id="timer-val-display">Off</span></div>
+                            <input type="range" id="sleep-slider" min="0" max="180" step="15" value="0" oninput="updateSleepLabel(this.value)" onchange="setSleepTimer(this.value)">
+                            <div class="slider-labels"><span>0</span><span>3ч</span></div>
+                        </div>
+                        <div id="sleep-status" class="status-hidden">
+                            Стоп: <span id="sleep-countdown" class="neon-text">00:00</span>
+                        </div>
+                    </div>
+                    <!-- Будильник -->
+                    <div class="feature-card">
+                        <div class="feature-header"><i class="fas fa-clock"></i> Будильник</div>
+                        <div class="alarm-create-box">
+                            <input type="time" id="new-alarm-time" class="neon-input">
+                            <button class="add-alarm-btn" onclick="addAlarm()">Добавить</button>
+                        </div>
+                        <div class="days-selector">
+                             <span class="day-check" data-day="1" onclick="toggleDay(this)">Пн</span>
+                             <span class="day-check" data-day="2" onclick="toggleDay(this)">Вт</span>
+                             <span class="day-check" data-day="3" onclick="toggleDay(this)">Ср</span>
+                             <span class="day-check" data-day="4" onclick="toggleDay(this)">Чт</span>
+                             <span class="day-check" data-day="5" onclick="toggleDay(this)">Пт</span>
+                             <span class="day-check" data-day="6" onclick="toggleDay(this)">Сб</span>
+                             <span class="day-check" data-day="0" onclick="toggleDay(this)">Вс</span>
+                        </div>
+                        <div id="alarms-list"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -90,8 +120,13 @@
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
             <img id="modal-art" src="logo.jpg">
-            <h2 id="modal-title">...</h2>
-            <p id="modal-artist">...</p>
+            <h2 id="modal-title">Название</h2>
+            <p id="modal-artist">Артист</p>
+            <div class="modal-actions">
+                <a href="https://t.me/lepotafm" target="_blank" class="action-btn tg">
+                    <i class="fab fa-telegram-plane"></i> Написать Админу
+                </a>
+            </div>
         </div>
     </div>
 
