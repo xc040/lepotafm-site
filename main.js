@@ -23,10 +23,14 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
+    // Пауза игры при уходе с вкладки
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
-        if (tabName === 'home') gameFrame.contentWindow.setGamePause(false);
-        else gameFrame.contentWindow.setGamePause(true);
+        // ИСПРАВЛЕНО: Ставим на паузу только если уходим с вкладки игры
+        // Если возвращаемся (tabName === 'home'), принудительный запуск (false) не вызываем
+        if (tabName !== 'home') {
+            gameFrame.contentWindow.setGamePause(true);
+        }
     }
 };
 
