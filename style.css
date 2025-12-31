@@ -1,29 +1,159 @@
-/* Увеличиваем отступ контента, так как шапка стала выше из-за вкладок */
-.main-content {
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 0; /* Убираем отступы, чтобы игра была на весь экран */
-    /* Важно: Высота шапки (плеер ~90px + табы ~45px) = ~135px */
-    padding-top: 135px; 
-    height: 100vh;
-    box-sizing: border-box;
+:root {
+    --bg: #050510;
+    --card: #151525;
+    --neon-blue: #00f3ff;
+    --neon-pink: #bc13fe;
+    --text: #ffffff;
 }
 
-/* Настройка iframe с игрой */
-#game_tab.full-height {
-    width: 100%;
-    height: 100%;
+/* ОСНОВНАЯ СТРУКТУРА (FLEXBOX) */
+body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh; /* Высота экрана 100% */
+    overflow: hidden; /* Запрет прокрутки всего сайта */
+    user-select: none;
+}
+
+/* Контейнер приложения */
+.app-layout {
     display: flex;
+    flex-direction: column; /* Вертикальный стек */
+    height: 100%;
+    width: 100%;
 }
 
-#game-frame {
-    width: 100%;
-    height: 100%;
-    border: none;
+.neon-bg, .scanlines {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -2; pointer-events: none;
+}
+.neon-bg { background: radial-gradient(circle at 50% -20%, #1a1a40, #050510); }
+.scanlines { background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%); background-size: 100% 4px; }
+
+/* 1. ВЕРХНЯЯ СЕКЦИЯ (Не сжимается) */
+.top-section {
+    flex-shrink: 0; /* Запрет сжатия */
+    background: rgba(21, 21, 37, 0.98);
+    border-bottom: 1px solid var(--neon-blue);
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+/* Плеер */
+.inline-player {
+    display: flex; 
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.02);
+    align-items: stretch;
+    gap: 15px;
+}
+.player-info-col { flex: 1; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+.top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.logo-small { font-size: 16px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+
+.vol-mini-container { display: flex; align-items: center; gap: 8px; width: 50%; }
+.tiny-icon { font-size: 12px; color: #888; }
+#vol-slider { width: 100%; height: 4px; accent-color: var(--neon-blue); cursor: pointer; }
+
+.bot-row { background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); }
+.marquee-container { width: 100%; overflow: hidden; white-space: nowrap; }
+.marquee-content { display: inline-block; padding-left: 100%; animation: marquee 10s linear infinite; font-size: 14px; color: var(--neon-blue); font-weight: bold; }
+.marquee-content span { color: white; }
+#artist-name { color: var(--neon-pink); }
+@keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+/* Кнопка Play */
+.player-btn-col { display: flex; align-items: center; justify-content: center; }
+.big-play-btn {
+    background: var(--neon-blue); border: none;
+    width: 60px; height: 60px; border-radius: 50%;
+    padding: 0; position: relative; overflow: hidden;
+    box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.big-play-btn:active { transform: scale(0.95); }
+#mini-art { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; filter: brightness(0.7); }
+.inline-player.playing #mini-art { animation: spin 5s linear infinite; }
+.icon-overlay { position: relative; z-index: 2; font-size: 24px; color: #fff; text-shadow: 0 0 5px #000; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* Вкладки */
+.tabs { display: flex; border-top: 1px solid rgba(255,255,255,0.1); }
+.tab-btn {
+    flex: 1; width: 25%;
+    background: none; border: none; color: #888;
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    padding: 12px 0; cursor: pointer; transition: 0.3s;
+    border-bottom: 3px solid transparent;
+}
+.tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
+
+/* 2. НИЖНЯЯ СЕКЦИЯ (Растягивается) */
+.content-section {
+    flex-grow: 1; /* Занимает всё оставшееся место */
+    position: relative;
+    overflow: hidden; /* Скроллится только внутри табов */
     background: #000;
 }
 
-/* Для остальных вкладок возвращаем отступы */
-.tab-pane:not(#game_tab) {
-    padding: 15px;
+.tab-pane { display: none; width: 100%; height: 100%; }
+.tab-pane.active { display: block; }
+
+/* Стили для игры (БЕЗ отступов) */
+.full-height {
+    width: 100%; height: 100%;
+    padding: 0; margin: 0;
+    overflow: hidden;
+    display: flex;
 }
+#game-frame { width: 100%; height: 100%; border: none; }
+
+/* Стили для текста (С отступами и скроллом) */
+.scrollable-pad {
+    padding: 15px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Прокрутка только здесь */
+    background: var(--bg);
+}
+
+/* Остальные элементы (История, Фичи) */
+.history-item { display: flex; align-items: center; background: var(--card); margin-bottom: 8px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+.hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
+.hist-info { flex: 1; overflow: hidden; }
+.hist-title { font-size: 14px; font-weight: bold; color: white; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: var(--neon-blue); }
+.loading-msg { text-align: center; color: #666; margin-top: 20px; }
+.sku-btn { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; }
+
+/* Фичи */
+.feature-card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+.feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+.timer-slider-box { width: 100%; padding: 10px 0; }
+.timer-display { text-align: center; font-size: 18px; font-weight: bold; color: var(--neon-pink); }
+#sleep-slider { width: 100%; height: 5px; accent-color: var(--neon-pink); }
+.slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; }
+.status-hidden { display: none; text-align: center; color: #aaa; margin-top: 10px; }
+
+.alarm-create-box { display: flex; gap: 10px; margin-bottom: 10px; }
+.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 16px; outline: none; }
+.add-alarm-btn { flex: 1; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.days-selector { display: flex; gap: 4px; justify-content: space-between; margin-bottom: 10px; }
+.day-check { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #444; border-radius: 50%; font-size: 11px; color: #666; cursor: pointer; }
+.day-check.selected { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); font-weight: bold; }
+.alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
+.alarm-time { font-size: 18px; font-weight: bold; color: white; }
+.alarm-days { font-size: 11px; color: #888; }
+.alarm-del-btn { color: red; background: none; border: none; cursor: pointer; }
+
+/* Модалка */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+.modal.hidden { display: none; }
+.modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; }
+.close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; }
+#modal-art { width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover; margin-bottom: 15px; border: 2px solid var(--neon-pink); }
+#modal-title { font-size: 18px; color: white; margin: 5px 0; }
+#modal-artist { color: var(--neon-blue); margin-bottom: 20px; }
+.action-btn { display: block; padding: 12px; border-radius: 10px; background: #0088cc; color: white; text-decoration: none; font-weight: bold; }
