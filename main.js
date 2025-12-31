@@ -1,49 +1,50 @@
 /* --- НАСТРОЙКИ --- */
 const CONFIG = {
+    // Ссылки на поток и API
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
 };
 
-// Глобальные переменные
-const isApp = window.location.search.includes('app=true') || (typeof window.Android !== "undefined");
-let audio = new Audio(CONFIG.streamUrl);
-let isPlaying = false; 
+// Определяем, где мы: в Приложении или в Браузере
+const isApp = (typeof window.Android !== "undefined");
 
-if (isApp) isPlaying = true;
+// Создаем JS-плеер (он будет работать ТОЛЬКО в браузере)
+let audio = new Audio(); 
+let isPlaying = false; 
 
 /* --- ЗАПУСК --- */
 window.onload = function() {
+    // Если мы в приложении - сразу ставим статус "Играет", т.к. ExoPlayer стартует сам
+    if (isApp) {
+        isPlaying = true;
+    } else {
+        // Если в браузере - готовим ссылку
+        audio.src = CONFIG.streamUrl;
+    }
+
     initPlayer();
     initVolume();
     loadAlarms(); 
     startAlarmClock(); 
+    
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== ЛОГИКА ВКЛАДОК (ГЛАВНОЕ ИСПРАВЛЕНИЕ) ================== */
+/* ================== ЛОГИКА ВКЛАДОК ================== */
 window.openTab = function(tabName, btnElement) {
-    // 1. Скрываем все вкладки (убираем класс active)
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    
-    // 2. Деактивируем все кнопки
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
-    // 3. Показываем нужную вкладку (добавляем active)
     const target = document.getElementById(tabName);
-    if (target) {
-        target.classList.add('active');
-    }
+    if (target) target.classList.add('active');
     
-    // 4. Подсвечиваем кнопку
-    if (btnElement) {
-        btnElement.classList.add('active');
-    }
+    if (btnElement) btnElement.classList.add('active');
 };
 
-/* ================== ПЛЕЕР ================== */
+/* ================== ПЛЕЕР (МОСТ JS <-> JAVA) ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     const icon = document.getElementById('play-icon');
@@ -51,7 +52,8 @@ function initPlayer() {
 
     if (!playBtn) return;
 
-    if (isApp) {
+    // Визуальная инициализация при старте
+    if (isPlaying) {
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
     }
@@ -65,23 +67,39 @@ function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
 
-    if (isApp && window.Android) {
-        // Логика для Android (если будет реализована)
-        try { /* ... */ } catch(e) {}
-        return;
+    /* --- СЦЕНАРИЙ 1: МЫ В ПРИЛОЖЕНИИ (JAVA) --- */
+    if (isApp) {
+        if (isPlaying) {
+            // Шлем команду в Java: "Пауза"
+            window.Android.pauseAudio();
+            
+            // Меняем иконки локально
+            if(icon) icon.className = "fas fa-play";
+            if(playerDiv) playerDiv.classList.remove('playing');
+            isPlaying = false;
+        } else {
+            // Шлем команду в Java: "Играть"
+            window.Android.playAudio();
+            
+            // Меняем иконки локально
+            if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
+            isPlaying = true;
+        }
+        return; // Выходим, чтобы JS-плеер не включился
     }
 
-    // Логика браузера/простого APK
+    /* --- СЦЕНАРИЙ 2: МЫ В БРАУЗЕРЕ (JS) --- */
     if (isPlaying) {
         audio.pause();
-        audio.src = ""; // Сброс буфера
-        audio.load();
+        audio.src = ""; // Сброс буфера (экономия трафика)
         
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+        audio.load();
         audio.play().catch(e => console.log("Autoplay block"));
         
         if(icon) icon.className = "fas fa-pause";
@@ -90,23 +108,39 @@ function togglePlayState() {
     }
 }
 
+/* ================== ГРОМКОСТЬ (ИСПРАВЛЕНО) ================== */
 function initVolume() {
     const slider = document.getElementById('vol-slider');
     if (!slider) return;
 
+    // Восстанавливаем сохраненную громкость
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    if (finalVol < 0.1) finalVol = 0.5;
+    if (finalVol < 0.1) finalVol = 0.5; // Защита от тишины
 
     slider.value = finalVol;
-    audio.volume = finalVol;
+    
+    // Применяем громкость сразу при старте
+    if (isApp) {
+        window.Android.setVolume(finalVol);
+    } else {
+        audio.volume = finalVol;
+    }
 
+    // Обработка движения ползунка
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
-        audio.volume = vol;
+
+        if (isApp) {
+            // Шлем команду в Java
+            window.Android.setVolume(vol);
+        } else {
+            // Меняем в браузере
+            audio.volume = vol;
+        }
         
-        // Стоп при громкости 0
+        // Логика "Стоп при громкости 0"
         if (vol === 0 && isPlaying) {
             togglePlayState();
         } else if (vol > 0 && !isPlaying) {
@@ -115,8 +149,9 @@ function initVolume() {
     });
 }
 
-/* ================== МЕТАДАННЫЕ ================== */
+/* ================== МЕТАДАННЫЕ (БЕЗ ИЗМЕНЕНИЙ) ================== */
 function updateMetadata() {
+    // Fetch данных (только текст, не грузит поток)
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(res => res.json())
         .then(data => {
@@ -196,7 +231,10 @@ window.closeSku = function() {
     if(modal) modal.classList.add('hidden');
 };
 
-/* ================== ТАЙМЕРЫ И БУДИЛЬНИКИ ================== */
+/* ================== ТАЙМЕРЫ И БУДИЛЬНИКИ (JS Logic) ================== */
+// Эти функции управляют таймером локально. 
+// Когда таймер истекает -> вызывается stopRadioForce()
+
 let sleepInterval = null;
 window.updateSleepLabel = function(minutes) {
     const display = document.getElementById('timer-val-display');
@@ -226,95 +264,4 @@ window.setSleepTimer = function(minutes) {
         }
     }, 1000);
 }
-window.cancelSleepTimer = function() {
-    if (sleepInterval) clearInterval(sleepInterval);
-    const statusDiv = document.getElementById('sleep-status');
-    if(statusDiv) statusDiv.style.display = "none";
-}
-
-let alarms = []; 
-let alarmChecker = null;
-let lastTriggeredTime = "";
-
-function loadAlarms() {
-    const stored = localStorage.getItem('myAlarms');
-    if (stored) { alarms = JSON.parse(stored); renderAlarms(); }
-}
-function saveAlarms() {
-    localStorage.setItem('myAlarms', JSON.stringify(alarms));
-    renderAlarms();
-}
-let selectedDays = [];
-window.toggleDay = function(el) {
-    const day = parseInt(el.getAttribute('data-day'));
-    if (selectedDays.includes(day)) {
-        selectedDays = selectedDays.filter(d => d !== day);
-        el.classList.remove('selected');
-    } else {
-        selectedDays.push(day);
-        el.classList.add('selected');
-    }
-}
-window.addAlarm = function() {
-    const timeInput = document.getElementById('new-alarm-time');
-    const time = timeInput.value;
-    if (!time) { alert("Выберите время!"); return; }
-    if (selectedDays.length === 0) { alert("Выберите дни недели!"); return; }
-    alarms.push({ time: time, days: [...selectedDays], active: true });
-    saveAlarms();
-    timeInput.value = "";
-    selectedDays = [];
-    document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
-}
-window.deleteAlarm = function(index) {
-    alarms.splice(index, 1);
-    saveAlarms();
-}
-function renderAlarms() {
-    const container = document.getElementById('alarms-list');
-    if (!container) return;
-    container.innerHTML = "";
-    const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-    alarms.forEach((alarm, index) => {
-        let daysStr = alarm.days.map(d => dayNames[d]).join(", ");
-        if (alarm.days.length === 7) daysStr = "Каждый день";
-        const div = document.createElement('div');
-        div.className = "alarm-item";
-        div.innerHTML = `
-            <div><div class="alarm-time">${alarm.time}</div><div class="alarm-days">${daysStr}</div></div>
-            <button class="alarm-del-btn" onclick="deleteAlarm(${index})"><i class="fas fa-trash"></i></button>
-        `;
-        container.appendChild(div);
-    });
-}
-function startAlarmClock() {
-    if (alarmChecker) clearInterval(alarmChecker);
-    alarmChecker = setInterval(() => {
-        const now = new Date();
-        const currentDay = now.getDay();
-        const h = String(now.getHours()).padStart(2, '0');
-        const m = String(now.getMinutes()).padStart(2, '0');
-        const currentTime = `${h}:${m}`;
-        if (currentTime === lastTriggeredTime) return;
-        alarms.forEach(alarm => {
-            if (alarm.active && alarm.time === currentTime && alarm.days.includes(currentDay)) {
-                triggerAlarm();
-                lastTriggeredTime = currentTime;
-            }
-        });
-    }, 1000);
-}
-function triggerAlarm() {
-    const slider = document.getElementById('vol-slider');
-    if (!slider) return;
-    slider.value = 0;
-    slider.dispatchEvent(new Event('input'));
-    playRadioForce();
-    let vol = 0;
-    let fadeInterval = setInterval(() => {
-        vol += 0.05;
-        if (vol >= 1.0) { vol = 1.0; clearInterval(fadeInterval); }
-        slider.value = vol;
-        slider.dispatchEvent(new Event('input'));
-    }, 250);
-}
+window.cancelSl
