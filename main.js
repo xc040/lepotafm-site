@@ -23,14 +23,22 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
-    // Пауза игры при уходе с вкладки
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
-        // ИСПРАВЛЕНО: Ставим на паузу только если уходим с вкладки игры
-        // Если возвращаемся (tabName === 'home'), принудительный запуск (false) не вызываем
         if (tabName !== 'home') {
             gameFrame.contentWindow.setGamePause(true);
         }
+    }
+};
+
+// Функция загрузки игры из каталога
+window.loadGame = function(path) {
+    const frame = document.getElementById('game-frame');
+    if(frame) {
+        frame.src = path;
+        // Находим кнопку вкладки "Игра" для подсветки
+        const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
     }
 };
 
@@ -61,9 +69,7 @@ function togglePlayState() {
     }
 
     if (isPlaying) {
-        audio.pause();
-        audio.src = ""; 
-        audio.load();
+        audio.pause(); audio.src = ""; audio.load();
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
@@ -100,8 +106,7 @@ function updateMetadata() {
                 document.getElementById('track-name').innerText = song.title;
                 document.getElementById('artist-name').innerText = song.artist || "";
                 document.getElementById('track-sep').style.display = song.artist ? "inline" : "none";
-                let artUrl = fixUrl(song.art);
-                document.getElementById('mini-art').src = artUrl;
+                document.getElementById('mini-art').src = fixUrl(song.art);
             }
             if (data.song_history) renderHistory(data.song_history);
         }).catch(err => {});
@@ -134,6 +139,4 @@ window.openSku = function(title, artist, art) {
     document.getElementById('modal-artist').innerText = artist;
     document.getElementById('info-modal').classList.remove('hidden');
 };
-window.closeSku = function() { 
-    document.getElementById('info-modal').classList.add('hidden'); 
-};
+window.closeSku = function() { document.getElementById('info-modal').classList.add('hidden'); };
