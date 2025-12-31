@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarm</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 15px; background: #050510; color: white; font-family: 'Segoe UI', Roboto, sans-serif; }
+        
+        /* КНОПКА НАЗАД */
+        .back-btn { 
+            display: inline-flex; align-items: center; color: #888; 
+            text-decoration: none; font-size: 14px; margin-bottom: 20px; 
+        }
+        .back-btn i { margin-right: 5px; }
+
+        .feature-header { font-size: 18px; font-weight: bold; color: #00f3ff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        .alarm-create-box { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; display: flex; gap: 10px; }
+        .neon-input { background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 5px; border-radius: 5px; font-size: 20px; outline: none; flex: 1; }
+        .add-alarm-btn { padding: 0 20px; background: #333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        .days-selector { display: flex; gap: 5px; margin: 10px 0; justify-content: space-between; }
+        .day-check { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: 1px solid #444; border-radius: 50%; font-size: 12px; color: #666; cursor: pointer; }
+        .day-check.selected { background: #00f3ff; color: #000; border-color: #00f3ff; font-weight: bold; }
+
+        .alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .alarm-time { font-size: 20px; font-weight: bold; color: white; }
+        .alarm-days { font-size: 12px; color: #888; margin-top: 2px; }
+        .alarm-del-btn { background: none; border: none; color: red; font-size: 18px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+
+    <div class="feature-header"><i class="fas fa-clock"></i> Будильник</div>
+
+    <div class="alarm-create-box">
+        <input type="time" id="new-alarm-time" class="neon-input">
+        <button class="add-alarm-btn" id="add-alarm-btn">ОК</button>
+    </div>
+    
+    <div class="days-selector">
+        <span class="day-check" data-day="1">Пн</span>
+        <span class="day-check" data-day="2">Вт</span>
+        <span class="day-check" data-day="3">Ср</span>
+        <span class="day-check" data-day="4">Чт</span>
+        <span class="day-check" data-day="5">Пт</span>
+        <span class="day-check" data-day="6">Сб</span>
+        <span class="day-check" data-day="0">Вс</span>
+    </div>
+
+    <div id="alarms-list" style="margin-top: 20px;"></div>
+
+    <script>
+        let alarms = [];
+        let selectedDays = [];
+        let alarmChecker = null;
+        let lastTriggeredTime = "";
+
+        // Загрузка
+        try {
+            const stored = localStorage.getItem('myAlarms');
+            if (stored) alarms = JSON.parse(stored);
+        } catch(e) {}
+        renderAlarms();
+        startAlarmClock();
+
+        // Выбор дней
+        document.querySelectorAll('.day-check').forEach(el => {
+            el.onclick = function() {
+                const day = parseInt(this.getAttribute('data-day'));
+                if (selectedDays.includes(day)) {
+                    selectedDays = selectedDays.filter(d => d !== day);
+                    this.classList.remove('selected');
+                } else {
+                    selectedDays.push(day);
+                    this.classList.add('selected');
+                }
+            }
+        });
+
+        // Добавление
+        document.getElementById('add-alarm-btn').onclick = function() {
+            const timeInp = document.getElementById('new-alarm-time');
+            const time = timeInp.value;
+            if (!time) return alert("Время?");
+            if (selectedDays.length === 0) return alert("Дни?");
+
+            alarms.push({ time: time, days: [...selectedDays], active: true });
+            saveAlarms();
+            
+            timeInp.value = "";
+            selectedDays = [];
+            document.querySelectorAll('.day-check').forEach(el => el.classList.remove('selected'));
+        };
+
+        // Удаление
+        window.deleteAlarm = function(index) {
+            alarms.splice(index, 1);
+            saveAlarms();
+        };
+
+        function saveAlarms() {
+            localStorage.setItem('myAlarms', JSON.stringify(alarms));
+            renderAlarms();
+        }
+
+        function renderAlarms() {
+            const container = document.getElementById('alarms-list');
+            container.innerHTML = "";
+            const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+            alarms.forEach((alarm, index) => {
+                let daysStr = alarm.days.length === 7 ? "Каждый день" : alarm.days.map(d => dayNames[d]).join(", ");
+                container.innerHTML += `
+                    <div class="alarm-item">
+                        <div>
+                            <div class="alarm-time">${alarm.time}</div>
+                            <div class="alarm-days">${daysStr}</div>
+                        </div>
+                        <button class="alarm-del-btn" onclick="deleteAlarm(${index})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
+            });
+        }
+
+        function startAlarmClock() {
+            if (alarmChecker) clearInterval(alarmChecker);
+            alarmChecker = setInterval(() => {
+                const now = new Date();
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                const t = `${h}:${m}`;
+                if (t === lastTriggeredTime) return;
+
+                alarms.forEach(a => {
+                    if (a.active && a.time === t && a.days.includes(now.getDay()) && now.getSeconds() < 2) {
+                        triggerAlarm();
+                        lastTriggeredTime = t;
+                    }
+                });
+            }, 1000);
+        }
+
+        function triggerAlarm() {
+            // ОБРАЩЕНИЕ К ГЛАВНОМУ ОКНУ
+            if(window.parent && window.parent.playRadioForce) {
+                const parentSlider = window.parent.document.getElementById('vol-slider');
+                if(parentSlider) {
+                    parentSlider.value = 0;
+                    parentSlider.dispatchEvent(new Event('input'));
+                }
+                window.parent.playRadioForce();
+                let vol = 0;
+                let fade = setInterval(() => {
+                    vol += 0.05;
+                    if(vol >= 1) { vol = 1; clearInterval(fade); }
+                    if(parentSlider) {
+                        parentSlider.value = vol;
+                        parentSlider.dispatchEvent(new Event('input'));
+                    }
+                }, 250);
+            }
+        }
+    </script>
+</body>
+</html>
