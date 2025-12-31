@@ -54,21 +54,29 @@
         <!-- НИЖНЯЯ ЗОНА -->
         <main class="content-section">
             
-            <!-- 1. ИГРА (СИСТЕМНАЯ ОБЕРТКА) -->
+            <!-- 1. ИГРА -->
             <div id="home" class="tab-pane active full-height">
                 <div class="game-wrapper">
                     <!-- СЛОЙ 1: Игра -->
                     <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
                     
-                    <!-- СЛОЙ 2: Экран Паузы (Скрыт) -->
+                    <!-- СЛОЙ 2: Панель управления (Инфо, Имя, Пауза) -->
+                    <div class="game-overlay-controls">
+                        <button class="game-info-btn" onclick="openGameInfo()">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        
+                        <div class="game-title-display">Snake Game</div>
+
+                        <button id="system-pause-btn" class="system-pause-btn" onclick="toggleGamePause()">
+                            <i class="fas fa-pause" id="pause-icon"></i>
+                        </button>
+                    </div>
+
+                    <!-- СЛОЙ 3: Экран Паузы (Скрыт) -->
                     <div id="pause-overlay" class="pause-overlay" onclick="toggleGamePause()">
                         <div class="pause-text">ПАУЗА<br><span style="font-size:14px; color:#fff">Нажми чтобы продолжить</span></div>
                     </div>
-
-                    <!-- СЛОЙ 3: Кнопка (Всегда видна) -->
-                    <button id="system-pause-btn" class="system-pause-btn" onclick="toggleGamePause()">
-                        <i class="fas fa-pause" id="pause-icon"></i>
-                    </button>
                 </div>
             </div>
 
@@ -95,13 +103,16 @@
         </main>
     </div>
 
-    <!-- МОДАЛКА -->
+    <!-- МОДАЛКА ИНФО (Используем её же для игры) -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
             <img id="modal-art" src="logo.jpg">
             <h2 id="modal-title">...</h2>
             <p id="modal-artist">...</p>
+            <div class="modal-actions">
+                <a href="https://t.me/lepotafm" target="_blank" class="action-btn tg">Написать</a>
+            </div>
         </div>
     </div>
 
