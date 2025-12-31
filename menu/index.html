@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Hub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0; padding: 20px;
+            background: #050510; color: white;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            user-select: none; text-align: center;
+        }
+        h2 { color: #00f3ff; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .menu-grid { display: flex; flex-direction: column; gap: 15px; }
+        
+        .menu-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            padding: 20px; border-radius: 15px;
+            text-decoration: none; color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.2s;
+        }
+        .menu-btn:active { background: #00f3ff; color: black; }
+        
+        .btn-icon { font-size: 24px; width: 40px; text-align: center; }
+        .btn-text { flex: 1; text-align: left; padding-left: 15px; font-weight: bold; font-size: 16px; }
+        .btn-arrow { color: #666; }
+        .menu-btn:active .btn-arrow { color: black; }
+        
+        .fa-clock { color: #00f3ff; }
+        .fa-moon { color: #bc13fe; }
+        
+        .version { margin-top: 50px; color: #444; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h2>Настройки</h2>
+
+    <div class="menu-grid">
+        <!-- ССЫЛКА НА ПАПКУ БУДИЛЬНИКА -->
+        <a href="alarm/index.html" class="menu-btn">
+            <i class="fas fa-clock btn-icon"></i>
+            <span class="btn-text">Будильник</span>
+            <i class="fas fa-chevron-right btn-arrow"></i>
+        </a>
+
+        <!-- ССЫЛКА НА ПАПКУ ТАЙМЕРА -->
+        <a href="timer/index.html" class="menu-btn">
+            <i class="fas fa-moon btn-icon"></i>
+            <span class="btn-text">Таймер сна</span>
+            <i class="fas fa-chevron-right btn-arrow"></i>
+        </a>
+    </div>
+
+    <div class="version">Modular System v3.0</div>
+
+</body>
+</html>
