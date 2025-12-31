@@ -14,8 +14,10 @@
 
     <div class="app-layout">
 
-        <!-- ВЕРХНЯЯ ЗОНА -->
-        <header class="top-section">
+        <!-- ВЕРХНЯЯ ЗОНА (Плеер + Табы) -->
+        <!-- Z-INDEX 5000 гарантирует, что она будет поверх игры -->
+        <header class="fixed-top-area">
+            
             <div class="inline-player">
                 <div class="player-info-col">
                     <div class="top-row">
@@ -52,30 +54,33 @@
         </header>
 
         <!-- НИЖНЯЯ ЗОНА -->
-        <main class="content-section">
+        <main class="main-content">
             
             <!-- 1. ИГРА -->
             <div id="home" class="tab-pane active full-height">
                 <div class="game-wrapper">
-                    <!-- СЛОЙ 1: Игра -->
+                    <!-- Игра -->
                     <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
                     
-                    <!-- СЛОЙ 2: Панель управления (Инфо, Имя, Пауза) -->
-                    <div class="game-overlay-controls">
-                        <button class="game-info-btn" onclick="openGameInfo()">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                        
-                        <div class="game-title-display">Snake Game</div>
+                    <!-- Панель управления игрой (Поверх игры) -->
+                    <div class="game-header-controls">
+                        <!-- Слева: Инфо и Название -->
+                        <div class="game-left">
+                            <button class="game-btn info-btn" onclick="openGameInfo()">
+                                <i class="fas fa-info"></i>
+                            </button>
+                            <span class="game-title">Snake</span>
+                        </div>
 
-                        <button id="system-pause-btn" class="system-pause-btn" onclick="toggleGamePause()">
+                        <!-- Справа: Пауза -->
+                        <button id="system-pause-btn" class="game-btn pause-btn" onclick="toggleGamePause()">
                             <i class="fas fa-pause" id="pause-icon"></i>
                         </button>
                     </div>
 
-                    <!-- СЛОЙ 3: Экран Паузы (Скрыт) -->
+                    <!-- Экран Паузы (Затемнение) -->
                     <div id="pause-overlay" class="pause-overlay" onclick="toggleGamePause()">
-                        <div class="pause-text">ПАУЗА<br><span style="font-size:14px; color:#fff">Нажми чтобы продолжить</span></div>
+                        <div class="pause-text">ПАУЗА<br><span style="font-size:14px; color:#fff; font-weight:normal">Нажми чтобы продолжить</span></div>
                     </div>
                 </div>
             </div>
@@ -103,7 +108,7 @@
         </main>
     </div>
 
-    <!-- МОДАЛКА ИНФО (Используем её же для игры) -->
+    <!-- МОДАЛКА -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" onclick="closeSku()">✕</button>
