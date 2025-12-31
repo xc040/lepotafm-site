@@ -23,7 +23,6 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
-    // Пауза игры при уходе с вкладки
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
         if (tabName === 'home') gameFrame.contentWindow.setGamePause(false);
@@ -48,7 +47,6 @@ function togglePlayState() {
             if(playerDiv) playerDiv.classList.remove('playing');
             isPlaying = false;
         } else {
-            // Принудительно передаем громкость перед воспроизведением
             if (slider) window.Android.setVolume(parseFloat(slider.value));
             window.Android.playAudio();
             if(icon) icon.className = "fas fa-pause";
@@ -67,7 +65,7 @@ function togglePlayState() {
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => console.log("Autoplay block"));
+        audio.play().catch(e => {});
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
@@ -79,21 +77,13 @@ function initVolume() {
     if (!slider) return;
     let savedVol = localStorage.getItem('savedVolume');
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    if (finalVol < 0.1) finalVol = 0.5;
     slider.value = finalVol;
-    
-    if (isApp) {
-        try { window.Android.setVolume(finalVol); } catch(e){}
-    } else {
-        audio.volume = finalVol;
-    }
+    if (isApp) { try { window.Android.setVolume(finalVol); } catch(e){} } else { audio.volume = finalVol; }
 
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
         if (isApp) { try { window.Android.setVolume(vol); } catch(e) {} } else { audio.volume = vol; }
-        if (vol === 0 && isPlaying) togglePlayState();
-        else if (vol > 0 && !isPlaying) togglePlayState();
     });
 }
 
@@ -103,20 +93,11 @@ function updateMetadata() {
         .then(data => {
             if (data.now_playing && data.now_playing.song) {
                 const song = data.now_playing.song;
-                const titleEl = document.getElementById('track-name');
-                const artistEl = document.getElementById('artist-name');
-                const imgEl = document.getElementById('mini-art');
-                const sepEl = document.getElementById('track-sep');
-                if (titleEl) titleEl.innerText = song.title;
-                if (song.artist) {
-                    if (artistEl) artistEl.innerText = song.artist;
-                    if (sepEl) sepEl.style.display = "inline";
-                } else {
-                    if (artistEl) artistEl.innerText = "";
-                    if (sepEl) sepEl.style.display = "none";
-                }
+                document.getElementById('track-name').innerText = song.title;
+                document.getElementById('artist-name').innerText = song.artist || "";
+                document.getElementById('track-sep').style.display = song.artist ? "inline" : "none";
                 let artUrl = fixUrl(song.art);
-                if (imgEl && imgEl.src !== artUrl) imgEl.src = artUrl;
+                document.getElementById('mini-art').src = artUrl;
             }
             if (data.song_history) renderHistory(data.song_history);
         }).catch(err => {});
@@ -129,27 +110,24 @@ function renderHistory(history) {
     history.forEach(item => {
         const song = item.song;
         const art = fixUrl(song.art);
-        const safeTitle = (song.title || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const safeArtist = (song.artist || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        const safeArt = art;
-        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${safeArt}')"><i class="fas fa-info"></i></button></div>`;
+        const safeTitle = (song.title || "").replace(/'/g, "\\'");
+        const safeArtist = (song.artist || "").replace(/'/g, "\\'");
+        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="window.openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
     });
-    if (container.innerHTML !== html) container.innerHTML = html;
+    container.innerHTML = html;
 }
 
 function fixUrl(url) {
     if (!url || url.includes('generic')) return CONFIG.defaultImage;
-    if (url.startsWith('http:')) return url.replace('http:', 'https:');
-    return url;
+    return url.replace('http:', 'https:');
 }
 
 window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
 window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
 window.openSku = function(title, artist, art) {
-    const modal = document.getElementById('info-modal');
     document.getElementById('modal-art').src = art;
     document.getElementById('modal-title').innerText = title;
     document.getElementById('modal-artist').innerText = artist;
-    if(modal) modal.classList.remove('hidden');
+    document.getElementById('info-modal').classList.remove('hidden');
 };
-window.closeSku = function() { document.getElementById('info-modal').classList.add('hidden'); };
+window.closeSku = function() { document.getElementById('info-modal').classList.add('all-hidden'); document.getElementById('info-modal').classList.add('hidden'); };
