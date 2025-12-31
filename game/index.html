@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Snake</title>
+    <!-- Подключаем иконки для кнопки паузы -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
             margin: 0; padding: 0; background: #000; 
@@ -20,11 +22,38 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; color: #00f3ff; pointer-events: none; 
             font-size: 20px; font-weight: bold; text-shadow: 0 0 10px black;
+            z-index: 10;
+        }
+        /* КНОПКА ПАУЗЫ */
+        .pause-btn {
+            position: absolute; top: 15px; right: 15px;
+            width: 40px; height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00f3ff; border-radius: 50%;
+            color: #00f3ff; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 20;
+            backdrop-filter: blur(5px);
+        }
+        .pause-btn:active { background: #00f3ff; color: black; }
+        
+        /* Надпись ПАУЗА */
+        .paused-text {
+            display: none; position: absolute; top: 40%; 
+            font-size: 30px; color: #bc13fe; font-weight: bold; 
+            text-shadow: 0 0 10px black; pointer-events: none;
         }
     </style>
 </head>
 <body>
     <div class="start-msg" id="msg">Нажми чтобы играть</div>
+    <div class="paused-text" id="paused-msg">ПАУЗА</div>
+    
+    <!-- Кнопка Паузы -->
+    <button class="pause-btn" id="btn-pause" onclick="togglePauseManual(event)">
+        <i class="fas fa-pause" id="icon-pause"></i>
+    </button>
+
     <canvas width="320" height="320" id="game"></canvas>
 
     <script>
@@ -35,12 +64,21 @@
         var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
         var apple = { x: 320, y: 320 };
         var gameStarted = false;
+        
+        // Переменная паузы
+        var isGamePaused = false;
 
         function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
 
         // ЗАПУСК ПО КЛИКУ/ТАЧУ
-        document.body.addEventListener('touchstart', function() { if(!gameStarted) startGame(); });
-        document.body.addEventListener('click', function() { if(!gameStarted) startGame(); });
+        document.body.addEventListener('touchstart', function(e) { 
+            if(e.target.closest('.pause-btn')) return; // Игнорируем клик по кнопке
+            if(!gameStarted) startGame(); 
+        });
+        document.body.addEventListener('click', function(e) { 
+            if(e.target.closest('.pause-btn')) return; // Игнорируем клик по кнопке
+            if(!gameStarted) startGame(); 
+        });
 
         // УПРАВЛЕНИЕ СВАЙПАМИ
         let touchStartX = 0;
@@ -58,6 +96,8 @@
         }, false);
 
         function handleGesture(x1, y1, x2, y2) {
+            if (isGamePaused) return; // Не управляем на паузе
+
             let xDiff = x2 - x1;
             let yDiff = y2 - y1;
             if (Math.abs(xDiff) > Math.abs(yDiff)) {
@@ -70,12 +110,41 @@
         }
 
         function startGame() {
+            if(gameStarted) return;
             gameStarted = true;
             document.getElementById('msg').style.display = 'none';
             loop();
         }
 
+        // ЛОГИКА ПАУЗЫ
+        function togglePauseManual(e) {
+            e.stopPropagation(); // Чтобы не срабатывал клик по body
+            setGamePause(!isGamePaused);
+        }
+
+        // Глобальная функция для управления извне (из main.js)
+        window.setGamePause = function(state) {
+            // Если игра не начата или уже проиграна - ничего не делаем
+            if (!gameStarted) return; 
+
+            isGamePaused = state;
+            
+            const icon = document.getElementById('icon-pause');
+            const msg = document.getElementById('paused-msg');
+
+            if (isGamePaused) {
+                icon.className = "fas fa-play";
+                msg.style.display = "block";
+            } else {
+                icon.className = "fas fa-pause";
+                msg.style.display = "none";
+                loop(); // Перезапускаем цикл
+            }
+        };
+
         function loop() {
+            if (isGamePaused) return; // Останавливаем рендер
+
             requestAnimationFrame(loop);
             if (++count < 6) return;
             count = 0;
