@@ -1,4 +1,3 @@
-/* --- НАСТРОЙКИ --- */
 const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
@@ -9,7 +8,6 @@ const CONFIG = {
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
 let isPlaying = false; 
-let isGamePausedSystem = false; 
 
 window.onload = function() {
     if (!isApp) audio.src = CONFIG.streamUrl;
@@ -19,50 +17,20 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-/* ================== СИСТЕМНАЯ ПАУЗА ================== */
-window.toggleGamePause = function(forceState) {
-    const overlay = document.getElementById('pause-overlay');
-    const btnIcon = document.getElementById('pause-icon');
-    
-    const newState = (forceState !== undefined) ? forceState : !isGamePausedSystem;
-    isGamePausedSystem = newState;
-
-    if (isGamePausedSystem) {
-        // ПАУЗА (Радио НЕ трогаем, только игру)
-        overlay.style.display = 'flex';
-        btnIcon.className = 'fas fa-play';
-    } else {
-        // ИГРАЕМ
-        overlay.style.display = 'none';
-        btnIcon.className = 'fas fa-pause';
-    }
-};
-
-/* ================== ИНФО О ИГРЕ ================== */
-window.openGameInfo = function() {
-    window.openSku("Snake", "Лицензия: Open Source\nВерсия: 1.0", CONFIG.defaultImage);
-};
-
-/* ================== Вкладки ================== */
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
+    // Пауза игры при уходе с вкладки
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
-        if (tabName === 'home') {
-            gameFrame.contentWindow.setGamePause(false);
-            toggleGamePause(false);
-        } else {
-            gameFrame.contentWindow.setGamePause(true);
-            toggleGamePause(true);
-        }
+        if (tabName === 'home') gameFrame.contentWindow.setGamePause(false);
+        else gameFrame.contentWindow.setGamePause(true);
     }
 };
 
-/* ================== Плеер ================== */
 function initPlayer() {
     const playBtn = document.getElementById('play-btn');
     if (playBtn) playBtn.addEventListener('click', togglePlayState);
@@ -71,6 +39,7 @@ function initPlayer() {
 function togglePlayState() {
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
+    const slider = document.getElementById('vol-slider');
 
     if (isApp) {
         if (isPlaying) {
@@ -79,6 +48,8 @@ function togglePlayState() {
             if(playerDiv) playerDiv.classList.remove('playing');
             isPlaying = false;
         } else {
+            // Принудительно передаем громкость перед воспроизведением
+            if (slider) window.Android.setVolume(parseFloat(slider.value));
             window.Android.playAudio();
             if(icon) icon.className = "fas fa-pause";
             if(playerDiv) playerDiv.classList.add('playing');
@@ -110,8 +81,12 @@ function initVolume() {
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
     if (finalVol < 0.1) finalVol = 0.5;
     slider.value = finalVol;
-    if (!isApp) audio.volume = finalVol;
-    if (isApp) setTimeout(() => { try { window.Android.setVolume(finalVol); } catch(e){} }, 1000);
+    
+    if (isApp) {
+        try { window.Android.setVolume(finalVol); } catch(e){}
+    } else {
+        audio.volume = finalVol;
+    }
 
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
