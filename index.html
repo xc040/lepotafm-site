@@ -1,147 +1,171 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LepotaFM Game</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
+:root {
+    --bg: #050510;
+    --card: #151525;
+    --neon-blue: #00f3ff;
+    --neon-pink: #bc13fe;
+    --text: #ffffff;
+}
 
-    <div class="neon-bg"></div>
-    <div class="scanlines"></div>
+/* ОСНОВНАЯ СТРУКТУРА (FLEXBOX) */
+body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
 
-    <!-- ГЛАВНЫЙ КОНТЕЙНЕР (На весь экран) -->
-    <div class="app-layout">
+/* Контейнер приложения */
+.app-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
 
-        <!-- 1. ВЕРХНЯЯ ЗОНА (Плеер + Вкладки) -->
-        <!-- Она не фиксирована, она просто стоит первой и не сжимается -->
-        <header class="top-section">
-            
-            <!-- ПЛЕЕР -->
-            <div class="inline-player">
-                <!-- Левая часть: Инфо -->
-                <div class="player-info-col">
-                    <div class="top-row">
-                        <div class="logo-small">LEPOTA<span class="neon-text">FM</span></div>
-                        <div class="vol-mini-container">
-                            <i class="fas fa-volume-down tiny-icon"></i>
-                            <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1">
-                        </div>
-                    </div>
-                    <div class="bot-row">
-                        <div class="marquee-container">
-                            <div class="marquee-content">
-                                <span id="track-name">Загрузка...</span>
-                                <span class="separator" id="track-sep"> - </span>
-                                <span id="artist-name">LepotaFM</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.neon-bg, .scanlines {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -2; pointer-events: none;
+}
+.neon-bg { background: radial-gradient(circle at 50% -20%, #1a1a40, #050510); }
+.scanlines { background: linear-gradient(to bottom, rgba(255,255,255,0.03) 50%, transparent 50%); background-size: 100% 4px; }
 
-                <!-- Правая часть: Кнопка Play (Круглая) -->
-                <div class="player-btn-col">
-                    <button id="play-btn" class="big-play-btn">
-                        <img id="mini-art" src="logo.jpg" alt="Art" onerror="this.src='logo.jpg'">
-                        <span class="icon-overlay"><i class="fas fa-play" id="play-icon"></i></span>
-                    </button>
-                </div>
-            </div>
+/* 1. ВЕРХНЯЯ СЕКЦИЯ */
+.top-section {
+    flex-shrink: 0;
+    background: rgba(21, 21, 37, 0.98);
+    border-bottom: 1px solid var(--neon-blue);
+    z-index: 10;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
 
-            <!-- ВКЛАДКИ -->
-            <nav class="tabs">
-                <button class="tab-btn active" onclick="openTab('game_tab', this)">Игра</button>
-                <button class="tab-btn" onclick="openTab('catalog', this)">Каталог</button>
-                <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
-                <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
-            </nav>
-        </header>
+/* Плеер */
+.inline-player {
+    display: flex; 
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.02);
+    align-items: stretch;
+    gap: 15px;
+}
+.player-info-col { flex: 1; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+.top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.logo-small { font-size: 16px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+.neon-text { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
 
-        <!-- 2. НИЖНЯЯ ЗОНА (Контент) -->
-        <!-- Занимает всё оставшееся место автоматически -->
-        <main class="content-section">
-            
-            <!-- ВКЛАДКА 1: ИГРА -->
-            <div id="game_tab" class="tab-pane active full-height">
-                <!-- IFRAME грузит игру из папки game -->
-                <iframe id="game-frame" src="game/index.html" title="Game"></iframe>
-            </div>
+.vol-mini-container { display: flex; align-items: center; gap: 8px; width: 50%; }
+.tiny-icon { font-size: 12px; color: #888; }
+#vol-slider { width: 100%; height: 4px; accent-color: var(--neon-blue); cursor: pointer; }
 
-            <!-- ВКЛАДКА 2: КАТАЛОГ -->
-            <div id="catalog" class="tab-pane scrollable-pad">
-                <div class="placeholder-box">
-                    <h3>Другие игры</h3>
-                    <p>Здесь можно разместить ссылки на RuStore</p>
-                </div>
-            </div>
+.bot-row { background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.1); }
+.marquee-container { width: 100%; overflow: hidden; white-space: nowrap; }
+.marquee-content { display: inline-block; padding-left: 100%; animation: marquee 10s linear infinite; font-size: 14px; color: var(--neon-blue); font-weight: bold; }
+.marquee-content span { color: white; }
+#artist-name { color: var(--neon-pink); }
+@keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-            <!-- ВКЛАДКА 3: ЭФИР -->
-            <div id="ether" class="tab-pane scrollable-pad">
-                <div class="history-list" id="history-container">
-                    <div class="loading-msg">Загрузка истории...</div>
-                </div>
-            </div>
+/* Кнопка Play */
+.player-btn-col { display: flex; align-items: center; justify-content: center; }
+.big-play-btn {
+    background: var(--neon-blue); border: none;
+    width: 60px; height: 60px; border-radius: 50%;
+    padding: 0; position: relative; overflow: hidden;
+    box-shadow: 0 0 15px var(--neon-blue); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.big-play-btn:active { transform: scale(0.95); }
+#mini-art { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; filter: brightness(0.7); }
+.inline-player.playing #mini-art { animation: spin 5s linear infinite; }
+.icon-overlay { position: relative; z-index: 2; font-size: 24px; color: #fff; text-shadow: 0 0 5px #000; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
-            <!-- ВКЛАДКА 4: МЕНЮ -->
-            <div id="menu" class="tab-pane scrollable-pad">
-                <div class="settings-box">
-                    
-                    <!-- Таймер сна -->
-                    <div class="feature-card">
-                        <div class="feature-header"><i class="fas fa-moon"></i> Таймер сна</div>
-                        <div class="timer-slider-box">
-                            <div class="timer-display"><span id="timer-val-display">Off</span></div>
-                            <input type="range" id="sleep-slider" min="0" max="180" step="15" value="0" oninput="updateSleepLabel(this.value)" onchange="setSleepTimer(this.value)">
-                            <div class="slider-labels"><span>0</span><span>3ч</span></div>
-                        </div>
-                        <div id="sleep-status" class="status-hidden">
-                            Стоп: <span id="sleep-countdown" class="neon-text">00:00</span>
-                        </div>
-                    </div>
+/* Вкладки */
+.tabs { display: flex; border-top: 1px solid rgba(255,255,255,0.1); }
+.tab-btn {
+    flex: 1; width: 25%;
+    background: none; border: none; color: #888;
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    padding: 12px 0; cursor: pointer; transition: 0.3s;
+    border-bottom: 3px solid transparent;
+}
+.tab-btn.active { color: var(--neon-blue); border-bottom: 3px solid var(--neon-blue); background: rgba(255,255,255,0.03); }
 
-                    <!-- Будильник -->
-                    <div class="feature-card">
-                        <div class="feature-header"><i class="fas fa-clock"></i> Будильник</div>
-                        <div class="alarm-create-box">
-                            <input type="time" id="new-alarm-time" class="neon-input">
-                            <button class="add-alarm-btn" onclick="addAlarm()">+</button>
-                        </div>
-                        <div class="days-selector">
-                             <span class="day-check" data-day="1" onclick="toggleDay(this)">Пн</span>
-                             <span class="day-check" data-day="2" onclick="toggleDay(this)">Вт</span>
-                             <span class="day-check" data-day="3" onclick="toggleDay(this)">Ср</span>
-                             <span class="day-check" data-day="4" onclick="toggleDay(this)">Чт</span>
-                             <span class="day-check" data-day="5" onclick="toggleDay(this)">Пт</span>
-                             <span class="day-check" data-day="6" onclick="toggleDay(this)">Сб</span>
-                             <span class="day-check" data-day="0" onclick="toggleDay(this)">Вс</span>
-                        </div>
-                        <div id="alarms-list"></div>
-                    </div>
+/* 2. НИЖНЯЯ СЕКЦИЯ */
+.content-section {
+    flex-grow: 1;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
 
-                    <div class="placeholder-box" style="padding: 10px;">
-                        <p style="font-size: 12px; color: #666;">v.GameMesh 1.0</p>
-                    </div>
-                </div>
-            </div>
+/* БАЗОВЫЙ СТИЛЬ ВКЛАДОК (СКРЫТЫ) */
+.tab-pane { 
+    display: none; /* По умолчанию скрыто */
+    width: 100%; 
+    height: 100%; 
+}
 
-        </main>
-    </div>
+/* ИСПРАВЛЕНИЕ: Показываем только если есть класс ACTIVE */
+/* Для обычных вкладок */
+.tab-pane.active { 
+    display: block; 
+}
 
-    <!-- Модалка инфо -->
-    <div id="info-modal" class="modal hidden">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeSku()">✕</button>
-            <img id="modal-art" src="logo.jpg">
-            <h2 id="modal-title">Track</h2>
-            <p id="modal-artist">Artist</p>
-            <div class="modal-actions">
-                <a href="https://t.me/lepotafm" target="_blank" class="action-btn tg">Telegram</a>
-            </div>
-        </div>
-    </div>
+/* Спец. стиль для ИГРЫ (Flex, чтобы iframe растянулся) */
+/* Важно: применяется ТОЛЬКО когда есть active */
+#game_tab.active {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+}
 
-    <script src="main.js"></script>
-</body>
-</html>
+#game-frame { width: 100%; height: 100%; border: none; }
+
+/* Стили для текстовых вкладок */
+.scrollable-pad {
+    padding: 15px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: var(--bg);
+}
+
+/* Остальные элементы */
+.history-item { display: flex; align-items: center; background: var(--card); margin-bottom: 8px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+.hist-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 15px; }
+.hist-info { flex: 1; overflow: hidden; }
+.hist-title { font-size: 14px; font-weight: bold; color: white; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-artist { font-size: 12px; color: var(--neon-blue); }
+.loading-msg { text-align: center; color: #666; margin-top: 20px; }
+.sku-btn { background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); width: 35px; height: 35px; border-radius: 50%; cursor: pointer; }
+
+/* Фичи */
+.feature-card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1); }
+.feature-header { font-size: 15px; font-weight: bold; color: var(--neon-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+.timer-slider-box { width: 100%; padding: 10px 0; }
+.timer-display { text-align: center; font-size: 18px; font-weight: bold; color: var(--neon-pink); }
+#sleep-slider { width: 100%; height: 5px; accent-color: var(--neon-pink); }
+.slider-labels { display: flex; justify-content: space-between; font-size: 12px; color: #666; }
+.status-hidden { display: none; text-align: center; color: #aaa; margin-top: 10px; }
+
+.alarm-create-box { display: flex; gap: 10px; margin-bottom: 10px; }
+.neon-input { background: #000; border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 5px; border-radius: 5px; font-size: 16px; outline: none; }
+.add-alarm-btn { flex: 1; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.days-selector { display: flex; gap: 4px; justify-content: space-between; margin-bottom: 10px; }
+.day-check { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #444; border-radius: 50%; font-size: 11px; color: #666; cursor: pointer; }
+.day-check.selected { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); font-weight: bold; }
+.alarm-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 5px; }
+.alarm-time { font-size: 18px; font-weight: bold; color: white; }
+.alarm-days { font-size: 11px; color: #888; }
+.alarm-del-btn { color: red; background: none; border: none; cursor: pointer; }
+
+/* Модалка */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+.modal.hidden { display: none; }
+.modal-content { background: #151525; border: 1px solid var(--neon-blue); padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; position: relative; }
+.close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; }
+#modal-art { width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover; margin-bottom: 15px; border: 2px solid var(--neon-pink); }
+#modal-title { font-size: 18px; color: white; margin: 5px 0; }
+#modal-artist { color: var(--neon-blue); margin-bottom: 20px; }
+.action-btn { display: block; padding: 12px; border-radius: 10px; background: #0088cc; color: white; text-decoration: none; font-weight: bold; }
