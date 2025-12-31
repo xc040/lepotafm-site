@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake</title>
+    <style>
+        body { 
+            margin: 0; padding: 0; background: #000; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden; color: white; 
+            font-family: sans-serif; touch-action: none; 
+        }
+        canvas { 
+            border: 1px solid #333; background: #111; 
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); 
+            max-width: 100%; max-height: 100%;
+        }
+        .start-msg { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; color: #00f3ff; pointer-events: none; 
+            font-size: 20px; font-weight: bold; text-shadow: 0 0 10px black;
+        }
+    </style>
+</head>
+<body>
+    <div class="start-msg" id="msg">Нажми чтобы играть</div>
+    <canvas width="320" height="320" id="game"></canvas>
+
+    <script>
+        var canvas = document.getElementById('game');
+        var context = canvas.getContext('2d');
+        var grid = 16;
+        var count = 0;
+        var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
+        var apple = { x: 320, y: 320 };
+        var gameStarted = false;
+
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
+
+        // ЗАПУСК ПО КЛИКУ/ТАЧУ
+        document.body.addEventListener('touchstart', function() { if(!gameStarted) startGame(); });
+        document.body.addEventListener('click', function() { if(!gameStarted) startGame(); });
+
+        // УПРАВЛЕНИЕ СВАЙПАМИ
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, false);
+
+        document.addEventListener('touchend', function(e) {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            handleGesture(touchStartX, touchStartY, touchEndX, touchEndY);
+        }, false);
+
+        function handleGesture(x1, y1, x2, y2) {
+            let xDiff = x2 - x1;
+            let yDiff = y2 - y1;
+            if (Math.abs(xDiff) > Math.abs(yDiff)) {
+                if (xDiff > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
+                else if (xDiff < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
+            } else {
+                if (yDiff > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
+                else if (yDiff < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
+            }
+        }
+
+        function startGame() {
+            gameStarted = true;
+            document.getElementById('msg').style.display = 'none';
+            loop();
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            if (++count < 6) return;
+            count = 0;
+            context.clearRect(0,0,canvas.width,canvas.height);
+
+            snake.x += snake.dx;
+            snake.y += snake.dy;
+
+            // Стенки (проход сквозь)
+            if (snake.x < 0) snake.x = canvas.width - grid;
+            else if (snake.x >= canvas.width) snake.x = 0;
+            if (snake.y < 0) snake.y = canvas.height - grid;
+            else if (snake.y >= canvas.height) snake.y = 0;
+
+            snake.cells.unshift({x: snake.x, y: snake.y});
+            if (snake.cells.length > snake.maxCells) snake.cells.pop();
+
+            // Яблоко
+            context.fillStyle = '#ff0055'; 
+            context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+            // Змейка
+            context.fillStyle = '#00f3ff'; 
+            snake.cells.forEach(function(cell, index) {
+                context.fillRect(cell.x, cell.y, grid-1, grid-1);
+                
+                // Поедание
+                if (cell.x === apple.x && cell.y === apple.y) {
+                    snake.maxCells++;
+                    apple.x = getRandomInt(0, 20) * grid;
+                    apple.y = getRandomInt(0, 20) * grid;
+                }
+                
+                // Столкновение с хвостом
+                for (var i = index + 1; i < snake.cells.length; i++) {
+                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+                        snake.x = 160; snake.y = 160; snake.cells = []; snake.maxCells = 4; snake.dx = grid; snake.dy = 0;
+                        gameStarted = false;
+                        document.getElementById('msg').style.display = 'block';
+                        document.getElementById('msg').innerText = "Game Over\nНажми для рестарта";
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
