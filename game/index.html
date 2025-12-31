@@ -4,102 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Snake</title>
-    <!-- Подключаем иконки для кнопки паузы -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { 
-            margin: 0; padding: 0; background: #000; 
-            display: flex; justify-content: center; align-items: center; 
-            height: 100vh; overflow: hidden; color: white; 
-            font-family: sans-serif; touch-action: none; 
-        }
-        canvas { 
-            border: 1px solid #333; background: #111; 
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); 
-            max-width: 100%; max-height: 100%;
-        }
-        .start-msg { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; color: #00f3ff; pointer-events: none; 
-            font-size: 20px; font-weight: bold; text-shadow: 0 0 10px black;
-            z-index: 10;
-        }
-        /* КНОПКА ПАУЗЫ */
-        .pause-btn {
-            position: absolute; top: 15px; right: 15px;
-            width: 40px; height: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #00f3ff; border-radius: 50%;
-            color: #00f3ff; font-size: 16px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 20;
-            backdrop-filter: blur(5px);
-        }
-        .pause-btn:active { background: #00f3ff; color: black; }
-        
-        /* Надпись ПАУЗА */
-        .paused-text {
-            display: none; position: absolute; top: 40%; 
-            font-size: 30px; color: #bc13fe; font-weight: bold; 
-            text-shadow: 0 0 10px black; pointer-events: none;
-        }
+        body { margin: 0; padding: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; touch-action: none; }
+        canvas { border: 1px solid #333; background: #111; box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); max-width: 100%; max-height: 100%; position: relative; z-index: 1; }
+        .start-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #00f3ff; pointer-events: none; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px black; z-index: 10; }
+        .pause-btn { position: absolute; top: 15px; right: 15px; width: 45px; height: 45px; background: rgba(0, 0, 0, 0.6); border: 2px solid #00f3ff; border-radius: 50%; color: #00f3ff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 999; pointer-events: auto; }
+        .paused-text { display: none; position: absolute; top: 40%; font-size: 30px; color: #bc13fe; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 10; }
     </style>
 </head>
 <body>
     <div class="start-msg" id="msg">Нажми чтобы играть</div>
     <div class="paused-text" id="paused-msg">ПАУЗА</div>
-    
-    <!-- Кнопка Паузы -->
-    <button class="pause-btn" id="btn-pause" onclick="togglePauseManual(event)">
-        <i class="fas fa-pause" id="icon-pause"></i>
-    </button>
-
+    <button class="pause-btn" id="btn-pause" onclick="togglePauseManual(event)"><i class="fas fa-pause" id="icon-pause"></i></button>
     <canvas width="320" height="320" id="game"></canvas>
-
     <script>
         var canvas = document.getElementById('game');
         var context = canvas.getContext('2d');
-        var grid = 16;
-        var count = 0;
+        var grid = 16, count = 0, gameLoopId;
         var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], maxCells: 4 };
         var apple = { x: 320, y: 320 };
-        var gameStarted = false;
-        
-        // Переменная паузы
-        var isGamePaused = false;
+        var gameStarted = false, isGamePaused = false;
 
         function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
 
-        // ЗАПУСК ПО КЛИКУ/ТАЧУ
-        document.body.addEventListener('touchstart', function(e) { 
-            if(e.target.closest('.pause-btn')) return; // Игнорируем клик по кнопке
-            if(!gameStarted) startGame(); 
-        });
         document.body.addEventListener('click', function(e) { 
-            if(e.target.closest('.pause-btn')) return; // Игнорируем клик по кнопке
+            if(e.target.closest('.pause-btn')) return; 
             if(!gameStarted) startGame(); 
         });
 
-        // УПРАВЛЕНИЕ СВАЙПАМИ
-        let touchStartX = 0;
-        let touchStartY = 0;
+        function startGame() { if(gameStarted) return; gameStarted = true; document.getElementById('msg').style.display = 'none'; loop(); }
         
-        document.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, false);
+        function togglePauseManual(e) { 
+            e.preventDefault();
+            e.stopPropagation(); 
+            setGamePause(!isGamePaused); 
+        }
 
-        document.addEventListener('touchend', function(e) {
-            let touchEndX = e.changedTouches[0].screenX;
-            let touchEndY = e.changedTouches[0].screenY;
-            handleGesture(touchStartX, touchStartY, touchEndX, touchEndY);
-        }, false);
+        window.setGamePause = function(state) { 
+            if (!gameStarted) return; 
+            isGamePaused = state; 
+            const icon = document.getElementById('icon-pause'); 
+            const msg = document.getElementById('paused-msg'); 
+            if (isGamePaused) { 
+                cancelAnimationFrame(gameLoopId);
+                icon.className = "fas fa-play"; 
+                msg.style.display = "block"; 
+            } else { 
+                icon.className = "fas fa-pause"; 
+                msg.style.display = "none"; 
+                loop(); 
+            } 
+        };
 
-        function handleGesture(x1, y1, x2, y2) {
-            if (isGamePaused) return; // Не управляем на паузе
+        function loop() { 
+            if (isGamePaused) return;
+            gameLoopId = requestAnimationFrame(loop); 
+            if (++count < 6) return; 
+            count = 0; context.clearRect(0,0,canvas.width,canvas.height); 
+            snake.x += snake.dx; snake.y += snake.dy; 
+            if (snake.x < 0) snake.x = canvas.width - grid; else if (snake.x >= canvas.width) snake.x = 0; 
+            if (snake.y < 0) snake.y = canvas.height - grid; else if (snake.y >= canvas.height) snake.y = 0; 
+            snake.cells.unshift({x: snake.x, y: snake.y}); 
+            if (snake.cells.length > snake.maxCells) snake.cells.pop(); 
+            context.fillStyle = '#ff0055'; context.fillRect(apple.x, apple.y, grid-1, grid-1); 
+            context.fillStyle = '#00f3ff'; 
+            snake.cells.forEach(function(cell, index) { 
+                context.fillRect(cell.x, cell.y, grid-1, grid-1); 
+                if (cell.x === apple.x && cell.y === apple.y) { snake.maxCells++; apple.x = getRandomInt(0, 20) * grid; apple.y = getRandomInt(0, 20) * grid; } 
+                for (var i = index + 1; i < snake.cells.length; i++) { 
+                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) { 
+                        snake.x = 160; snake.y = 160; snake.cells = []; snake.maxCells = 4; snake.dx = grid; snake.dy = 0; 
+                        gameStarted = false; cancelAnimationFrame(gameLoopId);
+                        document.getElementById('msg').style.display = 'block'; 
+                        document.getElementById('msg').innerText = "Game Over\nНажми для рестарта"; 
+                    } 
+                } 
+            }); 
+        }
 
-            let xDiff = x2 - x1;
-            let yDiff = y2 - y1;
+        // Управление свайпами
+        let touchStartX = 0, touchStartY = 0;
+        document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, {passive: false});
+        document.addEventListener('touchmove', (e) => {
+            if (isGamePaused) return;
+            let xDiff = e.touches[0].clientX - touchStartX;
+            let yDiff = e.touches[0].clientY - touchStartY;
             if (Math.abs(xDiff) > Math.abs(yDiff)) {
                 if (xDiff > 0 && snake.dx === 0) { snake.dx = grid; snake.dy = 0; }
                 else if (xDiff < 0 && snake.dx === 0) { snake.dx = -grid; snake.dy = 0; }
@@ -107,88 +97,8 @@
                 if (yDiff > 0 && snake.dy === 0) { snake.dy = grid; snake.dx = 0; }
                 else if (yDiff < 0 && snake.dy === 0) { snake.dy = -grid; snake.dx = 0; }
             }
-        }
-
-        function startGame() {
-            if(gameStarted) return;
-            gameStarted = true;
-            document.getElementById('msg').style.display = 'none';
-            loop();
-        }
-
-        // ЛОГИКА ПАУЗЫ
-        function togglePauseManual(e) {
-            e.stopPropagation(); // Чтобы не срабатывал клик по body
-            setGamePause(!isGamePaused);
-        }
-
-        // Глобальная функция для управления извне (из main.js)
-        window.setGamePause = function(state) {
-            // Если игра не начата или уже проиграна - ничего не делаем
-            if (!gameStarted) return; 
-
-            isGamePaused = state;
-            
-            const icon = document.getElementById('icon-pause');
-            const msg = document.getElementById('paused-msg');
-
-            if (isGamePaused) {
-                icon.className = "fas fa-play";
-                msg.style.display = "block";
-            } else {
-                icon.className = "fas fa-pause";
-                msg.style.display = "none";
-                loop(); // Перезапускаем цикл
-            }
-        };
-
-        function loop() {
-            if (isGamePaused) return; // Останавливаем рендер
-
-            requestAnimationFrame(loop);
-            if (++count < 6) return;
-            count = 0;
-            context.clearRect(0,0,canvas.width,canvas.height);
-
-            snake.x += snake.dx;
-            snake.y += snake.dy;
-
-            // Стенки (проход сквозь)
-            if (snake.x < 0) snake.x = canvas.width - grid;
-            else if (snake.x >= canvas.width) snake.x = 0;
-            if (snake.y < 0) snake.y = canvas.height - grid;
-            else if (snake.y >= canvas.height) snake.y = 0;
-
-            snake.cells.unshift({x: snake.x, y: snake.y});
-            if (snake.cells.length > snake.maxCells) snake.cells.pop();
-
-            // Яблоко
-            context.fillStyle = '#ff0055'; 
-            context.fillRect(apple.x, apple.y, grid-1, grid-1);
-
-            // Змейка
-            context.fillStyle = '#00f3ff'; 
-            snake.cells.forEach(function(cell, index) {
-                context.fillRect(cell.x, cell.y, grid-1, grid-1);
-                
-                // Поедание
-                if (cell.x === apple.x && cell.y === apple.y) {
-                    snake.maxCells++;
-                    apple.x = getRandomInt(0, 20) * grid;
-                    apple.y = getRandomInt(0, 20) * grid;
-                }
-                
-                // Столкновение с хвостом
-                for (var i = index + 1; i < snake.cells.length; i++) {
-                    if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                        snake.x = 160; snake.y = 160; snake.cells = []; snake.maxCells = 4; snake.dx = grid; snake.dy = 0;
-                        gameStarted = false;
-                        document.getElementById('msg').style.display = 'block';
-                        document.getElementById('msg').innerText = "Game Over\nНажми для рестарта";
-                    }
-                }
-            });
-        }
+            e.preventDefault();
+        }, {passive: false});
     </script>
 </body>
 </html>
