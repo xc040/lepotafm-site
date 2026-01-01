@@ -1,9 +1,11 @@
+// --- НАСТРОЙКИ (Меняй здесь для Тест-версии) ---
 const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
 };
+// -----------------------------------------------
 
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
@@ -31,12 +33,10 @@ window.openTab = function(tabName, btnElement) {
     }
 };
 
-// Функция загрузки игры из каталога
 window.loadGame = function(path) {
     const frame = document.getElementById('game-frame');
     if(frame) {
         frame.src = path;
-        // Находим кнопку вкладки "Игра" для подсветки
         const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
