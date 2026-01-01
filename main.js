@@ -1,4 +1,3 @@
-// --- КОНФИГУРАЦИЯ ---
 const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
@@ -26,22 +25,18 @@ window.openTab = function(tabName, btnElement) {
 
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
-        // Умная пауза: только ставим на паузу при уходе. При возврате не снимаем!
         if (tabName !== 'home') {
             gameFrame.contentWindow.setGamePause(true);
         }
     }
 };
 
-// Исправленная функция загрузки игры
 window.loadGame = function(gamePath) {
     const frame = document.getElementById('game-frame');
     if(frame) {
-        // Добавляем метку времени, чтобы iframe принудительно обновился
         const buster = gamePath.includes('?') ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
         
-        // Переключаем на вкладку Игра
         const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
