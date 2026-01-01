@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Страж Эфира 13.9 - Elite Master Fix</title>
+    <title>Страж Эфира 14.0 - Elite Radar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
@@ -46,7 +46,7 @@
         }
         #signal-bar { width: 100%; height: 100%; background: var(--neon-green); transition: width 0.3s; }
 
-        /* МИССИИ (СЛЕВА ВНИЗУ) */
+        /* МИССИИ (УРОВЕНЬ) */
         #mission-box {
             position: absolute; bottom: 35px; left: 20px;
             background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
@@ -56,7 +56,7 @@
         #mission-title { font-size: 8px; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 2px; }
         #mission-text { font-size: 10px; font-weight: bold; color: #fff; line-height: 1.2; }
 
-        /* ДЖОЙСТИК (СПРАВА) */
+        /* ДЖОЙСТИК СПРАВА */
         #joystick-zone { 
             position: absolute; bottom: 40px; right: 30px; width: 110px; height: 110px; 
             background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.2); 
@@ -89,8 +89,7 @@
         }
         .shop-item.locked { opacity: 0.3; cursor: not-allowed; }
         .shop-item i { color: var(--neon-blue); font-size: 22px; margin-bottom: 5px; display: block; }
-        .shop-item b { font-size: 12px; color: var(--neon-green); display: block; }
-        /* ФИКС ЦВЕТА ЦЕНЫ */
+        .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
 
         /* ЭКРАНЫ */
@@ -125,12 +124,12 @@
         
         <div id="top-right" class="stat-box">
             <div>ЯДРО: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
-            <!-- ФИКС ЦВЕТА БАЛАНСА -->
             <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
         </div>
 
+        <!-- FIX: Название изм. на УРОВЕНЬ -->
         <div id="mission-box" class="hidden">
-            <div id="mission-title">Сектор <span id="m-id">1</span></div>
+            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
             <div id="mission-text">Загрузка...</div>
         </div>
 
@@ -200,7 +199,7 @@ window.addEventListener('load', () => {
         resize();
         initJoystick();
         window.addEventListener('resize', resize);
-        console.log("Elite Master System: Ready");
+        console.log("Elite Master System v14.0: Ready");
     }
 });
 
@@ -210,7 +209,7 @@ function resize() {
     canvas.height = window.innerHeight;
 }
 
-/** --- ЗАПУСК ИГРЫ (FIX: ВОССТАНОВЛЕНИЕ СПАВНА) --- */
+/** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
 function startGame() {
     if (started) return;
 
@@ -239,7 +238,7 @@ function startGame() {
         snake.segments.push({x: snake.x, y: snake.y});
     }
 
-    // 4. ПРИНУДИТЕЛЬНАЯ ОЧИСТКА И ПЕРВИЧНЫЙ СПАВН (FIX)
+    // 4. Очистка массивов
     entities.food = [];
     entities.enemies = [];
     entities.particles = [];
@@ -247,7 +246,7 @@ function startGame() {
     entities.bullets = [];
     entities.drones = [];
 
-    // Создаем первые 15 байтов данных сразу
+    // Принудительный спавн ресурсов при старте
     for(let i=0; i<15; i++) spawnFood();
 
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
@@ -264,6 +263,7 @@ function startGame() {
     window.sigInt = setInterval(() => { 
         if(started && !paused && curMission > 1) {
             let dist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+            // ФИЧА: Около Ядра сигнал падает медленнее
             let decay = dist < 450 ? 0.35 : 1.25;
             signalLevel = Math.max(0, signalLevel - decay); 
             if(signalLevel <= 0) gameOver();
@@ -272,21 +272,22 @@ function startGame() {
     }, 1500);
 }
 
-/** --- СИСТЕМА МИССИЙ --- */
+/** --- СИСТЕМА УРОВНЕЙ (МИССИИ) --- */
 const baseMissions = [
-    { t: "Сектор 1: Начни движение (стик справа)", check: () => Math.abs(input.x) > 0.1 || Math.abs(input.y) > 0.1 },
-    { t: "Сектор 2: Собери 1 байт данных", check: () => missionProgress >= 1 },
-    { t: "Сектор 3: Уничтожь Глюк ударом ГОЛОВЫ", check: () => missionProgress >= 1 },
-    { t: "Сектор 4: Набери 1200 CR на оборону", check: () => score >= 1200 },
-    { t: "Сектор 5: Купи ПУШКУ в магазине", check: () => entities.turrets.some(t => t.type === 'bolt') }
+    { t: "Охраняй базу: начни движение", check: () => Math.abs(input.x) > 0.1 || Math.abs(input.y) > 0.1 },
+    { t: "Собери 1 байт данных", check: () => missionProgress >= 1 },
+    { t: "Уничтожь Глюк ударом ГОЛОВЫ", check: () => missionProgress >= 1 },
+    { t: "Набери 1200 CR на оборону", check: () => score >= 1200 },
+    { t: "Купи ПУШКУ в магазине", check: () => entities.turrets.some(t => t.type === 'bolt') }
 ];
 
 function getMission(id) {
     if (id < baseMissions.length) return baseMissions[id];
+    // Генератор бесконечных уровней
     const types = [
         { t: "Зачистка: Убей {n} Осколков", n: 5 + id, type: 'box', check: () => missionProgress >= 5 + id },
-        { t: "Перехват: Убей {n} Векторов", n: 2 + Math.floor(id/3), type: 'tri', check: () => missionProgress >= 2 + Math.floor(id/3) },
-        { t: "Связь: Собери {n} байтов", n: 10 + id, check: () => missionProgress >= 10 + id }
+        { t: "Перехват: Убей {n} Векторов", n: 3 + Math.floor(id/3), type: 'tri', check: () => missionProgress >= 3 + Math.floor(id/3) },
+        { t: "Резонанс: Собери {n} байтов", n: 10 + id, check: () => missionProgress >= 10 + id }
     ];
     return types[id % types.length];
 }
@@ -305,7 +306,7 @@ function updateMission() {
     }
 }
 
-/** --- МАГАЗИН (FIX БАЛАНСА И ЦЕН) --- */
+/** --- МАГАЗИН И МОДЕРНИЗАЦИЯ --- */
 function buyUpgrade(type, cost) {
     if (score < cost) return;
     
@@ -333,7 +334,7 @@ function toggleShop(show) {
     if(!started) return;
     paused = show;
     document.getElementById('shop-modal').classList.toggle('hidden', !show);
-    updateUI(); // Обновляем баланс при открытии
+    updateUI();
     if(!show) { gameId = requestAnimationFrame(gameLoop); } 
     else { cancelAnimationFrame(gameId); }
 }
@@ -353,28 +354,25 @@ function updateUI() {
         bar.style.width = signalLevel + '%';
         bar.style.background = signalLevel < 30 ? 'var(--neon-red)' : 'var(--neon-green)';
     }
-    // Обновление баланса в основном интерфейсе
     const sv = document.getElementById('score-val');
     if(sv) sv.innerText = Math.floor(score);
-    
-    // Обновление баланса в магазине (FIX)
     const sc = document.getElementById('shop-credits');
     if(sc) sc.innerText = Math.floor(score);
-    
     const lv = document.getElementById('lives-val');
     if(lv) lv.innerText = lives;
 }
 
-/** --- UPDATE LOOP --- */
+/** --- ЦИКЛ ОБНОВЛЕНИЯ (UPDATE) --- */
 function update() {
     if(!started || paused) return;
     frameCount++;
     updateMission();
 
-    // 1. Движение
+    // 1. Движение змеи
     if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
     snake.x += Math.cos(snake.angle) * snake.speed;
     snake.y += Math.sin(snake.angle) * snake.speed;
+
     // 2. Loop Мира (Червоточины)
     if(snake.x < 0) snake.x = WORLD_SIZE; if(snake.x > WORLD_SIZE) snake.x = 0;
     if(snake.y < 0) snake.y = WORLD_SIZE; if(snake.y > WORLD_SIZE) snake.y = 0;
@@ -386,10 +384,10 @@ function update() {
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
-    // 4. Логика защиты (Специализация)
+    // 4. Отработка специализации турелей
     entities.turrets.forEach(t => {
         if (t.type === 'bolt') {
-            if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 15) {
+            if (Date.now() - t.lastShot > 1700) {
                 let target = entities.enemies.find(en => en.type === 'box');
                 if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1000) {
                     const a = Math.atan2(target.y - t.y, target.x - t.x);
@@ -398,7 +396,7 @@ function update() {
                 }
             }
         } else if (t.type === 'laser') {
-            if (Date.now() - t.lastShot > 2500) {
+            if (Date.now() - t.lastShot > 2600) {
                 let target = entities.enemies.find(en => en.type === 'tri');
                 if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1600) {
                     t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
@@ -408,8 +406,7 @@ function update() {
             }
         }
     });
-
-    // 5. Дроны (Feat 14)
+    // 5. Дроны (Feature 14)
     entities.drones.forEach(d => {
         d.angle += 0.04;
         const dx = BASE_POS.x + Math.cos(d.angle) * d.dist;
@@ -431,7 +428,7 @@ function update() {
         if(Math.hypot(b.x - BASE_POS.x, b.y - BASE_POS.y) > 2500) entities.bullets.splice(i,1);
     });
 
-    // 7. Враги (FIX: ПРИНУДИТЕЛЬНЫЙ СПАВН)
+    // 7. Глюки (Враги)
     if(started && curMission >= 2 && Math.random() < (0.0075 + (curMission * 0.0003))) spawnEnemy();
 
     entities.enemies.forEach((en, i) => {
@@ -462,7 +459,7 @@ function update() {
             updateUI();
         }
 
-        // Урон Змее (Уменьшение длины)
+        // Урон Змее
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
             score += 100;
             snake.length = Math.max(10, snake.length - 8); 
@@ -474,28 +471,17 @@ function update() {
         }
     });
 
-    // 8. Ресурсы и Грави-луч (Feat 18)
+    // 8. Байты данных (МАГНИТ УДАЛЕН)
     entities.food.forEach((f, i) => {
-        const dCore = Math.hypot(f.x - BASE_POS.x, f.y - BASE_POS.y);
         const dSnake = Math.hypot(f.x - snake.x, f.y - snake.y);
 
-        if (dCore < 350) { // Ядро притягивает байты
-            const a = Math.atan2(BASE_POS.y - f.y, BASE_POS.x - f.x);
-            f.x += Math.cos(a) * 4.5; f.y += Math.sin(a) * 4.5;
-        }
-
-        if(dSnake < 65) { // Сбор игроком
+        // Сбор только змейкой вручную
+        if(dSnake < 65) { 
             signalLevel = Math.min(100, signalLevel + 22);
             snake.length += 4; score += 35;
             entities.food.splice(i, 1); spawnFood();
             if(curMission === 1) missionProgress++;
             if(curMission >= 5) missionProgress++;
-            updateUI();
-        }
-        
-        if (dCore < 55) { // Авто-захват центром
-            signalLevel = Math.min(100, signalLevel + 7);
-            entities.food.splice(i, 1); spawnFood();
             updateUI();
         }
     });
@@ -507,7 +493,7 @@ function update() {
     });
 }
 
-/** --- ОТРИСОВКА (RENDER ENGINE) --- */
+/** --- ГРАФИЧЕСКИЙ ДВИЖОК --- */
 function gameLoop() {
     if(!started || paused) return;
     update();
@@ -524,14 +510,14 @@ function draw() {
     ctx.scale(ZOOM, ZOOM);
     ctx.translate(-camera.x, -camera.y);
 
-    // Сетка мира
+    // Сетка
     ctx.strokeStyle = '#112'; ctx.lineWidth = 10;
     for(let i=0; i<=WORLD_SIZE; i+=1000) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
     }
 
-    // 1. Ядро и Грави-поле
+    // 1. Ядро
     if(shieldActive) {
         ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 15;
         ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 115, 0, 6.28); ctx.stroke();
@@ -540,20 +526,31 @@ function draw() {
     ctx.fillStyle = '#0a0a1a'; ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 65, 0, 6.28); ctx.fill();
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 350 + Math.sin(frameCount*0.1)*15, 0, 6.28); ctx.stroke();
 
-    // 2. РАДАР (Метки по форме врага)
+    // 2. ОБНОВЛЕННЫЙ ДИНАМИЧЕСКИЙ РАДАР (Чем ближе враг, тем ближе метка)
     entities.enemies.forEach(en => {
         const ang = Math.atan2(en.y - BASE_POS.y, en.x - BASE_POS.x);
-        ctx.save(); ctx.translate(BASE_POS.x, BASE_POS.y); ctx.rotate(ang);
+        const realDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
+        
+        // Масштабируем расстояние для радара (от 180 до 600 пикселей от центра Ядра)
+        const radarDist = Math.max(160, Math.min(800, realDist * 0.4));
+        
+        ctx.save();
+        ctx.translate(BASE_POS.x, BASE_POS.y);
+        ctx.rotate(ang);
         ctx.fillStyle = '#ff0055';
-        if(en.type === 'box') { ctx.fillRect(180, -8, 16, 16); }
-        else { ctx.beginPath(); ctx.moveTo(180, -10); ctx.lineTo(200, 0); ctx.lineTo(180, 10); ctx.fill(); }
+        ctx.globalAlpha = 0.8;
+        
+        if(en.type === 'box') { 
+            ctx.fillRect(radarDist, -10, 20, 20); // Квадратная метка
+        } else { 
+            ctx.beginPath(); // Треугольная метка
+            ctx.moveTo(radarDist, -12); ctx.lineTo(radarDist + 25, 0); ctx.lineTo(radarDist, 12); ctx.fill(); 
+        }
         ctx.restore();
     });
 
-    // 3. Турели и Дроны
+    // 3. Защитные системы
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
         ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
@@ -564,13 +561,14 @@ function draw() {
             ctx.strokeStyle = '#bc13fe'; ctx.lineWidth = 5; ctx.stroke();
         }
     });
+
     entities.drones.forEach(d => {
         ctx.fillStyle = '#bc13fe'; ctx.beginPath(); ctx.arc(d.x, d.y, 16, 0, 6.28); ctx.fill();
     });
 
-    // 4. Объекты
+    // 4. Еда и Враги
     ctx.fillStyle = 'yellow'; entities.bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 6.28); ctx.fill(); });
-    ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 24, 0, 6.28); ctx.fill(); });
+    ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 25, 0, 6.28); ctx.fill(); });
     entities.enemies.forEach(en => {
         ctx.fillStyle = '#ff0055'; 
         if(en.type === 'tri') { ctx.beginPath(); ctx.moveTo(en.x, en.y-45); ctx.lineTo(en.x+35, en.y+20); ctx.lineTo(en.x-35, en.y+20); ctx.fill(); }
@@ -592,13 +590,14 @@ function draw() {
     ctx.restore();
 
     // 7. Частицы
+    ctx.globalAlpha = 1.0;
     entities.particles.forEach(p => {
         ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 12, 12);
     });
     ctx.globalAlpha = 1.0; ctx.restore();
 }
 
-/** --- ГЕНЕРАТОРЫ (HELPERS) --- */
+/** --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
 function spawnEnemy() {
     const side = Math.floor(Math.random() * 4);
     let x, y;
@@ -625,10 +624,10 @@ function gameOver() {
     started = false;
     if(window.sigInt) clearInterval(window.sigInt);
     document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Секторов пройдено: " + curMission + " | Собрано данных: " + Math.floor(score);
+    document.getElementById('final-stats').innerText = "Уровней пройдено: " + curMission + " | Данных: " + Math.floor(score);
 }
 
-/** --- ДЖОЙСТИК (ФИНАЛЬНЫЙ ФИКС) --- */
+/** --- ДЖОЙСТИК (RIGHT HAND) --- */
 function initJoystick() {
     const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
     let active = false;
@@ -648,7 +647,7 @@ function initJoystick() {
     window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
 }
 
-// ПРЯМОЙ ЗАПУСК ИНИЦИАЛИЗАЦИИ
+// Запуск инициализации джойстика
 init();
 </script>
 </body>
