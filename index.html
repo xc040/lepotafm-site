@@ -49,31 +49,31 @@
 
         <!-- НИЗ: Контент -->
         <main class="main-content">
-            <!-- 1. ОКНО ИГРЫ (Сюда загружаются игры из каталога) -->
+            <!-- Вкладка игры -->
             <div id="home" class="tab-pane active full-height">
                 <iframe id="game-frame" src="game/index.html" frameborder="0"></iframe>
             </div>
 
-            <!-- 2. КАТАЛОГ ИГР -->
+            <!-- Вкладка каталога -->
             <div id="catalog" class="tab-pane scrollable-pad">
                 <div class="catalog-grid">
                     
                     <!-- Кнопка 1: Змейка -->
-                    <div class="game-card" onclick="loadGame('game/index.html')">
+                    <div class="game-card" onclick="loadGame('./game/index.html')">
                         <div class="game-card-icon"><i class="fas fa-snake"></i></div>
                         <div class="game-card-info">
-                            <span class="game-card-title">Классическая Змейка</span>
-                            <span class="game-card-desc">Игра в папке /game/</span>
+                            <span class="game-card-title">Змейка</span>
+                            <span class="game-card-desc">Классический режим</span>
                         </div>
                         <i class="fas fa-play play-mini"></i>
                     </div>
 
                     <!-- Кнопка 2: Страж Эфира -->
-                    <div class="game-card" onclick="loadGame('games/strazh/index.html')">
+                    <div class="game-card" onclick="loadGame('./games/index.html')">
                         <div class="game-card-icon" style="color:#bc13fe"><i class="fas fa-shield-virus"></i></div>
                         <div class="game-card-info">
                             <span class="game-card-title">Страж Эфира</span>
-                            <span class="game-card-desc">Игра в папке /games/strazh/</span>
+                            <span class="game-card-desc">Защита радиоволны</span>
                         </div>
                         <i class="fas fa-play play-mini" style="color:#bc13fe"></i>
                     </div>
