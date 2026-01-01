@@ -3,82 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Signal Defender - LepotaFM Master Edition</title>
+    <title>Signal Defender - Master 6.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --neon-green: #39ff14;
-            --neon-blue: #00f3ff;
-            --neon-red: #ff0055;
-            --neon-purple: #bc13fe;
-        }
-        body {
-            margin: 0; padding: 0; background: #000;
-            color: #fff; font-family: 'Segoe UI', sans-serif;
-            overflow: hidden; touch-action: none; user-select: none;
-        }
+        :root { --neon-green: #39ff14; --neon-blue: #00f3ff; --neon-red: #ff0055; --neon-purple: #bc13fe; }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; user-select: none; }
         canvas { display: block; }
 
         /* ИНТЕРФЕЙС */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .stat-box {
-            position: absolute; background: rgba(5, 5, 20, 0.8);
-            padding: 10px 15px; border: 1px solid var(--neon-blue);
-            border-radius: 12px; pointer-events: auto; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
-        }
+        .stat-box { position: absolute; background: rgba(5, 5, 20, 0.85); padding: 8px 12px; border: 1px solid var(--neon-blue); border-radius: 10px; pointer-events: auto; }
         #top-left { top: 65px; left: 15px; }
         #top-right { top: 65px; right: 15px; text-align: right; }
 
-        .bar-container { width: 100px; height: 8px; background: #111; border-radius: 4px; overflow: hidden; margin-top: 5px; border: 1px solid #333; }
-        #signal-bar { width: 100%; height: 100%; background: var(--neon-green); transition: width 0.3s; }
+        .app-controls { position: absolute; top: 0; left: 0; right: 0; height: 55px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #0f0f1e; border-bottom: 2px solid var(--neon-purple); pointer-events: auto; }
+        .control-btn { width: 38px; height: 38px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--neon-blue); border-radius: 50%; color: var(--neon-blue); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        .app-controls {
-            position: absolute; top: 0; left: 0; right: 0; height: 55px;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 15px; background: rgba(15, 15, 30, 0.98);
-            border-bottom: 2px solid var(--neon-purple); pointer-events: auto;
-        }
-        .control-btn {
-            width: 40px; height: 40px; background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--neon-blue); border-radius: 50%;
-            color: var(--neon-blue); display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
+        /* МОДАЛКА */
+        .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+        .modal-content { width: 80%; max-width: 320px; background: #0a0a1a; border: 1px solid var(--neon-blue); padding: 20px; border-radius: 20px; position: relative; }
+        .license-text { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #444; color: var(--neon-purple); font-style: italic; font-size: 11px; }
 
-        /* МОДАЛЬНОЕ ОКНО ИНФО */
-        .modal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center;
-        }
-        .modal-content {
-            width: 85%; max-width: 350px; background: #0a0a1a; border: 1px solid var(--neon-blue);
-            padding: 25px; border-radius: 20px; text-align: left; position: relative;
-        }
-        .modal-content h2 { color: var(--neon-blue); margin-top: 0; font-size: 18px; text-align: center; }
-        .modal-content p, .modal-content li { font-size: 13px; color: #ccc; line-height: 1.4; }
-        .license-text { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #444; color: var(--neon-purple) !important; font-style: italic; font-size: 11px !important; }
-        .close-btn { position: absolute; top: 10px; right: 10px; color: #666; font-size: 20px; cursor: pointer; }
+        .btn-start { padding: 12px 30px; font-size: 18px; font-weight: bold; background: none; border: 2px solid var(--neon-green); color: var(--neon-green); border-radius: 25px; cursor: pointer; box-shadow: 0 0 10px var(--neon-green); }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; pointer-events: auto; }
 
-        /* ЭКРАНЫ */
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 100; pointer-events: auto;
-        }
-        .btn-start {
-            padding: 15px 40px; font-size: 18px; font-weight: bold; background: none;
-            border: 2px solid var(--neon-green); color: var(--neon-green);
-            border-radius: 30px; cursor: pointer; box-shadow: 0 0 15px var(--neon-green);
-        }
-
-        #joystick-zone {
-            position: absolute; bottom: 50px; left: 50px; width: 100px; height: 100px;
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.1); border-radius: 50%; pointer-events: auto;
-        }
-        #joystick-stick {
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px;
-            background: var(--neon-blue); border-radius: 50%; transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px var(--neon-blue);
-        }
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 90px; height: 90px; background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.1); border-radius: 50%; pointer-events: auto; }
+        #joystick-stick { position: absolute; top: 50%; left: 50%; width: 35px; height: 35px; background: var(--neon-blue); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px var(--neon-blue); }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -88,62 +38,60 @@
 
     <div id="ui-layer">
         <div class="app-controls">
-            <button class="control-btn" onclick="toggleModal(true)"><i class="fas fa-info-circle"></i></button>
-            <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 1px;">SIGNAL DEFENDER</div>
+            <button class="control-btn" onclick="toggleModal(true)"><i class="fas fa-info"></i></button>
+            <div style="color: var(--neon-blue); font-weight: bold; letter-spacing: 1px; font-size: 13px;">SIGNAL DEFENDER</div>
             <button class="control-btn" onclick="togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
         </div>
 
         <div id="top-left" class="stat-box">
-            <div style="font-size: 10px;">СИГНАЛ</div>
-            <div class="bar-container"><div id="signal-bar"></div></div>
+            <div style="font-size: 9px; margin-bottom: 4px;">SIGNAL</div>
+            <div style="width: 80px; height: 6px; background: #111; border-radius: 3px; overflow: hidden; border: 1px solid #333;">
+                <div id="signal-bar" style="width: 100%; height: 100%; background: var(--neon-green); transition: width 0.3s;"></div>
+            </div>
         </div>
         <div id="top-right" class="stat-box">
-            <div style="font-size: 10px;">БАЗА: <span id="lives-val" style="color:var(--neon-red)">3</span> | <span id="score-val">0</span></div>
+            <div style="font-size: 10px;">CORE: <span id="lives-val" style="color:var(--neon-red)">3</span> | SCORE: <span id="score-val">0</span></div>
         </div>
 
         <div id="joystick-zone"><div id="joystick-stick"></div></div>
     </div>
 
-    <!-- ОКНО ИНФОРМАЦИИ -->
     <div id="info-modal" class="modal hidden">
         <div class="modal-content">
-            <div class="close-btn" onclick="toggleModal(false)">✕</div>
-            <h2>УСЛОВИЯ ИГРЫ</h2>
-            <ul>
-                <li><b>Цель:</b> Защищай Ядро (центр) от Глюков.</li>
-                <li><b>Сигнал:</b> Падает каждую секунду. Ешь голубые ноты, чтобы музыка LepotaFM не затихла.</li>
-                <li><b>Атака:</b> Собирай фиолетовые сферы (PowerUp), чтобы временно уничтожать врагов касанием.</li>
+            <div style="position:absolute; top:10px; right:15px; cursor:pointer;" onclick="toggleModal(false)">✕</div>
+            <h2 style="color: var(--neon-blue); font-size: 16px;">ИНФО</h2>
+            <ul style="font-size: 12px; color: #ccc; padding-left: 20px;">
+                <li>Ешь ноты (голубые) для сигнала.</li>
+                <li>Ешь маленьких врагов (головой).</li>
+                <li>Больших врагов ешь только под PowerUp (фиолетовый).</li>
             </ul>
-            <p class="license-text">
-                ЛИЦЕНЗИЯ: Данное программное обеспечение является интеллектуальной собственностью LepotaFM. 
-                Копирование, коммерческое использование или декомпиляция кода ЗАПРЕЩЕНЫ и преследуются законом.
-            </p>
+            <div class="license-text">LICENSED TO LEPOTAFM. ALL RIGHTS RESERVED. COPYING PROHIBITED.</div>
         </div>
     </div>
 
-    <!-- ЭКРАНЫ -->
     <div id="start-screen" class="overlay">
-        <h1 style="color:var(--neon-blue); text-shadow: 0 0 20px var(--neon-blue);">SIGNAL DEFENDER</h1>
-        <button class="btn-start" onclick="startGame()">НАЧАТЬ ЗАЩИТУ</button>
+        <h1 style="color:var(--neon-blue); font-size: 24px;">SIGNAL DEFENDER</h1>
+        <button class="btn-start" onclick="startGame()">START DEFENSE</button>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: var(--neon-red);">ЭФИР ПРЕРВАН</h1>
-        <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
+        <h1 style="color: var(--neon-red);">SIGNAL LOST</h1>
+        <button class="btn-start" onclick="location.reload()">REBOOT</button>
     </div>
 
 <script>
 /** CONFIG */
 const STREAM_URL = "https://lepotafm.ru/listen/lepotafm/radio.mp3";
-const WORLD_SIZE = 1800;
-const BASE_POS = { x: 900, y: 900 };
+const WORLD_SIZE = 2000;
+const BASE_POS = { x: 1000, y: 1000 };
+const ZOOM = 0.75; // ОТДАЛЕНИЕ КАМЕРЫ (Меньше = дальше)
 
 /** STATE */
 let canvas, ctx, started = false, paused = false, score = 0, signalLevel = 100, lives = 3, powerTimer = 0;
-let snake = { x: 950, y: 950, segments: [], angle: 0, speed: 2.8, size: 16, length: 15 };
+let snake = { x: 1050, y: 1050, segments: [], angle: 0, speed: 2.2, size: 18, length: 15 };
 let entities = { food: [], enemies: [], powerups: [], particles: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
-let audioCtx, musicSource, noiseNode, musicGain, noiseGain;
+let audioCtx, noiseGain;
 
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -159,18 +107,24 @@ function resize() {
     canvas.height = window.innerHeight;
 }
 
-function toggleModal(show) {
-    document.getElementById('info-modal').classList.toggle('hidden', !show);
-}
+function toggleModal(s) { document.getElementById('info-modal').classList.toggle('hidden', !s); }
 
-/** AUDIO */
+/** AUDIO (FIXED FOR DOUBLE SOUND) */
 function initAudio() {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const music = new Audio(STREAM_URL);
-    music.crossOrigin = "anonymous";
-    musicSource = audioCtx.createMediaElementSource(music);
-    musicGain = audioCtx.createGain();
+    // Если в URL есть ?app=true или мы в iframe, не запускаем второе радио
+    const isInsideApp = window.self !== window.top;
     
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (!isInsideApp) {
+        const music = new Audio(STREAM_URL);
+        music.crossOrigin = "anonymous";
+        const source = audioCtx.createMediaElementSource(music);
+        const gain = audioCtx.createGain();
+        source.connect(gain).connect(audioCtx.destination);
+        music.play();
+    }
+
     const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
     for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
@@ -180,20 +134,17 @@ function initAudio() {
     noiseSource.loop = true;
     noiseGain = audioCtx.createGain();
     noiseGain.gain.value = 0;
-
-    musicSource.connect(musicGain).connect(audioCtx.destination);
     noiseSource.connect(noiseGain).connect(audioCtx.destination);
-    music.play();
     noiseSource.start();
 }
 
 /** GAME LOGIC */
 function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
-    if(!audioCtx) initAudio();
+    initAudio();
     started = true;
     for(let i=0; i<snake.length; i++) snake.segments.push({x: snake.x, y: snake.y});
-    for(let i=0; i<10; i++) spawnFood();
+    for(let i=0; i<12; i++) spawnFood();
     spawnPowerUp();
     requestAnimationFrame(gameLoop);
     setInterval(() => {
@@ -202,7 +153,7 @@ function startGame() {
             if(signalLevel <= 0) gameOver();
             updateUI();
         }
-    }, 1200);
+    }, 1500);
 }
 
 function update() {
@@ -215,26 +166,29 @@ function update() {
     snake.segments.unshift({x: snake.x, y: snake.y});
     if(snake.segments.length > snake.length) snake.segments.pop();
 
-    camera.x = snake.x - canvas.width/2;
-    camera.y = snake.y - canvas.height/2;
+    camera.x = snake.x - (canvas.width / ZOOM) / 2;
+    camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
     // Enemies (Reduced spawn)
-    if(Math.random() < 0.012) spawnEnemy();
+    if(Math.random() < 0.007) spawnEnemy();
     entities.enemies.forEach((en, i) => {
         const ang = Math.atan2(BASE_POS.y - en.y, BASE_POS.x - en.x);
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
 
+        // Collision with Base
         if(Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y) < 40) {
             lives--; createParticles(en.x, en.y, 'red'); entities.enemies.splice(i, 1);
             if(lives <= 0) gameOver(); updateUI();
         }
 
+        // Collision with Head (CAN EAT SMALL WITHOUT POWERUP)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 25) {
-            if(powerTimer > Date.now()) {
-                score += 50; createParticles(en.x, en.y, 'blue'); entities.enemies.splice(i, 1);
+            const inPower = powerTimer > Date.now();
+            if(inPower || en.speed < 1.1) { // Если в силе или медленный (маленький)
+                score += 25; createParticles(en.x, en.y, 'blue'); entities.enemies.splice(i, 1);
             } else {
-                snake.length = Math.max(10, snake.length - 3);
+                snake.length = Math.max(8, snake.length - 2); // Урон змее
                 createParticles(en.x, en.y, 'red'); entities.enemies.splice(i, 1);
             }
             updateUI();
@@ -243,9 +197,8 @@ function update() {
 
     entities.food.forEach((f, i) => {
         if(Math.hypot(f.x - snake.x, f.y - snake.y) < 25) {
-            signalLevel = Math.min(100, signalLevel + 12);
-            snake.length += 5; // GROW
-            score += 10;
+            signalLevel = Math.min(100, signalLevel + 15);
+            snake.length += 4; score += 10;
             entities.food.splice(i, 1); spawnFood();
             createParticles(f.x, f.y, 'cyan'); updateUI();
         }
@@ -255,7 +208,7 @@ function update() {
         if(Math.hypot(p.x - snake.x, p.y - snake.y) < 25) {
             powerTimer = Date.now() + 8000;
             entities.powerups.splice(i, 1);
-            setTimeout(spawnPowerUp, 15000);
+            setTimeout(spawnPowerUp, 18000);
             createParticles(p.x, p.y, 'purple');
         }
     });
@@ -266,36 +219,30 @@ function update() {
     });
 
     if(audioCtx) {
-        let m = signalLevel > 50 ? 1 : signalLevel/50;
-        let n = signalLevel > 50 ? 0 : (50-signalLevel)/50;
-        musicGain.gain.setTargetAtTime(m, audioCtx.currentTime, 0.1);
-        noiseGain.gain.setTargetAtTime(n * 0.25, audioCtx.currentTime, 0.1);
+        let noiseVal = signalLevel > 50 ? 0 : (50 - signalLevel) / 50;
+        noiseGain.gain.setTargetAtTime(noiseVal * 0.2, audioCtx.currentTime, 0.1);
     }
 }
 
 function draw() {
     ctx.fillStyle = '#05050f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     ctx.save();
+    ctx.scale(ZOOM, ZOOM); // ПРИМЕНЕНИЕ ОТДАЛЕНИЯ
     ctx.translate(-camera.x, -camera.y);
 
-    // Grid
-    ctx.strokeStyle = '#112';
-    for(let i=0; i<=WORLD_SIZE; i+=100) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
-    }
+    // Border
+    ctx.strokeStyle = '#223'; ctx.lineWidth = 10;
+    ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
 
-    // Base (Complex Shape)
-    ctx.shadowBlur = 20; ctx.shadowColor = lives < 2 ? 'red' : 'cyan';
-    ctx.lineWidth = 2; ctx.strokeStyle = lives < 2 ? 'red' : 'cyan';
+    // Core
+    ctx.shadowBlur = 15; ctx.shadowColor = lives < 2 ? 'red' : 'cyan';
+    ctx.strokeStyle = lives < 2 ? 'red' : 'cyan';
     ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 35, 0, Math.PI*2); ctx.stroke();
-    // Rotating ring
     ctx.save();
-    ctx.translate(BASE_POS.x, BASE_POS.y);
-    ctx.rotate(Date.now() * 0.002);
-    ctx.strokeRect(-45, -45, 90, 90);
-    ctx.restore();
+    ctx.translate(BASE_POS.x, BASE_POS.y); ctx.rotate(Date.now() * 0.001);
+    ctx.strokeRect(-45, -45, 90, 90); ctx.restore();
 
     // Food (Notes)
     entities.food.forEach(f => {
@@ -303,18 +250,31 @@ function draw() {
         ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, Math.PI*2); ctx.fill();
     });
 
-    // Enemies (Crystals)
+    // PowerUp
+    entities.powerups.forEach(p => {
+        ctx.fillStyle = 'purple'; ctx.shadowColor = 'purple';
+        ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2); ctx.fill();
+    });
+
+    // Enemies
+    const inPower = powerTimer > Date.now();
     entities.enemies.forEach(en => {
-        ctx.fillStyle = powerTimer > Date.now() ? '#0044ff' : '#ff0055';
+        ctx.fillStyle = inPower || en.speed < 1.1 ? '#00f3ff' : '#ff0055';
         ctx.shadowColor = ctx.fillStyle;
         ctx.beginPath();
         ctx.moveTo(en.x, en.y - 12); ctx.lineTo(en.x + 10, en.y); ctx.lineTo(en.x, en.y + 12); ctx.lineTo(en.x - 10, en.y);
         ctx.closePath(); ctx.fill();
     });
 
-    // Snake (Energy Beam)
-    const inPower = powerTimer > Date.now();
-    ctx.shadowBlur = 15;
+    // Particles
+    entities.particles.forEach(p => {
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Snake
+    ctx.shadowBlur = 20;
     ctx.shadowColor = inPower ? 'white' : '#39ff14';
     ctx.fillStyle = inPower ? 'white' : '#39ff14';
     snake.segments.forEach((seg, i) => {
@@ -329,16 +289,17 @@ function draw() {
 function spawnEnemy() {
     const side = Math.floor(Math.random() * 4);
     let x, y;
-    if(side===0) {x=Math.random()*WORLD_SIZE; y=-30;}
-    else if(side===1) {x=WORLD_SIZE+30; y=Math.random()*WORLD_SIZE;}
-    else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+30;}
-    else {x=-30; y=Math.random()*WORLD_SIZE;}
-    entities.enemies.push({ x, y, speed: 0.8 + Math.random()*0.7, color: 'red' });
+    if(side===0) {x=Math.random()*WORLD_SIZE; y=-50;}
+    else if(side===1) {x=WORLD_SIZE+50; y=Math.random()*WORLD_SIZE;}
+    else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+50;}
+    else {x=-50; y=Math.random()*WORLD_SIZE;}
+    // Маленькие враги медленнее
+    entities.enemies.push({ x, y, speed: 0.6 + Math.random()*0.9 });
 }
 function spawnFood() { entities.food.push({ x: Math.random()*WORLD_SIZE, y: Math.random()*WORLD_SIZE }); }
 function spawnPowerUp() { entities.powerups.push({ x: Math.random()*WORLD_SIZE, y: Math.random()*WORLD_SIZE }); }
 function createParticles(x, y, color) {
-    for(let i=0; i<8; i++) entities.particles.push({ x, y, color, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8, life: 1.0 });
+    for(let i=0; i<6; i++) entities.particles.push({ x, y, color, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1.0 });
 }
 function updateUI() {
     document.getElementById('signal-bar').style.width = signalLevel + '%';
