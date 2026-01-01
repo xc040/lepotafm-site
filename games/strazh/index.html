@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Страж Эфира 14.1 - Elite View</title>
+    <title>Страж Эфира 14.2 - Elite Loop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
@@ -46,11 +46,11 @@
         }
         #signal-bar { width: 100%; height: 100%; background: var(--neon-green); transition: width 0.3s; }
 
-        /* МИССИИ */
+        /* МИССИИ (УРОВЕНЬ) */
         #mission-box {
             position: absolute; bottom: 35px; left: 20px;
             background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
-            padding: 8px 12px; border-radius: 12px; width: 165px; z-index: 20;
+            padding: 8px 12px; border-radius: 12px; width: 160px; z-index: 20;
             pointer-events: auto; border-left: 4px solid var(--neon-purple);
         }
         #mission-title { font-size: 8px; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 2px; }
@@ -78,16 +78,11 @@
             width: 92%; max-width: 380px; background: #0a0a1a; 
             border: 2px solid var(--neon-purple); padding: 20px; border-radius: 20px; overflow-y: auto; max-height: 85vh;
         }
-        .story-block { 
-            font-size: 12px; color: #ccc; line-height: 1.5; background: rgba(0,0,0,0.6); 
-            padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 3px solid var(--neon-gold);
-        }
         .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .shop-item { 
             background: rgba(255,255,255,0.05); border: 1px solid #333; 
             padding: 12px; border-radius: 12px; text-align: center; cursor: pointer; 
         }
-        .shop-item.locked { opacity: 0.3; cursor: not-allowed; }
         .shop-item i { color: var(--neon-blue); font-size: 22px; margin-bottom: 5px; display: block; }
         .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
@@ -118,7 +113,7 @@
         </div>
 
         <div id="top-left" class="stat-box">
-            <div>МОЩНОСТЬ СИГНАЛА</div>
+            <div>ЗАРЯД ТУРЕЛЕЙ</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
@@ -135,18 +130,17 @@
         <div id="joystick-zone"><div id="joystick-stick"></div></div>
     </div>
 
+    <!-- МАГАЗИН -->
     <div id="shop-modal" class="modal hidden">
         <div class="shop-content">
-            <div class="story-block">
-                <h3 style="color:var(--neon-blue); margin-top:0; font-size: 16px;">ХРОНИКИ ЭФИРА</h3>
-                Мир погрузился в Тишину. Глюки атакуют Ядро. Осколки (Квадраты) медленны, Векторы (Треугольники) быстры. Пушки бьют Осколки, Лазеры испаряют Векторы. Берегите Сигнал.
-            </div>
+            <h2 style="color: var(--neon-purple); text-align:center; font-size: 20px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
+            <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись на базу, чтобы отдать массу хвоста и зарядить пушки.</p>
             <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
             <div class="shop-grid">
-                <div class="shop-item" id="item-turret" onclick="window.buyUpgrade('turret', 1200)">
+                <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
                     <i class="fas fa-crosshairs"></i><b>Пушка</b><span>1200 CR</span>
                 </div>
-                <div class="shop-item" id="item-laser" onclick="window.buyUpgrade('laser', 3000)">
+                <div class="shop-item" onclick="window.buyUpgrade('laser', 3000)">
                     <i class="fas fa-bolt"></i><b>Лазер</b><span>3000 CR</span>
                 </div>
                 <div class="shop-item" onclick="window.buyUpgrade('drone', 2000)">
@@ -172,26 +166,27 @@
     </div>
 
 <script>
-/** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
-const WORLD_SIZE = 4000;
-const BASE_POS = { x: 2000, y: 2000 };
-const ZOOM = 0.28; // FIX: УВЕЛИЧЕНО ОТДАЛЕНИЕ
+/** --- CONFIG & STATE --- */
+const WORLD_SIZE = 5000; // Увеличили мир для Босса
+const BASE_POS = { x: 2500, y: 2500 };
+const ZOOM = 0.28;
 
 let canvas, ctx, gameId;
 let started = false, paused = false;
-let score = 0, signalLevel = 100, lives = 3;
-    let snake = { x: 2050, y: 2050, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
-let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [] };
+let score = 0, baseAmmo = 100, lives = 3;
+let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
+let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curMission = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
 
-// Принудительная регистрация функций для кнопок HTML
+window.startGame = startGame; window.toggleShop = toggleShop; window.togglePause = togglePause; window.buyUpgrade = buyUpgrade;
+    /** --- РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ --- */
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
 
-/** --- ИНИЦИАЛИЗАЦИЯ --- */
+/** --- ИНИЦИАЛИЗАЦИЯ ДВИЖКА --- */
 window.addEventListener('load', () => {
     canvas = document.getElementById('gameCanvas');
     if (canvas) {
@@ -199,7 +194,7 @@ window.addEventListener('load', () => {
         resize();
         initJoystick();
         window.addEventListener('resize', resize);
-        console.log("Elite Master System v14.1: Ready");
+        console.log("Elite Master System v14.2: Ready");
     }
 });
 
@@ -220,74 +215,80 @@ function startGame() {
     if (gov) gov.classList.add('hidden');
     document.getElementById('mission-box').classList.remove('hidden');
 
-    // 2. Сброс игровых флагов
+    // 2. Полный сброс параметров
     started = true;
     paused = false;
     score = 0;
-    signalLevel = 100;
+    baseAmmo = 100; // Энергия турелей
     lives = 3;
     curMission = 0;
     missionProgress = 0;
     shieldActive = false;
 
     // 3. Сброс игрока
-    snake.x = 2050; snake.y = 2050;
+    snake.x = BASE_POS.x + 50; 
+    snake.y = BASE_POS.y + 50;
     snake.segments = [];
-    snake.length = 20;
+    snake.length = 25; // Начальная длина
     for(let i=0; i < snake.length; i++) {
         snake.segments.push({x: snake.x, y: snake.y});
     }
 
-    // 4. Очистка массивов (Гарантия отсутствия мусора)
+    // 4. Очистка массивов (Гарантия чистого экрана)
     entities.food = [];
     entities.enemies = [];
     entities.particles = [];
     entities.turrets = [];
     entities.bullets = [];
     entities.drones = [];
+    entities.loot = [];
+    entities.boss = null;
 
-    // Принудительный спавн еды (байтов)
+    // Первичный спавн еды
     for(let i=0; i<15; i++) spawnFood();
 
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
-    // 5. Запуск анимации
+    // 5. Запуск циклов
     if (gameId) cancelAnimationFrame(gameId);
     gameId = requestAnimationFrame(gameLoop);
     updateMission();
     updateUI();
 
-    // 6. Таймер Сигнала
-    if (window.sigInt) clearInterval(window.sigInt);
-    window.sigInt = setInterval(() => { 
-        if(started && !paused && curMission > 0) { // Сигнал не падает на 1-м шаге
-            let dist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
-            let decay = dist < 450 ? 0.35 : 1.2;
-            signalLevel = Math.max(0, signalLevel - decay); 
-            if(signalLevel <= 0) gameOver();
+    // 6. Таймер расхода патронов (если есть турели)
+    if (window.ammoInt) clearInterval(window.ammoInt);
+    window.ammoInt = setInterval(() => { 
+        if(started && !paused && curMission > 0) {
+            // Если на карте есть враги или турели - энергия медленно тает
+            if(entities.turrets.length > 0 || entities.enemies.length > 0) {
+                baseAmmo = Math.max(0, baseAmmo - 0.4); 
+            }
+            if(baseAmmo <= 0) updateUI(); // Турели перестанут стрелять в update()
             updateUI(); 
         }
-    }, 1500);
+    }, 1000);
 }
 
 /** --- СИСТЕМА УРОВНЕЙ (МИССИИ) --- */
 const baseMissions = [
     { t: "Защищай базу: съешь первый голубой байт", check: () => missionProgress >= 1 },
-    { t: "Уровень 2: Уничтожь Глюк ударом ГОЛОВЫ", check: () => missionProgress >= 1 },
-    { t: "Уровень 3: Собери 1200 CR на оборону", check: () => score >= 1200 },
-    { t: "Уровень 4: Купи ПУШКУ в магазине", check: () => entities.turrets.some(t => t.type === 'bolt') }
+    { t: "Перехват: Уничтожь 1 Глюк ГОЛОВОЙ (+2 к длине)", check: () => missionProgress >= 1 },
+    { t: "Защита: Собери 1200 CR на Пушку", check: () => score >= 1200 },
+    { t: "Установка: Купи ПУШКУ в магазине", check: () => entities.turrets.length > 0 },
+    { t: "Зарядка: Коснись Ядра, чтобы отдать массу Турелям", check: () => missionProgress >= 1 }
 ];
 
 function getMission(id) {
     if (id < baseMissions.length) return baseMissions[id];
+    // Генератор бесконечных уровней
     const types = [
-        { t: "Уровень {id}: Убей {n} Осколков", n: 5 + id, type: 'box', check: () => missionProgress >= 5 + id },
-        { t: "Уровень {id}: Убей {n} Векторов", n: 3 + Math.floor(id/3), type: 'tri', check: () => missionProgress >= 3 + Math.floor(id/3) },
-        { t: "Уровень {id}: Собери {n} байтов", n: 10 + id, check: () => missionProgress >= 10 + id }
+        { t: "Уровень {id}: Уничтожь {goal} Глюков", goal: 5+id, check: () => missionProgress >= 5+id },
+        { t: "Уровень {id}: Собери {goal} байтов данных", goal: 10+id, check: () => missionProgress >= 10+id },
+        { t: "Уровень {id}: Пополни заряд базы 3 раза", goal: 3, check: () => missionProgress >= 3 }
     ];
     let res = types[id % types.length];
-    return { t: res.t.replace("{id}", id + 1).replace("{n}", res.n), check: res.check };
+    return { t: res.t.replace("{id}", id + 1).replace("{goal}", res.goal), check: res.check };
 }
 
 function updateMission() {
@@ -299,124 +300,115 @@ function updateMission() {
     
     if (m.check()) {
         curMission++; missionProgress = 0;
-        // Обучение: авто-пауза перед покупкой первой турели
         if(curMission === 3 && !paused) toggleShop(true); 
         updateMission();
     }
 }
 
-/** --- МАГАЗИН И УЛУЧШЕНИЯ --- */
+/** --- МАГАЗИН И МОДЕРНИЗАЦИЯ --- */
 function buyUpgrade(type, cost) {
     if (score < cost) return;
     
     if (type === 'turret') {
         score -= cost;
         const ang = Math.random() * 6.28;
-        entities.turrets.push({ 
-            x: BASE_POS.x + Math.cos(ang)*165, y: BASE_POS.y + Math.sin(ang)*165, 
-            type: 'bolt', lastShot: 0 
-        });
+        entities.turrets.push({ x: BASE_POS.x + Math.cos(ang)*165, y: BASE_POS.y + Math.sin(ang)*165, type: 'bolt', lastShot: 0 });
     } else if (type === 'laser') {
         let t = entities.turrets.find(t => t.type === 'bolt');
-        if (t) { score -= cost; t.type = 'laser'; missionProgress++; }
+        if (t) { score -= cost; t.type = 'laser'; }
     } else if (type === 'drone') {
         score -= cost;
         entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40 });
-        missionProgress++;
     } else if (type === 'fix') {
         if (lives < 3) { score -= cost; lives++; }
     }
     updateUI();
 }
 
-function toggleShop(show) {
-    if(!started) return;
-    paused = show;
-    document.getElementById('shop-modal').classList.toggle('hidden', !show);
-    updateUI();
-    if(!show) { gameId = requestAnimationFrame(gameLoop); } 
-    else { cancelAnimationFrame(gameId); }
-}
-
-function togglePause() {
-    if(!started) return;
-    paused = !paused;
-    const pIcon = document.getElementById('pause-icon');
-    if(pIcon) pIcon.className = paused ? "fas fa-play" : "fas fa-pause";
-    if(!paused) { gameId = requestAnimationFrame(gameLoop); } 
-    else { cancelAnimationFrame(gameId); }
-}
-
 function updateUI() {
     const bar = document.getElementById('signal-bar');
     if (bar) {
-        bar.style.width = signalLevel + '%';
-        bar.style.background = signalLevel < 30 ? 'var(--neon-red)' : 'var(--neon-green)';
+        bar.style.width = baseAmmo + '%';
+        bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
     }
     const sv = document.getElementById('score-val');
-    if(sv) sv.innerText = Math.floor(score);
     const sc = document.getElementById('shop-credits');
-    if(sc) sc.innerText = Math.floor(score);
     const lv = document.getElementById('lives-val');
+    if(sv) sv.innerText = Math.floor(score);
+    if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
 }
 
-/** --- ОСНОВНОЙ ЦИКЛ ОБНОВЛЕНИЯ --- */
+/** --- ЦИКЛ ОБНОВЛЕНИЯ (UPDATE) --- */
 function update() {
     if(!started || paused) return;
     frameCount++;
     updateMission();
 
-    // 1. Движение
+    // 1. Движение змеи
     if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
     snake.x += Math.cos(snake.angle) * snake.speed;
     snake.y += Math.sin(snake.angle) * snake.speed;
-    // 2. Loop Мира (Червоточины)
+
+    // Loop Мира (Червоточины)
     if(snake.x < 0) snake.x = WORLD_SIZE; if(snake.x > WORLD_SIZE) snake.x = 0;
     if(snake.y < 0) snake.y = WORLD_SIZE; if(snake.y > WORLD_SIZE) snake.y = 0;
 
     snake.segments.unshift({x: snake.x, y: snake.y});
     if(snake.segments.length > snake.length) snake.segments.pop();
 
+    // 2. Механика: Кормление Базы (Пополнение патронов)
+    const distToCore = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+    if(distToCore < 80 && baseAmmo < 100 && snake.length > 12) {
+        snake.length -= 0.2; // Отдаем массу
+        baseAmmo = Math.min(100, baseAmmo + 1.5); // Заряжаем турели
+        if(curMission === 4) missionProgress = 1;
+        updateUI();
+    }
     // 3. Камера
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
-    // 4. Отработка защиты (Специализация)
-    entities.turrets.forEach(t => {
-        if (t.type === 'bolt') {
-            if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 15) {
-                let target = entities.enemies.find(en => en.type === 'box');
-                if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1000) {
-                    const a = Math.atan2(target.y - t.y, target.x - t.x);
-                    entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
-                    t.lastShot = Date.now();
+    // 4. Отработка защиты (Специализация + Расход патронов)
+    if (baseAmmo > 0) {
+        entities.turrets.forEach(t => {
+            if (t.type === 'bolt') {
+                if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 15) {
+                    let target = entities.enemies.find(en => en.type === 'box');
+                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1000) {
+                        const a = Math.atan2(target.y - t.y, target.x - t.x);
+                        entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
+                        t.lastShot = Date.now();
+                        baseAmmo -= 0.5; // Расход за выстрел
+                    }
+                }
+            } else if (t.type === 'laser') {
+                if (Date.now() - t.lastShot > 2500) {
+                    let target = entities.enemies.find(en => en.type === 'tri');
+                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1600) {
+                        t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
+                        // Лазер создает обломок (Loot Decay)
+                        entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
+                        entities.enemies = entities.enemies.filter(e => e !== target);
+                        score += 90; t.lastShot = Date.now();
+                        baseAmmo -= 2; // Лазер дороже
+                    }
                 }
             }
-        } else if (t.type === 'laser') {
-            if (Date.now() - t.lastShot > 2500) {
-                let target = entities.enemies.find(en => en.type === 'tri');
-                if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1600) {
-                    t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
-                    entities.enemies = entities.enemies.filter(e => e !== target);
-                    score += 90; t.lastShot = Date.now();
-                }
-            }
-        }
-    });
+        });
+    }
 
-    // 5. Дроны (Feat 14)
+    // 5. Дроны
     entities.drones.forEach(d => {
         d.angle += 0.04;
         const dx = BASE_POS.x + Math.cos(d.angle) * d.dist;
         const dy = BASE_POS.y + Math.sin(d.angle) * d.dist;
         d.x = dx; d.y = dy;
-
         entities.enemies.forEach((en, ei) => {
             if(Math.hypot(en.x - dx, en.y - dy) < 55) {
                 entities.enemies.splice(ei, 1);
-                createParticles(en.x, en.y, 'purple', 8);
-                score += 45;
+                entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
+                score += 40;
             }
         });
     });
@@ -427,7 +419,7 @@ function update() {
         if(Math.hypot(b.x - BASE_POS.x, b.y - BASE_POS.y) > 2500) entities.bullets.splice(i,1);
     });
 
-    // 7. Глюки (Враги) - ПОЯВЛЯЮТСЯ ТОЛЬКО ПОСЛЕ ПЕРВОГО БАЙТА (Миссия 1 выполнена)
+    // 7. Враги (Глюки)
     if(started && curMission >= 1 && Math.random() < (0.0075 + (curMission * 0.0003))) spawnEnemy();
 
     entities.enemies.forEach((en, i) => {
@@ -435,15 +427,20 @@ function update() {
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
 
+        // Пуля vs Враг (Механика Loot Decay)
         entities.bullets.forEach((b, bi) => {
             if(Math.hypot(b.x - en.x, b.y - en.y) < 45) {
-                entities.enemies.splice(i,1); entities.bullets.splice(bi,1);
-                score += (en.type === 'box' ? 50 : 25); 
-                if(curMission >= 4) missionProgress++;
+                entities.enemies.splice(i,1); 
+                entities.bullets.splice(bi,1);
+                // При смерти от пули выпадает обломок (+1 длина)
+                entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
+                score += 50; 
+                if(curMission >= 5) missionProgress++;
                 createParticles(en.x, en.y, 'blue', 5);
             }
         });
 
+        // Ядро vs Враг
         if(Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y) < 70) {
             if (shieldActive) { shieldActive = false; createParticles(BASE_POS.x, BASE_POS.y, 'cyan', 25); }
             else { lives--; }
@@ -452,35 +449,47 @@ function update() {
             updateUI();
         }
 
+        // Змея vs Враг (Убийство ГОЛОВОЙ)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
             score += 100;
-            snake.length = Math.max(10, snake.length - 8); // Урон уменьшает змею
+            // Прямое поедание дает +2 к длине
+            snake.length += 2; 
             entities.enemies.splice(i, 1);
-            createParticles(en.x, en.y, 'red', 10);
-            if(curMission >= 1) missionProgress++; 
+            createParticles(en.x, en.y, 'green', 10);
+            if(curMission === 1) missionProgress++; 
             updateUI();
         }
     });
 
-    // 8. Ресурсы
+    // 8. Обломки (Loot Decay)
+    entities.loot.forEach((l, i) => {
+        if (Date.now() > l.dieTime) { entities.loot.splice(i, 1); return; }
+        if (Math.hypot(l.x - snake.x, l.y - snake.y) < 60) {
+            snake.length += 1; // Обломок дает меньше, чем живой враг
+            entities.loot.splice(i, 1);
+            score += 10;
+            updateUI();
+        }
+    });
+
+    // 9. Бабайты (Еда)
     entities.food.forEach((f, i) => {
         if(Math.hypot(f.x - snake.x, f.y - snake.y) < 65) { 
-            signalLevel = Math.min(100, signalLevel + 22);
             snake.length += 4; score += 35;
             entities.food.splice(i, 1); spawnFood();
             if(curMission === 0) missionProgress++;
-            if(curMission >= 4) missionProgress++;
             updateUI();
         }
     });
 
+    // 10. Частицы
     entities.particles.forEach((p, i) => {
         p.x += p.vx; p.y += p.vy; p.life -= 0.03;
         if(p.life <= 0) entities.particles.splice(i, 1);
     });
 }
 
-/** --- ОТРИСОВКА (RENDER ENGINE) --- */
+/** --- ОТРИСОВКА --- */
 function gameLoop() {
     if(!started || paused) return;
     update();
@@ -492,7 +501,6 @@ function draw() {
     if(!ctx) return;
     ctx.fillStyle = '#05050f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
     ctx.save();
     ctx.scale(ZOOM, ZOOM);
     ctx.translate(-camera.x, -camera.y);
@@ -514,24 +522,23 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // 2. УМЕНЬШЕННЫЙ РАДАР (Метки прижимаются к центру)
+    // 2. РАДАР (FIX: Остановка у края Ядра 65px)
     entities.enemies.forEach(en => {
         const ang = Math.atan2(en.y - BASE_POS.y, en.x - BASE_POS.x);
         const realDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
-        
-        // Масштабируем: если враг на расстоянии 2000, точка на 120. Если враг на 0, точка на 0.
-        const radarDist = Math.max(0, Math.min(120, realDist * 0.06));
+        // Метка не заходит внутрь (минимум 65) и не улетает далеко (максимум 150)
+        const radarDist = Math.max(65, Math.min(150, realDist * 0.05));
         
         ctx.save();
         ctx.translate(BASE_POS.x, BASE_POS.y);
         ctx.rotate(ang);
         ctx.fillStyle = '#ff0055';
-        if(en.type === 'box') { ctx.fillRect(radarDist, -6, 12, 12); }
-        else { ctx.beginPath(); ctx.moveTo(radarDist, -8); ctx.lineTo(radarDist + 15, 0); ctx.lineTo(radarDist, 8); ctx.fill(); }
+        if(en.type === 'box') { ctx.fillRect(radarDist, -8, 16, 16); }
+        else { ctx.beginPath(); ctx.moveTo(radarDist, -10); ctx.lineTo(radarDist + 20, 0); ctx.lineTo(radarDist, 10); ctx.fill(); }
         ctx.restore();
     });
 
-    // 3. Системы защиты
+    // 3. Турели и Лазеры
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
         ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
@@ -543,13 +550,11 @@ function draw() {
         }
     });
 
-    entities.drones.forEach(d => {
-        ctx.fillStyle = '#bc13fe'; ctx.beginPath(); ctx.arc(d.x, d.y, 16, 0, 6.28); ctx.fill();
-    });
-
-    // 4. Объекты
+    // 4. Объекты (Пули, Еда, Враги, Обломки)
     ctx.fillStyle = 'yellow'; entities.bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 6.28); ctx.fill(); });
     ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 22, 0, 6.28); ctx.fill(); });
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; entities.loot.forEach(l => { ctx.fillRect(l.x-10, l.y-10, 20, 20); });
+    
     entities.enemies.forEach(en => {
         ctx.fillStyle = '#ff0055'; 
         if(en.type === 'tri') { ctx.beginPath(); ctx.moveTo(en.x, en.y-45); ctx.lineTo(en.x+35, en.y+20); ctx.lineTo(en.x-35, en.y+20); ctx.fill(); }
@@ -585,8 +590,8 @@ function spawnEnemy() {
     else if(side===1) {x=WORLD_SIZE+250; y=Math.random()*WORLD_SIZE;}
     else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+250;}
     else {x=-250; y=Math.random()*WORLD_SIZE;}
-    const isTri = Math.random() > 0.7;
-    entities.enemies.push({ x, y, speed: isTri ? 3.3 : 1.6, type: isTri ? 'tri' : 'box' });
+    const isTri = Math.random() > 0.75;
+    entities.enemies.push({ x, y, speed: isTri ? 3.4 : 1.7, type: isTri ? 'tri' : 'box' });
 }
 
 function spawnFood() {
@@ -602,9 +607,9 @@ function createParticles(x, y, color, count) {
 
 function gameOver() {
     started = false;
-    if(window.sigInt) clearInterval(window.sigInt);
+    if(window.ammoInt) clearInterval(window.ammoInt);
     document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Уровней пройдено: " + curMission + " | Собрано данных: " + Math.floor(score);
+    document.getElementById('final-stats').innerText = "Уровней пройдено: " + curMission + " | Счет: " + Math.floor(score);
 }
 
 /** --- ДЖОЙСТИК --- */
@@ -627,6 +632,7 @@ function initJoystick() {
     window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
 }
 
+// ПРЯМОЙ ЗАПУСК
 init();
 </script>
 </body>
