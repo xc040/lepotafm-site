@@ -11,7 +11,6 @@
     <div class="neon-bg"></div>
     <div class="scanlines"></div>
     <div class="app-layout">
-        <!-- ВЕРХ: Плеер + Табы -->
         <header class="fixed-top-area">
             <div class="inline-player">
                 <div class="player-info-col">
@@ -47,18 +46,17 @@
             </nav>
         </header>
 
-        <!-- НИЗ: Контент -->
         <main class="main-content">
-            <!-- 1. ОКНО ИГРЫ (Загружаем змейку из новой папки по умолчанию) -->
+            <!-- ОКНО ИГРЫ -->
             <div id="home" class="tab-pane active full-height">
                 <iframe id="game-frame" src="games/snake/index.html" frameborder="0"></iframe>
             </div>
 
-            <!-- 2. КАТАЛОГ -->
+            <!-- КАТАЛОГ -->
             <div id="catalog" class="tab-pane scrollable-pad">
                 <div class="catalog-grid">
                     
-                    <!-- Кнопка: Змейка -->
+                    <!-- КАРТОЧКА ЗМЕЙКИ -->
                     <div class="game-card" onclick="loadGame('games/snake/index.html')">
                         <div class="game-card-icon"><i class="fas fa-snake"></i></div>
                         <div class="game-card-info">
@@ -68,7 +66,7 @@
                         <i class="fas fa-play play-mini"></i>
                     </div>
 
-                    <!-- Кнопка: Страж Эфира -->
+                    <!-- КАРТОЧКА СТРАЖА -->
                     <div class="game-card" onclick="loadGame('games/strazh/index.html')">
                         <div class="game-card-icon" style="color:#bc13fe"><i class="fas fa-shield-virus"></i></div>
                         <div class="game-card-info">
