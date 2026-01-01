@@ -20,54 +20,36 @@
 </head>
 <body>
     <div class="game-controls">
-        <button class="control-btn" onclick="openTrack()"><i class="fas fa-info"></i></button>
-        <div class="game-title-container" onclick="location.reload()">
-            <div class="game-title-mini">СТРАЖ ЭФИРА</div>
-            <div class="game-score">Очки: <span id="score-val">0</span></div>
-        </div>
+        <button class="control-btn" onclick="openInfo()"><i class="fas fa-info"></i></button>
+        <div class="game-title-container" onclick="location.reload()"><div class="game-title-mini">СТРАЖ ЭФИРА</div><div class="game-score">Счет: <span id="s">0</span></div></div>
         <button class="control-btn" onclick="toggleP()"><i class="fas fa-pause" id="p-icon"></i></button>
     </div>
     <div class="start-msg" id="msg">Нажми для начала<br>ОХОТЫ</div>
     <div class="paused-text" id="p-msg">ПАУЗА</div>
     <canvas width="320" height="320" id="g"></canvas>
     <script>
-        var canvas = document.getElementById('g'), ctx = canvas.getContext('2d');
-        var grid = 16, count = 0, score = 0, gameId;
-        var snake = { x: 160, y: 160, dx: grid, dy: 0, cells: [], max: 4 };
-        var apple = { x: 320, y: 320 };
-        var started = false, paused = false;
-        function rnd(min, max) { return Math.floor(Math.random() * (max - min)) + min; }
-        function openTrack() { if(window.parent && window.parent.openSku) window.parent.openSku(window.parent.document.getElementById('track-name').innerText, window.parent.document.getElementById('artist-name').innerText, window.parent.document.getElementById('mini-art').src); }
-        document.body.onclick = function(e) { if(!e.target.closest('.control-btn') && !started) { started = true; document.getElementById('msg').style.display='none'; loop(); } };
-        function toggleP() { if(!started) return; paused = !paused; document.getElementById('p-icon').className = paused ? "fas fa-play" : "fas fa-pause"; document.getElementById('p-msg').style.display = paused ? "block" : "none"; if(!paused) loop(); }
-        window.setGamePause = function(s) { if(started && s && !paused) toggleP(); };
-        function loop() {
-            if(paused || !started) return;
-            gameId = requestAnimationFrame(loop);
-            if(++count < 6) return;
-            count = 0; ctx.clearRect(0,0,canvas.width,canvas.height);
-            snake.x += snake.dx; snake.y += snake.dy;
-            if(snake.x<0) snake.x=canvas.width-grid; else if(snake.x>=canvas.width) snake.x=0;
-            if(snake.y<0) snake.y=canvas.height-grid; else if(snake.y>=canvas.height) snake.y=0;
-            snake.cells.unshift({x:snake.x, y:snake.y});
-            if(snake.cells.length > snake.max) snake.cells.pop();
-            ctx.fillStyle = '#00f3ff'; ctx.fillRect(apple.x, apple.y, grid-1, grid-1);
-            ctx.fillStyle = '#bc13fe';
-            snake.cells.forEach(function(cell, index) {
-                ctx.fillRect(cell.x, cell.y, grid-1, grid-1);
-                if(cell.x === apple.x && cell.y === apple.y) {
-                    snake.max++; score++; document.getElementById('score-val').innerText = score;
-                    apple.x = rnd(0, 20) * grid; apple.y = rnd(0, 20) * grid;
-                }
-                for(var i=index+1; i<snake.cells.length; i++) {
-                    if(cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-                        started = false; document.getElementById('msg').style.display='block';
-                        document.getElementById('msg').innerHTML = "ЭФИР ПРЕРВАН<br>Очки: "+score;
-                        snake={x:160,y:160,dx:grid,dy:0,cells:[],max:4}; score=0;
-                    }
-                }
+        var canvas=document.getElementById('g'), ctx=canvas.getContext('2d'), grid=16, count=0, score=0, gameId, started=false, paused=false;
+        var snake={x:160,y:160,dx:grid,dy:0,cells:[],max:4}, apple={x:320,y:320};
+        function rnd(min,max){return Math.floor(Math.random()*(max-min))+min;}
+        function openInfo(){if(window.parent&&window.parent.openSku)window.parent.openSku(window.parent.document.getElementById('track-name').innerText,window.parent.document.getElementById('artist-name').innerText,window.parent.document.getElementById('mini-art').src);}
+        document.body.onclick=function(e){if(!e.target.closest('.control-btn')&&!started){started=true;document.getElementById('msg').style.display='none';loop();}};
+        function toggleP(){if(!started)return;paused=!paused;document.getElementById('p-icon').className=paused?"fas fa-play":"fas fa-pause";document.getElementById('p-msg').style.display=paused?"block":"none";if(!paused)loop();}
+        window.setGamePause=function(s){if(started&&s&&!paused)toggleP();};
+        function loop(){
+            if(paused||!started)return; gameId=requestAnimationFrame(loop); if(++count<6)return; count=0; ctx.clearRect(0,0,canvas.width,canvas.height);
+            snake.x+=snake.dx; snake.y+=snake.dy;
+            if(snake.x<0)snake.x=canvas.width-grid; else if(snake.x>=canvas.width)snake.x=0;
+            if(snake.y<0)snake.y=canvas.height-grid; else if(snake.y>=canvas.height)snake.y=0;
+            snake.cells.unshift({x:snake.x,y:snake.y}); if(snake.cells.length>snake.max)snake.cells.pop();
+            ctx.fillStyle='#00f3ff'; ctx.fillRect(apple.x,apple.y,grid-1,grid-1);
+            ctx.fillStyle='#bc13fe'; snake.cells.forEach(function(cell,i){
+                ctx.fillRect(cell.x,cell.y,grid-1,grid-1);
+                if(cell.x===apple.x&&cell.y===apple.y){snake.max++;score++;document.getElementById('s').innerText=score;apple.x=rnd(0,20)*grid;apple.y=rnd(0,20)*grid;}
+                for(var j=i+1;j<snake.cells.length;j++){if(cell.x===snake.cells[j].x&&cell.y===snake.cells[j].y){started=false;document.getElementById('msg').style.display='block';document.getElementById('msg').innerHTML="ЭФИР ПРЕРВАН<br>Счет: "+score;snake={x:160,y:160,dx:grid,dy:0,cells:[],max:4};score=0;}}
             });
         }
-        let tsX, tsY;
-        document.ontouchstart = e => { tsX = e.touches[0].clientX; tsY = e.touches[0].clientY; };
-        document.ontouchmove = e => {
+        let tsX,tsY; document.ontouchstart=e=>{tsX=e.touches[0].clientX;tsY=e.touches[0].clientY;};
+        document.ontouchmove=e=>{if(paused||!started||e.target.closest('.game-controls'))return;let x=e.touches[0].clientX-tsX,y=e.touches[0].clientY-tsY;if(Math.abs(x)>Math.abs(y)){if(x>15&&snake.dx===0){snake.dx=grid;snake.dy=0;}else if(x<-15&&snake.dx===0){snake.dx=-grid;snake.dy=0;}}else{if(y>15&&snake.dy===0){snake.dy=grid;snake.dx=0;}else if(y<-15&&snake.dy===0){snake.dy=-grid;snake.dx=0;}}e.preventDefault();};
+    </script>
+</body>
+</html>
