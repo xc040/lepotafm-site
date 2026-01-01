@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Страж Эфира 14.3 - Elite Loop Fix</title>
+    <title>Страж Эфира 14.4 - Elite Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
@@ -48,17 +48,17 @@
         }
         #signal-bar { width: 100%; height: 100%; background: var(--neon-blue); transition: width 0.3s; }
 
-        /* МИССИИ (НИЖЕ И ЛЕВЕЕ) */
+        /* МИССИИ (УРОВЕНЬ) */
         #mission-box {
             position: absolute; bottom: 35px; left: 20px;
             background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
-            padding: 10px 15px; border-radius: 12px; width: 165px; z-index: 20;
+            padding: 8px 12px; border-radius: 12px; width: 160px; z-index: 20;
             pointer-events: auto; border-left: 4px solid var(--neon-purple);
         }
         #mission-title { font-size: 8px; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 2px; }
         #mission-text { font-size: 10px; font-weight: bold; color: #fff; line-height: 1.2; }
 
-        /* ДЖОЙСТИК (СПРАВА) */
+        /* ДЖОЙСТИК СПРАВА */
         #joystick-zone { 
             position: absolute; bottom: 40px; right: 30px; width: 110px; height: 110px; 
             background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.2); 
@@ -80,10 +80,6 @@
             width: 92%; max-width: 380px; background: #0a0a1a; 
             border: 2px solid var(--neon-purple); padding: 20px; border-radius: 20px; overflow-y: auto; max-height: 85vh;
         }
-        .story-block { 
-            font-size: 12px; color: #ccc; line-height: 1.5; background: rgba(0,0,0,0.6); 
-            padding: 15px; border-radius: 15px; margin-bottom: 15px; border-left: 3px solid var(--neon-gold);
-        }
         .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .shop-item { 
             background: rgba(255,255,255,0.05); border: 1px solid #333; 
@@ -100,9 +96,9 @@
             align-items: center; justify-content: center; z-index: 100; pointer-events: auto; 
         }
         .btn-start { 
-            padding: 18px 55px; font-size: 20px; font-weight: bold; background: none; 
+            padding: 16px 50px; font-size: 18px; font-weight: bold; background: none; 
             border: 2px solid var(--neon-green); color: var(--neon-green); 
-            border-radius: 35px; cursor: pointer; box-shadow: 0 0 20px var(--neon-green);
+            border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px var(--neon-green);
         }
         .hidden { display: none !important; }
     </style>
@@ -130,18 +126,17 @@
 
         <div id="mission-box" class="hidden">
             <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
-            <div id="mission-text">Загрузка...</div>
+            <div id="mission-text">Загрузка протоколов...</div>
         </div>
 
         <div id="joystick-zone"><div id="joystick-stick"></div></div>
     </div>
 
+    <!-- МАГАЗИН -->
     <div id="shop-modal" class="modal hidden">
         <div class="shop-content">
-            <div class="story-block">
-                <h3 style="color:var(--neon-blue); margin-top:0; font-size: 16px;">МОДЕРНИЗАЦИЯ</h3>
-                Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и пополнить боезапас. Обычные пушки бьют Квадраты, Лазеры испаряют Треугольники.
-            </div>
+            <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
+            <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
             <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
             <div class="shop-grid">
                 <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
@@ -186,23 +181,23 @@ let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [],
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curMission = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
 
-// ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ (FIX КНОПОК)
+// ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
 
-/** --- ИНИЦИАЛИЗАЦИЯ (FIX ЗАГРУЗКИ) --- */
-window.addEventListener('load', () => {
+/** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
+window.onload = function() {
     canvas = document.getElementById('gameCanvas');
     if (canvas) {
         ctx = canvas.getContext('2d');
         resize();
         initJoystick();
         window.addEventListener('resize', resize);
-        console.log("Elite System v14.3: Online");
+        console.log("Elite System v14.4: Online");
     }
-});
+};
 
 function resize() {
     if (!canvas) return;
@@ -210,18 +205,43 @@ function resize() {
     canvas.height = window.innerHeight;
 }
 
+/** --- УПРАВЛЕНИЕ ОКНАМИ --- */
+function toggleShop(show) {
+    if(!started) return;
+    paused = show;
+    document.getElementById('shop-modal').classList.toggle('hidden', !show);
+    updateUI();
+    if(!show) { 
+        gameId = requestAnimationFrame(gameLoop); 
+    } else { 
+        cancelAnimationFrame(gameId); 
+    }
+}
+
+function togglePause() {
+    if(!started) return;
+    paused = !paused;
+    const pIcon = document.getElementById('pause-icon');
+    if(pIcon) pIcon.className = paused ? "fas fa-play" : "fas fa-pause";
+    if(!paused) { 
+        gameId = requestAnimationFrame(gameLoop); 
+    } else { 
+        cancelAnimationFrame(gameId); 
+    }
+}
+
 /** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
 function startGame() {
     if (started) return;
 
-    // 1. Прячем экраны
-    const overlay = document.getElementById('start-screen');
-    if (overlay) overlay.style.display = 'none';
+    // 1. Очистка интерфейса
+    const startOverlay = document.getElementById('start-screen');
+    if (startOverlay) startOverlay.style.display = 'none';
     const gov = document.getElementById('game-over-screen');
     if (gov) gov.classList.add('hidden');
     document.getElementById('mission-box').classList.remove('hidden');
 
-    // 2. Сброс переменных
+    // 2. Сброс игровых флагов
     started = true;
     paused = false;
     score = 0;
@@ -261,11 +281,10 @@ function startGame() {
     updateMission();
     updateUI();
 
-    // 6. Таймер Энергии (Расход патронов)
+    // 6. Таймер Энергии (Расход заряда)
     if (window.ammoTick) clearInterval(window.ammoTick);
     window.ammoTick = setInterval(() => { 
         if(started && !paused && curMission > 0) {
-            // Если есть турели или враги - энергия тратится на поддержание систем
             if(entities.turrets.length > 0 || entities.enemies.length > 0) {
                 baseAmmo = Math.max(0, baseAmmo - 0.5); 
             }
@@ -280,7 +299,7 @@ const baseMissions = [
     { t: "Перехват: Уничтожь Глюк ГОЛОВОЙ (+2 к длине)", check: () => missionProgress >= 1 },
     { t: "Защита: Собери 1200 CR на Пушку", check: () => score >= 1200 },
     { t: "Модернизация: Купи ПУШКУ в магазине", check: () => entities.turrets.length > 0 },
-    { t: "Зарядка: Коснись Ядра, чтобы пополнить заряд за счет хвоста", check: () => missionProgress >= 1 }
+    { t: "Зарядка: Коснись Ядра, чтобы пополнить заряд", check: () => missionProgress >= 1 }
 ];
 
 function getMission(id) {
@@ -307,10 +326,9 @@ function updateMission() {
     }
 }
 
-/** --- МАГАЗИН И ОБОРУДОВАНИЕ --- */
+/** --- МАГАЗИН И ОБНОВЛЕНИЕ UI --- */
 function buyUpgrade(type, cost) {
     if (score < cost) return;
-    
     if (type === 'turret') {
         score -= cost;
         const ang = Math.random() * 6.28;
@@ -333,9 +351,7 @@ function updateUI() {
         bar.style.width = baseAmmo + '%';
         bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
     }
-    const sv = document.getElementById('score-val');
-    const sc = document.getElementById('shop-credits');
-    const lv = document.getElementById('lives-val');
+    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
@@ -359,11 +375,11 @@ function update() {
     snake.segments.unshift({x: snake.x, y: snake.y});
     if(snake.segments.length > snake.length) snake.segments.pop();
 
-    // 2. МЕХАНИКА: ПОПОЛНЕНИЕ ЭНЕРГИИ (ОБМЕН МАССЫ)
-    const distToCore = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
-    if(distToCore < 80 && baseAmmo < 100 && snake.length > 12) {
-        snake.length -= 0.25; // Уменьшаем хвост
-        baseAmmo = Math.min(100, baseAmmo + 2); // Заряжаем пушки
+    // 2. Механика: Пополнение заряда у Ядра
+    const dCore = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+    if(dCore < 80 && baseAmmo < 100 && snake.length > 12) {
+        snake.length -= 0.25; 
+        baseAmmo = Math.min(100, baseAmmo + 2.5);
         if(curMission === 4) missionProgress = 1;
         updateUI();
     }
@@ -524,7 +540,6 @@ function draw() {
     entities.enemies.forEach(en => {
         const ang = Math.atan2(en.y - BASE_POS.y, en.x - BASE_POS.x);
         const realDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
-        // Метка останавливается на 65px (край ядра) и не уходит дальше 150px
         const radarDist = Math.max(65, Math.min(150, realDist * 0.05));
         
         ctx.save();
@@ -536,7 +551,7 @@ function draw() {
         ctx.restore();
     });
 
-    // 3. Защитные системы
+    // 3. Турели и Лазеры
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
         ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
@@ -630,8 +645,16 @@ function initJoystick() {
     window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
 }
 
-// ПРЯМОЙ ЗАПУСК ИНИЦИАЛИЗАЦИИ
-init();
+window.setGamePause = function(state) {
+    if(started) {
+        paused = state;
+        if(!paused) gameId = requestAnimationFrame(gameLoop);
+        else cancelAnimationFrame(gameId);
+    }
+};
+
+// Запуск инициализации джойстика
+initJoystick();
 </script>
 </body>
 </html>
