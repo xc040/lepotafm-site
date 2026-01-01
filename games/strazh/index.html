@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Signal Defender 11.3</title>
+    <title>Signal Defender 11.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --neon-green: #39ff14; --neon-blue: #00f3ff; --neon-red: #ff0055; --neon-purple: #bc13fe; }
         body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; user-select: none; }
         canvas { display: block; }
 
-        /* ИНТЕРФЕЙС */
+        /* UI */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .stat-box { position: absolute; background: rgba(5, 5, 20, 0.9); padding: 8px 12px; border: 1px solid var(--neon-blue); border-radius: 10px; pointer-events: auto; font-size: 11px; }
         #top-left { top: 65px; left: 15px; }
@@ -22,12 +22,13 @@
         /* ОБУЧЕНИЕ: СЛЕВА ОТ СТИКА */
         #tutorial-box {
             position: absolute; bottom: 50px; left: 20px;
-            background: rgba(0, 0, 0, 0.85); border: 2px solid var(--neon-blue);
-            padding: 12px 18px; border-radius: 15px; text-align: left;
-            width: 180px; z-index: 20; box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            background: rgba(0, 0, 0, 0.9); border: 2px solid var(--neon-blue);
+            padding: 15px; border-radius: 15px; text-align: left;
+            width: 200px; z-index: 20; box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
             font-size: 13px; font-weight: bold; color: #fff; pointer-events: auto;
-            line-height: 1.3;
+            line-height: 1.4; animation: flash 2s infinite;
         }
+        @keyframes flash { 0%, 100% { border-color: var(--neon-blue); } 50% { border-color: var(--neon-purple); } }
 
         /* ДЖОЙСТИК СПРАВА */
         #joystick-zone { position: absolute; bottom: 50px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 50%; pointer-events: auto; }
@@ -68,8 +69,9 @@
             <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-green)">0</span></div>
         </div>
 
-        <!-- ОБУЧЕНИЕ -->
+        <!-- ОКНО МИССИЙ -->
         <div id="tutorial-box" class="hidden">
+            <div style="font-size: 10px; color: var(--neon-blue); margin-bottom: 5px;">ТЕКУЩАЯ МИССИЯ:</div>
             <div id="tut-text">Инициализация...</div>
         </div>
 
@@ -82,24 +84,24 @@
             <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
             <div class="shop-grid">
                 <div class="shop-item" onclick="buyUpgrade('turret', 1200)"><i class="fas fa-crosshairs"></i><b>Турель</b><span>1.2k</span></div>
-                <div class="shop-item" onclick="buyUpgrade('shield', 600)"><i class="fas fa-shield-alt"></i><b>Щит</b><span>0.6k</span></div>
+                <div class="shop-item" onclick="buyUpgrade('shield', 600)"><i class="fas fa-shield-alt"></i><b>Щит Ядра</b><span>0.6k</span></div>
                 <div class="shop-item" onclick="buyUpgrade('fix', 1500)"><i class="fas fa-tools"></i><b>Ремонт</b><span>1.5k</span></div>
                 <div class="shop-item" onclick="buyUpgrade('emp', 1000)"><i class="fas fa-bolt"></i><b>ЭМИ</b><span>1.0k</span></div>
             </div>
-            <div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; font-size:11px; color:#888;">
-                <b style="color:var(--neon-blue)">ИНФО:</b> Защищай центр. Ешь голубые байты для сигнала. Очки трать на турели. Лицензия LepotaFM (c) 2025.
+            <div style="padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; font-size:11px; color:#888; border: 1px solid #333;">
+                <b style="color:var(--neon-blue)">СПРАВКА:</b> Защищай центр. Сигнал падает. Ешь голубые байты. Данные трать на пушки. (c) LepotaFM 2025.
             </div>
             <button class="btn-start" style="width:100%; margin-top:15px; font-size: 14px;" onclick="toggleShop(false)">В БОЙ</button>
         </div>
     </div>
 
     <div id="start-screen" class="overlay">
-        <h1 style="color:var(--neon-blue); letter-spacing:3px;">СТРАЖ ЭФИРА</h1>
-        <button class="btn-start" onclick="startGame()">ЗАПУСК</button>
+        <h1 style="color:var(--neon-blue); letter-spacing:4px; text-shadow: 0 0 20px var(--neon-blue);">СТРАЖ ЭФИРА</h1>
+        <button class="btn-start" onclick="startGame()">ЗАГРУЗКА ПРОТОКОЛОВ</button>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: var(--neon-red);">ЭФИР ВЗЛОМАН</h1>
+        <h1 style="color: var(--neon-red);">DATA CORRUPTED</h1>
         <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
     </div>
 
@@ -114,7 +116,7 @@ let canvas, ctx, started = false, paused = false, score = 0, signalLevel = 100, 
 let snake = { x: 2050, y: 2050, segments: [], angle: 0, speed: 5.5, size: 25, length: 15 };
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
-let shieldActive = false, tutStep = 0, autoPausedForShop = false;
+let shieldActive = false, tutStep = 0;
 
 function init() {
     canvas = document.getElementById('gameCanvas'); ctx = canvas.getContext('2d');
@@ -127,7 +129,7 @@ function toggleShop(s) {
     if(!started) return;
     paused = s;
     document.getElementById('shop-modal').classList.toggle('hidden', !s);
-    if(s && tutStep === 4) { tutStep = 5; nextTut(); } // Переход к финалу обучения
+    if(s && tutStep === 4) { tutStep = 5; nextTut(); } 
     if(!s) { gameId = requestAnimationFrame(gameLoop); } else { cancelAnimationFrame(gameId); }
 }
 
@@ -144,6 +146,7 @@ function buyUpgrade(type, cost) {
     if (type === 'turret') {
         const ang = Math.random() * 6.28;
         entities.turrets.push({ x: BASE_POS.x + Math.cos(ang)*150, y: BASE_POS.y + Math.sin(ang)*150, lastShot: 0 });
+        if(tutStep === 5) nextTut();
     }
     if (type === 'shield') shieldActive = true;
     if (type === 'fix') lives = Math.min(3, lives + 1);
@@ -156,10 +159,10 @@ function startGame() {
     started = true;
     for(let i=0; i<15; i++) spawnFood();
     gameId = requestAnimationFrame(gameLoop);
-    showTut("Двигай змейку джойстиком СПРАВА");
+    showTut("Используй стик справа: начни движение");
     
     setInterval(() => { 
-        if(started && !paused) {
+        if(started && !paused && tutStep > 1) {
             let decay = Math.hypot(snake.x-BASE_POS.x, snake.y-BASE_POS.y) < 400 ? 0.4 : 1;
             signalLevel = Math.max(0, signalLevel - decay); 
             if(signalLevel <= 0) gameOver();
@@ -168,7 +171,7 @@ function startGame() {
     }, 1500);
 }
 
-/** TUTORIAL LOGIC */
+/** MISSION SYSTEM */
 function showTut(text) {
     const box = document.getElementById('tutorial-box');
     box.classList.remove('hidden');
@@ -177,15 +180,16 @@ function showTut(text) {
 
 function nextTut() {
     tutStep++;
-    if(tutStep === 1) showTut("Отлично! Теперь съешь голубой БАЙТ, чтобы восстановить сигнал");
-    else if(tutStep === 2) showTut("Враги обнаружены! Защищай БАЗУ в центре. Бей врагов головой");
-    else if(tutStep === 3) showTut("Набирай данные. Нужно 1200 очков для модернизации");
+    if(tutStep === 1) showTut("Найди и съешь голубой БАЙТ, чтобы включить радио");
+    else if(tutStep === 2) showTut("Враги близко! Уничтожь красную помеху, ударив её ГОЛОВОЙ");
+    else if(tutStep === 3) showTut("Отлично. Копи 1200 данных для покупки турели");
     else if(tutStep === 4) {
-        showTut("Внимание! Очков достаточно. Нажми на КОРЗИНУ слева");
-        togglePause(); // Авто-пауза для захода в магазин
+        showTut("Лимит данных достигнут! Нажми на КОРЗИНУ слева");
+        if(!paused) togglePause(); // Принудительная пауза для захода в магазин
     }
-    else if(tutStep === 6) showTut("Обучение завершено. Удачи, Страж Эфира!");
-    else if(tutStep > 6) document.getElementById('tutorial-box').classList.add('hidden');
+    else if(tutStep === 5) showTut("Купи ТУРЕЛЬ в меню модернизации");
+    else if(tutStep === 6) showTut("Протоколы завершены. Защищай эфир, Страж!");
+    else setTimeout(() => document.getElementById('tutorial-box').classList.add('hidden'), 5000);
 }
 
 function update() {
@@ -226,7 +230,7 @@ function update() {
         if(Math.hypot(b.x-BASE_POS.x, b.y-BASE_POS.y) > 2000) entities.bullets.splice(i,1);
     });
 
-    // Враги появляются только после сбора первой еды (Шаг 2+)
+    // Враги только после сбора первой еды
     if(tutStep >= 2 && Math.random() < 0.007) spawnEnemy();
 
     entities.enemies.forEach((en, i) => {
@@ -248,6 +252,7 @@ function update() {
 
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 50) {
             score += 100; entities.enemies.splice(i, 1);
+            if(tutStep === 2) nextTut(); // Миссия "Убить головой"
             updateUI();
         }
     });
@@ -257,15 +262,12 @@ function update() {
             signalLevel = Math.min(100, signalLevel + 20);
             snake.length += 2; score += 25;
             entities.food.splice(i, 1); spawnFood();
-            if(tutStep === 1) nextTut();
+            if(tutStep === 1) nextTut(); // Миссия "Съесть байт"
             updateUI();
         }
     });
 
-    // Проверка на 1200 очков
-    if(score >= 1200 && tutStep === 3) {
-        nextTut();
-    }
+    if(score >= 1200 && tutStep === 3) nextTut(); // Миссия "Накопить 1200"
 }
 
 function draw() {
@@ -278,7 +280,6 @@ function draw() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
     }
 
-    // Core
     ctx.shadowBlur = 30; ctx.shadowColor = 'cyan';
     ctx.fillStyle = '#112'; ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 60, 0, 6.28); ctx.fill();
     ctx.strokeStyle = 'cyan'; ctx.lineWidth = 5; ctx.stroke();
@@ -286,7 +287,6 @@ function draw() {
 
     if(shieldActive) { ctx.strokeStyle = 'cyan'; ctx.lineWidth = 15; ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 110, 0, 6.28); ctx.stroke(); }
 
-    // Radar
     entities.enemies.forEach(en => {
         const ang = Math.atan2(en.y - BASE_POS.y, en.x - BASE_POS.x);
         ctx.save(); ctx.translate(BASE_POS.x, BASE_POS.y); ctx.rotate(ang);
@@ -298,7 +298,7 @@ function draw() {
     ctx.fillStyle = 'cyan'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 25, 0, 6.28); ctx.fill(); });
     ctx.fillStyle = '#ff0055'; entities.enemies.forEach(en => { ctx.fillRect(en.x-35, en.y-35, 70, 70); });
 
-    // ЗМЕЙКА БЕЗ СВЕЧЕНИЯ
+    // ЗМЕЙКА: ЧЕТКАЯ, БЕЗ СВЕЧЕНИЯ
     ctx.fillStyle = '#39ff14';
     snake.segments.forEach((seg, i) => {
         const r = (snake.size * (1 - i / snake.segments.length)) + 5;
@@ -322,6 +322,7 @@ function spawnEnemy() {
     entities.enemies.push({ x, y, speed: 1.5 + Math.random() });
 }
 function spawnFood() { entities.food.push({ x: 500 + Math.random()*(WORLD_SIZE-1000), y: 500 + Math.random()*(WORLD_SIZE-1000) }); }
+
 function updateUI() {
     document.getElementById('signal-bar').style.width = signalLevel + '%';
     document.getElementById('lives-val').innerText = lives;
