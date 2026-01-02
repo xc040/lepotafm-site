@@ -41,6 +41,7 @@
         }
         #top-left { top: 70px; left: 15px; }
         #top-right { top: 70px; right: 15px; text-align: right; }
+        #boss-info { top: 120px; left: 50%; transform: translateX(-50%); min-width: 120px; text-align: center; }
 
         .progress-container { 
             width: 100px; height: 6px; background: #111; border-radius: 3px; 
@@ -140,12 +141,14 @@
 
         <div id="joystick-zone">
   <div id="joystick-stick"></div>
-  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
-    <button class="control-btn" id="pause-btn-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:18px;box-shadow:0 0 15px var(--neon-red);width:50px;height:50px;">
-      <i id="pause-jicon" class="fas fa-pause" style="color: var(--neon-red);"></i>
-    </button>
-  </div>
 </div>
+        
+        <!-- Кнопка плей/пауза в центре экрана слева -->
+        <div id="pause-btn-center" style="display:none;position: absolute;left: 25%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
+            <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
+                <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
+            </button>
+        </div>
     </div>
 
     <!-- МАГАЗИН -->
@@ -250,14 +253,14 @@ function toggleShop(show) {
         paused = true;
         cancelAnimationFrame(gameId);
     } else {
-        // Закрытие магазина - игра остается на паузе с показом кнопки паузы
+        // Закрытие магазина - игра остается на паузе с показом центральной кнопки паузы
         paused = true;
-        // Показываем кнопку паузы над стиком
-        const pauseBtn = document.getElementById('pause-btn');
-        if (pauseBtn) pauseBtn.style.display = 'block';
+        // Показываем центральную кнопку паузы
+        const centerBtn = document.getElementById('pause-btn-center');
+        if (centerBtn) centerBtn.style.display = 'block';
         // Обновляем иконку паузы
-        const pjIcon = document.getElementById('pause-jicon');
-        if (pjIcon) pjIcon.className = 'fas fa-play';
+        const centerIcon = document.getElementById('pause-center-icon');
+        if (centerIcon) centerIcon.className = 'fas fa-play';
     }
     updateUI();
 }
@@ -266,16 +269,16 @@ function togglePause() {
     if(!started) return;
     paused = !paused;
     const pIcon = document.getElementById('pause-icon');
-    const pjIcon = document.getElementById('pause-jicon');
-    const pauseBtn = document.getElementById('pause-btn');
+    const centerIcon = document.getElementById('pause-center-icon');
+    const centerBtn = document.getElementById('pause-btn-center');
     
     // Обновляем иконки
     const newIcon = paused ? "fas fa-play" : "fas fa-pause";
     if(pIcon) pIcon.className = newIcon;
-    if(pjIcon) pjIcon.className = newIcon;
+    if(centerIcon) centerIcon.className = newIcon;
     
-    // Показываем/скрываем кнопку паузы над стиком
-    if(pauseBtn) pauseBtn.style.display = paused ? 'block' : 'none';
+    // Показываем/скрываем центральную кнопку паузы
+    if(centerBtn) centerBtn.style.display = paused ? 'block' : 'none';
     
     if(!paused) { 
         gameId = requestAnimationFrame(gameLoop); 
@@ -683,6 +686,8 @@ function update() {
     updateMission();
 
     // 1. Движение змеи
+    // Принудительно восстанавливаем скорость чтобы избежать падения при попадании
+    snake.speed = 5.5;
     if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
     snake.x += Math.cos(snake.angle) * snake.speed;
     snake.y += Math.sin(snake.angle) * snake.speed;
@@ -893,11 +898,7 @@ function update() {
             const levelMul = 1 + (entities.boss.level||curLevel)/3;
             entities.boss.health -= tailDamage * levelMul;
             
-            // Змея теряет длину при атаке босса
-            const lengthLoss = Math.max(2, Math.floor(snake.segments.length / 10)); // Теряем 2 сегмента за каждые 10
-            snake.length = Math.max(5, snake.length - lengthLoss);
-            while(snake.segments.length > snake.length) snake.segments.pop();
-            
+            // Змея НЕ теряет длину при атаке босса (только наносит урон)
             createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
             if(entities.boss.health <= 0) {
                 score += 500;
@@ -1210,7 +1211,7 @@ function spawnBoss(level) {
             x: x + Math.cos(angle) * dist,
             y: y + Math.sin(angle) * dist,
             lastShot: 0,
-            type: 'turret'
+            type: 'turret' // Только турели, без башен
         });
     }
 }
@@ -1232,61 +1233,10 @@ function gameOver() {
 /** --- ДЖОЙСТИК --- */
 function initJoystick() {
     const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
-    const pauseBtn = document.getElementById('pause-btn');
     let active = false;
-    
-    // Отдельный обработчик для кнопки паузы
-    if (pauseBtn) {
-        pauseBtn.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            window.togglePause();
-        }, {passive: false});
-        
-        pauseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            window.togglePause();
-        });
-    }
-    
-    // Обработчик для внутренней кнопки
-    const pauseBtnInner = document.getElementById('pause-btn-inner');
-    if (pauseBtnInner) {
-        pauseBtnInner.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            window.togglePause();
-        }, {passive: false});
-        
-        pauseBtnInner.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            window.togglePause();
-        });
-    }
-    
-    const isTouchingPauseButton = (touch) => {
-        if (!pauseBtn || pauseBtn.style.display === 'none') return false;
-        const r = pauseBtn.getBoundingClientRect();
-        return touch.clientX >= r.left && touch.clientX <= r.right && 
-               touch.clientY >= r.top && touch.clientY <= r.bottom;
-    };
-    
     const handle = (e) => {
         if(!active) return;
         const t = e.touches ? e.touches[0] : e;
-        
-        // Проверяем, не нажимает ли пользователь на кнопку паузы
-        if (isTouchingPauseButton(t)) {
-            active = false;
-            stick.style.left='50%'; 
-            stick.style.top='50%'; 
-            input.x=0; 
-            input.y=0;
-            return;
-        }
-        
         const r = zone.getBoundingClientRect();
         const cX = r.left + r.width/2, cY = r.top + r.height/2;
         let dx = t.clientX - cX, dy = t.clientY - cY;
@@ -1295,39 +1245,26 @@ function initJoystick() {
         stick.style.top = `calc(50% + ${Math.sin(ang)*dist}px)`;
         input.x = Math.cos(ang); input.y = Math.sin(ang);
     };
+    zone.addEventListener('touchstart', e => { active = true; handle(e); e.preventDefault(); }, {passive: false});
+    window.addEventListener('touchmove', e => { if(active) { handle(e); e.preventDefault(); } }, {passive: false});
+    window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
     
-    zone.addEventListener('touchstart', e => { 
-        const t = e.touches ? e.touches[0] : e;
-        if (!isTouchingPauseButton(t)) {
-            active = true; 
-            handle(e); 
-        }
-        e.preventDefault(); 
-    }, {passive: false});
-    
-    window.addEventListener('touchmove', e => { 
-        if(active) { 
-            handle(e); 
-            e.preventDefault(); 
-        } 
-    }, {passive: false});
-    
-    window.addEventListener('touchend', () => { 
-        active = false; 
-        stick.style.left='50%'; 
-        stick.style.top='50%'; 
-        input.x=0; 
-        input.y=0; 
-    });
-}
-
-window.setGamePause = function(state) {
-    if(started) {
-        paused = state;
-        if(!paused) gameId = requestAnimationFrame(gameLoop);
-        else cancelAnimationFrame(gameId);
+    // Обработчики для центральной кнопки паузы
+    const centerBtn = document.getElementById('pause-btn-center-inner');
+    if (centerBtn) {
+        centerBtn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        }, {passive: false});
+        
+        centerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        });
     }
-};
+}
 
 // Запуск инициализации джойстика
 initJoystick();
