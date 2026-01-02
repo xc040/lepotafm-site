@@ -143,8 +143,8 @@
   <div id="joystick-stick"></div>
 </div>
         
-        <!-- Кнопка плей/пауза в центре экрана слева -->
-        <div id="pause-btn-center" style="display:none;position: absolute;left: 25%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
+        <!-- Кнопка плей/пауза в центре экрана справа -->
+        <div id="pause-btn-center" style="display:none;position: absolute;right: 25%;top: 50%;transform: translate(50%, -50%);z-index:1000;pointer-events: auto;">
             <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
                 <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
             </button>
@@ -297,7 +297,7 @@ function saveProgress() {
         baseAmmo: baseAmmo,
         lives: lives,
         snakeLength: snake.length,
-        turretsCount: entities.turrets.length,
+        turrets: entities.turrets.map(t => ({ type: t.type, lastShot: t.lastShot })),
         dronesCount: entities.drones.length,
         playerBases: entities.playerBases.map(base => ({
             x: base.x,
@@ -322,16 +322,26 @@ function loadProgress() {
             lives = progress.lives || 3;
             snake.length = progress.snakeLength || 25;
             
-            // Восстанавливаем турели
-            const turretCount = progress.turretsCount || 0;
-            for(let i = 0; i < turretCount; i++) {
-                const ang = (i / Math.max(1, turretCount)) * 6.28;
-                entities.turrets.push({ 
-                    x: BASE_POS.x + Math.cos(ang)*165, 
-                    y: BASE_POS.y + Math.sin(ang)*165, 
-                    type: 'bolt', 
-                    lastShot: 0 
-                });
+            // Восстанавливаем турели с правильными типами
+            if (progress.turrets && Array.isArray(progress.turrets)) {
+                entities.turrets = progress.turrets.map(turret => ({
+                    x: BASE_POS.x + Math.cos(Math.random() * 6.28) * 165,
+                    y: BASE_POS.y + Math.sin(Math.random() * 6.28) * 165,
+                    type: turret.type || 'bolt',
+                    lastShot: turret.lastShot || 0
+                }));
+            } else {
+                // Fallback для старых сохранений
+                const turretCount = progress.turretsCount || 0;
+                for(let i = 0; i < turretCount; i++) {
+                    const ang = (i / Math.max(1, turretCount)) * 6.28;
+                    entities.turrets.push({ 
+                        x: BASE_POS.x + Math.cos(ang)*165, 
+                        y: BASE_POS.y + Math.sin(ang)*165, 
+                        type: 'bolt', 
+                        lastShot: 0 
+                    });
+                }
             }
             
             // Восстанавливаем дроны
@@ -893,12 +903,19 @@ function update() {
         
         // Урон боссу от змеи
         if(Math.hypot(entities.boss.x - snake.x, entities.boss.y - snake.y) < 70 && snake.segments.length >= 2) {
-            // Урон боссу пропорционален длине хвоста
-            const tailDamage = Math.max(1, Math.floor(snake.segments.length / 5)); // 1 урон за каждые 5 сегментов
+            // Урон боссу равен всей длине хвоста
+            const tailDamage = snake.segments.length; // Урон равен количеству сегментов
             const levelMul = 1 + (entities.boss.level||curLevel)/3;
             entities.boss.health -= tailDamage * levelMul;
             
-            // Змея НЕ теряет длину при атаке босса (только наносит урон)
+            // Змея теряет весь хвост при атаке босса
+            const currentLength = snake.segments.length;
+            snake.segments = [];
+            snake.length = 1; // Только голова остается
+            for(let i = 0; i < snake.length; i++) {
+                snake.segments.push({x: snake.x, y: snake.y});
+            }
+            
             createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
             if(entities.boss.health <= 0) {
                 score += 500;
