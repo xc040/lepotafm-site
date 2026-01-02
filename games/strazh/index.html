@@ -497,9 +497,7 @@ function updateMission() {
             // Задание завершено, переход к следующему
             curRoomInLevel++;
             missionProgress = 0;
-            entities.enemies = [];
-            
-            // Сохраняем прогресс при завершении задания
+            // Прогресс сохраняем, врагов НЕ обнуляем - продолжаем игру
             saveProgress();
             
             const nextRoom = getCurrentRoom();
@@ -711,6 +709,19 @@ function update() {
     }
 
     entities.enemies.forEach((en, i) => {
+        // Урон по змее сбоку (по сегментам кроме головы)
+        for (let si = 1; si < snake.segments.length; si++) {
+            const seg = snake.segments[si];
+            if(Math.hypot(en.x - seg.x, en.y - seg.y) < 40) {
+                // Боковое столкновение — сильный урон
+                snake.length = Math.max(5, snake.length - 80);
+                while(snake.segments.length > snake.length) snake.segments.pop();
+                createParticles(seg.x, seg.y, 'red', 10);
+                entities.enemies.splice(i, 1);
+                updateUI();
+                break;
+            }
+        }
         const ang = Math.atan2(BASE_POS.y - en.y, BASE_POS.x - en.x);
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
@@ -737,12 +748,10 @@ function update() {
             updateUI();
         }
 
-        // Змея vs Враг (Убийство ГОЛОВОЙ с потерей длины)
+        // Змея vs Враг (Убийство ГОЛОВОЙ с ростом)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
             score += 100;
-            snake.length = Math.max(5, snake.length - 8); // Потеря -8 сегментов при столкновении
-            snake.length += 2; // Прямое поедание дает +2 к длине (итого -6)
-            // Обновляем сегменты если длина уменьшилась
+            snake.length += 2; // При лобовом столкновении змея растет (+2)
             while(snake.segments.length > snake.length) snake.segments.pop();
             entities.enemies.splice(i, 1);
             createParticles(en.x, en.y, 'green', 10);
