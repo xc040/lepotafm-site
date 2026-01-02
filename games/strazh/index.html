@@ -106,6 +106,11 @@
 <body>
 
     <canvas id="gameCanvas"></canvas>
+    
+    <!-- Аудио элементы -->
+    <audio id="ether-noise" loop>
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
 
     <div id="ui-layer">
         <div class="app-controls">
@@ -134,7 +139,7 @@
         </div>
 
         <div id="joystick-zone">
-  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: -65px;transform: translateX(-50%);z-index:21;">
+  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: -85px;transform: translateX(-50%);z-index:21;">
     <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.12);border:2px solid var(--neon-purple);font-size:18px;box-shadow:0 0 12px var(--neon-purple);">
       <i id="pause-jicon" class="fas fa-pause"></i>
     </button>
@@ -149,14 +154,7 @@
             <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
             <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
             <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
-            <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА</h3>
-                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
-                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
-                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
-                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
-                </p>
-            </div>
+            <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
             <div class="shop-grid">
                 <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
                     <i class="fas fa-crosshairs"></i><b>Пушка</b><span>1200 CR</span>
@@ -171,10 +169,17 @@
                     <i class="fas fa-tools"></i><b>Ремонт</b><span>2500 CR</span>
                 </div>
                 <div class="shop-item" onclick="window.buyUpgrade('base', 10000)">
-                    <i class="fas fa-building"></i><b>База</b><span>5000 CR</span>
+                    <i class="fas fa-building"></i><b>База</b><span>10000 CR</span>
                 </div>
             </div>
-            <button class="btn-start" style="width:100%; font-size:14px;" onclick="window.toggleShop(false)">В БОЙ</button>
+            <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА</h3>
+                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
+                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
+                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
+                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
+                </p>
+            </div>
         </div>
     </div>
 
@@ -199,10 +204,11 @@ const ZOOM = 0.28;
 let canvas, ctx, gameId;
 let started = false, paused = false;
 let score = 0, baseAmmo = 100, lives = 3;
-    let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
+let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
+let etherNoisePlaying = false;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -254,7 +260,17 @@ function togglePause() {
     if(!started) return;
     paused = !paused;
     const pIcon = document.getElementById('pause-icon');
-    if(pIcon) pIcon.className = paused ? "fas fa-play" : "fas fa-pause";
+    const pjIcon = document.getElementById('pause-jicon');
+    const pauseBtn = document.getElementById('pause-btn');
+    
+    // Обновляем иконки
+    const newIcon = paused ? "fas fa-play" : "fas fa-pause";
+    if(pIcon) pIcon.className = newIcon;
+    if(pjIcon) pjIcon.className = newIcon;
+    
+    // Показываем/скрываем кнопку паузы над стиком
+    if(pauseBtn) pauseBtn.style.display = paused ? 'block' : 'none';
+    
     if(!paused) { 
         gameId = requestAnimationFrame(gameLoop); 
     } else { 
@@ -617,9 +633,10 @@ function updateUI() {
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
-    // Кнопка паузы над стиком
-    const pauseBtn = document.getElementById('pause-btn');
-    if (pauseBtn) pauseBtn.style.display = paused ? 'block' : 'none';
+    
+    // Управление звуком шума эфира
+    updateEtherNoise();
+    
     // Информация про босса
     const bossBox = document.getElementById('boss-info');
     const bossStrength = document.getElementById('boss-strength');
@@ -630,6 +647,27 @@ function updateUI() {
         bossHp.innerText = 'HP: ' + Math.round(entities.boss.health) + ' / ' + Math.round(entities.boss.maxHealth);
     } else if (bossBox) {
         bossBox.style.display = 'none';
+    }
+}
+
+function updateEtherNoise() {
+    const etherNoise = document.getElementById('ether-noise');
+    if (!etherNoise) return;
+    
+    if (baseAmmo < 10 && started && !paused) {
+        // Включаем шум эфира при менее 10% заряда
+        if (!etherNoisePlaying) {
+            etherNoise.volume = 0.5; // 50% громкости
+            etherNoise.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+            etherNoisePlaying = true;
+        }
+    } else {
+        // Выключаем шум при достаточном заряде или паузе
+        if (etherNoisePlaying) {
+            etherNoise.pause();
+            etherNoise.currentTime = 0;
+            etherNoisePlaying = false;
+        }
     }
 }
 
