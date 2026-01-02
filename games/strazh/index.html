@@ -187,7 +187,7 @@ let score = 0, baseAmmo = 100, lives = 3;
     let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
-let curMission = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
+let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
 let audioContext = null, noiseNode = null, gainNode = null;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
@@ -257,7 +257,8 @@ function startGame() {
     score = 0;
     baseAmmo = 100;
     lives = 3;
-    curMission = 0;
+    curLevel = 1;
+    curRoomInLevel = 0;
     missionProgress = 0;
     shieldActive = false;
 
@@ -295,7 +296,7 @@ function startGame() {
     // 6. Таймер Энергии (Расход заряда)
     if (window.ammoTick) clearInterval(window.ammoTick);
     window.ammoTick = setInterval(() => { 
-        if(started && !paused && curMission > 0) {
+        if(started && !paused && curLevel > 0) {
             if(entities.turrets.length > 0 || entities.enemies.length > 0) {
                 baseAmmo = Math.max(0, baseAmmo - 0.5); 
             }
@@ -304,61 +305,85 @@ function startGame() {
     }, 1000);
 }
 
-/** --- СИСТЕМА КОМНАТ (ПРОГРЕССИЯ СЛОЖНОСТИ) --- */
-const roomConfigs = [
-    { name: "Комната 1: Инициализация", enemiesToKill: 0, hasBoss: false, spawnRate: 0 },
-    { name: "Комната 2: Первый контакт", enemiesToKill: 3, hasBoss: false, spawnRate: 0.005 },
-    { name: "Комната 3: Усиление", enemiesToKill: 8, hasBoss: false, spawnRate: 0.008 },
-    { name: "Комната 4: Босс Альфа", enemiesToKill: 15, hasBoss: true, spawnRate: 0.01 },
-    { name: "Комната 5: Эскалация", enemiesToKill: 25, hasBoss: false, spawnRate: 0.012 },
-    { name: "Комната 6: Босс Бета", enemiesToKill: 40, hasBoss: true, spawnRate: 0.015 },
-    { name: "Комната 7: Критическая зона", enemiesToKill: 60, hasBoss: false, spawnRate: 0.018 },
-    { name: "Комната 8: Финальный босс", enemiesToKill: 100, hasBoss: true, spawnRate: 0.02 }
-];
+/** --- СИСТЕМА УРОВНЕЙ (УРОВЕНЬ = СЦЕНАРИЙ ЗАДАНИЙ + БОСС) --- */
+// Каждый уровень состоит из нескольких заданий, последнее - босс
+const ROOMS_PER_LEVEL = 3; // Количество заданий перед боссом в каждом уровне
 
-function getRoomConfig(id) {
-    if (id < roomConfigs.length) return roomConfigs[id];
-    // Генерация бесконечных комнат с увеличивающейся сложностью
-    const baseId = roomConfigs.length;
-    const difficulty = id - baseId;
+function getLevelConfig(level) {
+    // Базовая сложность растет с уровнем
+    const baseDifficulty = level;
     return {
-        name: `Комната ${id + 1}: Уровень ${difficulty + 1}`,
-        enemiesToKill: 100 + difficulty * 20,
-        hasBoss: (id - baseId) % 3 === 0,
-        spawnRate: 0.02 + difficulty * 0.002
+        level: level,
+        rooms: [
+            { name: `Задание 1: Разведка`, enemiesToKill: 5 + baseDifficulty * 3, spawnRate: 0.005 + baseDifficulty * 0.001 },
+            { name: `Задание 2: Очистка`, enemiesToKill: 10 + baseDifficulty * 5, spawnRate: 0.008 + baseDifficulty * 0.0015 },
+            { name: `Задание 3: Штурм`, enemiesToKill: 15 + baseDifficulty * 7, spawnRate: 0.012 + baseDifficulty * 0.002 },
+            { name: `БОСС УРОВНЯ ${level}`, enemiesToKill: 1, spawnRate: 0, isBoss: true }
+        ]
     };
 }
 
+function getCurrentRoom() {
+    const levelConfig = getLevelConfig(curLevel);
+    if (curRoomInLevel < levelConfig.rooms.length) {
+        return levelConfig.rooms[curRoomInLevel];
+    }
+    return null;
+}
+
 function updateMission() {
-    const room = getRoomConfig(curMission);
+    const room = getCurrentRoom();
+    if (!room) return;
+    
     const mId = document.getElementById('m-id');
     const mText = document.getElementById('mission-text');
-    if(mId) mId.innerText = curMission + 1;
-    if(mText) mText.innerText = room.name;
+    if(mId) mId.innerText = curLevel;
+    if(mText) mText.innerText = `Уровень ${curLevel}: ${room.name}`;
     
-    // Проверка завершения комнаты
-    if (missionProgress >= room.enemiesToKill) {
-        // Очистка текущей комнаты
-        entities.enemies = [];
-        entities.boss = null;
-        entities.bossTowers = [];
-        
-        curMission++;
-        missionProgress = 0;
-        
-        // Спавн босса для новой комнаты если нужно
-        const nextRoom = getRoomConfig(curMission);
-        if (nextRoom.hasBoss) {
-            spawnBoss(curMission);
+    // Проверка завершения задания
+    if (room.isBoss) {
+        // Для босса проверяем его смерть
+        if (!entities.boss && missionProgress >= 1) {
+            // Босс убит, переход на следующий уровень
+            curLevel++;
+            curRoomInLevel = 0;
+            missionProgress = 0;
+            entities.enemies = [];
+            entities.bossTowers = [];
+            
+            // Спавн первого задания нового уровня
+            const newRoom = getCurrentRoom();
+            if (newRoom && !newRoom.isBoss) {
+                missionProgress = 0;
+            }
+            updateMission();
+        } else if (entities.boss && !room.isBoss) {
+            // Если босс еще жив, но мы не в задании босса - исправляем
+            // Это не должно происходить, но на всякий случай
         }
-        
-        if(curMission === 3 && !paused) toggleShop(true); 
-        updateMission();
+    } else {
+        // Обычное задание - проверяем количество убитых врагов
+        if (missionProgress >= room.enemiesToKill) {
+            // Задание завершено, переход к следующему
+            curRoomInLevel++;
+            missionProgress = 0;
+            entities.enemies = [];
+            
+            const nextRoom = getCurrentRoom();
+            if (nextRoom && nextRoom.isBoss) {
+                // Следующее задание - босс, спавним его
+                spawnBoss(curLevel);
+            }
+            
+            if(curLevel === 1 && curRoomInLevel === 2 && !paused) toggleShop(true); 
+            updateMission();
+        }
     }
     
-    // Спавн босса при входе в комнату с боссом
-    if (room.hasBoss && !entities.boss && curMission > 0) {
-        spawnBoss(curMission);
+    // Спавн босса при входе в задание босса
+    if (room.isBoss && !entities.boss) {
+        spawnBoss(curLevel);
+        missionProgress = 0; // Сбрасываем прогресс для босса
     }
 }
 
@@ -414,6 +439,8 @@ function initAudio() {
         noiseNode.connect(gainNode);
         noiseNode.start = noiseNode.start || noiseNode.noteOn;
         noiseNode.start(0);
+        // Изначально шум выключен
+        gainNode.gain.value = 0;
     } catch(e) {
         console.log("Audio not supported");
     }
@@ -458,7 +485,7 @@ function update() {
     if(dCore < 80 && baseAmmo < 100 && snake.length > 12) {
         snake.length -= 0.25; 
         baseAmmo = Math.min(100, baseAmmo + 2.5);
-        if(curMission === 4) missionProgress = 1;
+        // Зарядка у ядра (можно использовать для задания)
         updateUI();
     }
     // 3. Камера
@@ -515,9 +542,9 @@ function update() {
         if(Math.hypot(b.x - BASE_POS.x, b.y - BASE_POS.y) > 2500) entities.bullets.splice(i,1);
     });
 
-    // 7. Враги (Глюки) - Спавн в зависимости от комнаты
-    const room = getRoomConfig(curMission);
-    if(started && curMission >= 1 && Math.random() < room.spawnRate) spawnEnemy();
+    // 7. Враги (Глюки) - Спавн в зависимости от задания
+    const room = getCurrentRoom();
+    if(started && room && !room.isBoss && Math.random() < room.spawnRate) spawnEnemy();
     
     // Спавн вирусов от босса
     if(entities.boss && Math.random() < 0.02) {
@@ -587,7 +614,7 @@ function update() {
         if(Math.hypot(f.x - snake.x, f.y - snake.y) < 65) { 
             snake.length += 4; score += 35;
             entities.food.splice(i, 1); spawnFood();
-            if(curMission === 0) missionProgress = 1;
+            // Первый байт собран
             updateUI();
         }
     });
@@ -607,7 +634,7 @@ function update() {
                 createParticles(entities.boss.x, entities.boss.y, 'purple', 8);
                 if(entities.boss.health <= 0) {
                     score += 500;
-                    missionProgress += 10;
+                    missionProgress = 1; // Отмечаем босса как убитого
                     createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
                     entities.boss = null;
                     entities.bossTowers = [];
@@ -623,7 +650,7 @@ function update() {
             createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
             if(entities.boss.health <= 0) {
                 score += 500;
-                missionProgress += 10;
+                missionProgress = 1; // Отмечаем босса как убитого
                 createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
                 entities.boss = null;
                 entities.bossTowers = [];
@@ -896,7 +923,7 @@ function gameOver() {
     started = false;
     if(window.ammoTick) clearInterval(window.ammoTick);
     document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Уровней пройдено: " + curMission + " | Собрано данных: " + Math.floor(score);
+    document.getElementById('final-stats').innerText = "Уровней пройдено: " + (curLevel - 1) + " | Собрано данных: " + Math.floor(score);
 }
 
 /** --- ДЖОЙСТИК --- */
