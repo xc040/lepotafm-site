@@ -39,8 +39,8 @@
             padding: 8px 12px; border: 1px solid var(--neon-blue); 
             border-radius: 10px; pointer-events: auto; font-size: 11px; 
         }
-        #top-left { top: 70px; left: 15px; }
-        #top-right { top: 70px; right: 15px; text-align: right; }
+        #top-left { top: 20px; left: 15px; }
+        #top-right { top: 20px; right: 15px; text-align: right; }
 
         .progress-container { 
             width: 100px; height: 6px; background: #111; border-radius: 3px; 
@@ -124,7 +124,7 @@
             <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
-        <div id="boss-info" class="stat-box" style="left:50%;top:70px;transform:translateX(-50%);min-width:120px;text-align:center;">
+        <div id="boss-info" class="stat-box" style="left:50%;top:120px;transform:translateX(-50%);min-width:120px;text-align:center;">
   <div>БОСС <span id="boss-strength" style="color:var(--neon-purple);font-weight:bold;"></span></div>
   <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
 </div>
@@ -140,7 +140,7 @@
 
         <div id="joystick-zone">
   <div id="joystick-stick"></div>
-  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
+  <div id="pause-btn" style="display:block;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
     <button class="control-btn" id="pause-btn-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:18px;box-shadow:0 0 15px var(--neon-red);width:50px;height:50px;">
       <i id="pause-jicon" class="fas fa-pause" style="color: var(--neon-red);"></i>
     </button>
@@ -274,8 +274,8 @@ function togglePause() {
     if(pIcon) pIcon.className = newIcon;
     if(pjIcon) pjIcon.className = newIcon;
     
-    // Показываем/скрываем кнопку паузы над стиком
-    if(pauseBtn) pauseBtn.style.display = paused ? 'block' : 'none';
+    // Кнопка паузы над стиком всегда видна когда игра запущена
+    if(pauseBtn) pauseBtn.style.display = started ? 'block' : 'none';
     
     if(!paused) { 
         gameId = requestAnimationFrame(gameLoop); 
@@ -684,6 +684,8 @@ function update() {
 
     // 1. Движение змеи
     if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
+    // Гарантируем что скорость змеи всегда 5.5
+    snake.speed = 5.5;
     snake.x += Math.cos(snake.angle) * snake.speed;
     snake.y += Math.sin(snake.angle) * snake.speed;
 
