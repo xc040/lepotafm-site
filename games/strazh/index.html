@@ -159,6 +159,9 @@
                 <div class="shop-item" onclick="window.buyUpgrade('fix', 2500)">
                     <i class="fas fa-tools"></i><b>Ремонт</b><span>2500 CR</span>
                 </div>
+                <div class="shop-item" onclick="window.buyUpgrade('base', 5000)">
+                    <i class="fas fa-building"></i><b>База</b><span>5000 CR</span>
+                </div>
             </div>
             <button class="btn-start" style="width:100%; font-size:14px;" onclick="window.toggleShop(false)">В БОЙ</button>
         </div>
@@ -166,7 +169,8 @@
 
     <div id="start-screen" class="overlay">
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
-        <button class="btn-start" onclick="window.startGame()">ЗАПУСК СИСТЕМЫ</button>
+        <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
+        <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -185,7 +189,7 @@ let canvas, ctx, gameId;
 let started = false, paused = false;
 let score = 0, baseAmmo = 100, lives = 3;
     let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
-let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [] };
+let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
 
@@ -204,6 +208,13 @@ window.onload = function() {
         initJoystick();
         window.addEventListener('resize', resize);
         console.log("Elite System v14.6: Online");
+        
+        // Показываем кнопку "Продолжить" если есть сохранение
+        const saved = localStorage.getItem('strazhEfira_progress');
+        if (saved) {
+            const continueBtn = document.getElementById('continue-btn');
+            if (continueBtn) continueBtn.style.display = 'block';
+        }
     }
 };
 
@@ -240,8 +251,77 @@ function togglePause() {
     }
 }
 
+/** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
+function saveProgress() {
+    const progress = {
+        curLevel: curLevel,
+        curRoomInLevel: curRoomInLevel,
+        missionProgress: missionProgress,
+        score: score,
+        baseAmmo: baseAmmo,
+        lives: lives,
+        snakeLength: snake.length,
+        turretsCount: entities.turrets.length,
+        dronesCount: entities.drones.length,
+        playerBasesCount: entities.playerBases.length
+    };
+    localStorage.setItem('strazhEfira_progress', JSON.stringify(progress));
+}
+
+function loadProgress() {
+    const saved = localStorage.getItem('strazhEfira_progress');
+    if (saved) {
+        try {
+            const progress = JSON.parse(saved);
+            curLevel = progress.curLevel || 1;
+            curRoomInLevel = progress.curRoomInLevel || 0;
+            missionProgress = progress.missionProgress || 0;
+            score = progress.score || 0;
+            baseAmmo = progress.baseAmmo || 100;
+            lives = progress.lives || 3;
+            snake.length = progress.snakeLength || 25;
+            
+            // Восстанавливаем турели
+            const turretCount = progress.turretsCount || 0;
+            for(let i = 0; i < turretCount; i++) {
+                const ang = (i / Math.max(1, turretCount)) * 6.28;
+                entities.turrets.push({ 
+                    x: BASE_POS.x + Math.cos(ang)*165, 
+                    y: BASE_POS.y + Math.sin(ang)*165, 
+                    type: 'bolt', 
+                    lastShot: 0 
+                });
+            }
+            
+            // Восстанавливаем дроны
+            const droneCount = progress.dronesCount || 0;
+            for(let i = 0; i < droneCount; i++) {
+                entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40 });
+            }
+            
+            // Восстанавливаем базы игрока
+            const baseCount = progress.playerBasesCount || 0;
+            for(let i = 0; i < baseCount; i++) {
+                entities.playerBases.push({
+                    x: 1000 + i * 500,
+                    y: 1000 + i * 500,
+                    health: 100,
+                    maxHealth: 100,
+                    turrets: []
+                });
+            }
+            
+            return true;
+        } catch(e) {
+            console.log("Ошибка загрузки прогресса:", e);
+            return false;
+        }
+    }
+    return false;
+}
+
 /** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
-function startGame() {
+function startGame(newGame = true) {
     if (started) return;
 
     // 1. Очистка интерфейса
@@ -251,21 +331,42 @@ function startGame() {
     if (gov) gov.classList.add('hidden');
     document.getElementById('mission-box').classList.remove('hidden');
 
-    // 2. Сброс игровых флагов
+    // 2. Загрузка или сброс прогресса
+    if (newGame) {
+        // Новая игра - полный сброс
+        score = 0;
+        baseAmmo = 100;
+        lives = 3;
+        curLevel = 1;
+        curRoomInLevel = 0;
+        missionProgress = 0;
+        snake.length = 25;
+        
+        // Очистка массивов
+        entities.turrets = [];
+        entities.drones = [];
+        entities.playerBases = [];
+    } else {
+        // Продолжить игру - загружаем прогресс
+        if (!loadProgress()) {
+            // Если загрузка не удалась, начинаем новую игру
+            score = 0;
+            baseAmmo = 100;
+            lives = 3;
+            curLevel = 1;
+            curRoomInLevel = 0;
+            missionProgress = 0;
+            snake.length = 25;
+        }
+    }
+    
     started = true;
     paused = false;
-    score = 0;
-    baseAmmo = 100;
-    lives = 3;
-    curLevel = 1;
-    curRoomInLevel = 0;
-    missionProgress = 0;
     shieldActive = false;
 
     // 3. Сброс игрока и камеры
     snake.x = 2550; snake.y = 2550;
     snake.segments = [];
-    snake.length = 25;
     for(let i=0; i < snake.length; i++) {
         snake.segments.push({x: snake.x, y: snake.y});
     }
@@ -274,9 +375,7 @@ function startGame() {
     entities.food = [];
     entities.enemies = [];
     entities.particles = [];
-    entities.turrets = [];
     entities.bullets = [];
-    entities.drones = [];
     entities.loot = [];
     entities.boss = null;
     entities.bossTowers = [];
@@ -379,6 +478,9 @@ function updateMission() {
             entities.enemies = [];
             entities.bossTowers = [];
             
+            // Сохраняем прогресс при переходе на новый уровень
+            saveProgress();
+            
             // Спавн первого задания нового уровня
             const newRoom = getCurrentRoom();
             if (newRoom && !newRoom.isBoss) {
@@ -396,6 +498,9 @@ function updateMission() {
             curRoomInLevel++;
             missionProgress = 0;
             entities.enemies = [];
+            
+            // Сохраняем прогресс при завершении задания
+            saveProgress();
             
             const nextRoom = getCurrentRoom();
             if (nextRoom && nextRoom.isBoss) {
@@ -454,14 +559,41 @@ function buyUpgrade(type, cost) {
         score -= cost;
         const ang = Math.random() * 6.28;
         entities.turrets.push({ x: BASE_POS.x + Math.cos(ang)*165, y: BASE_POS.y + Math.sin(ang)*165, type: 'bolt', lastShot: 0 });
+        // Сохраняем прогресс при покупке турели (если игрок не погиб)
+        if(lives > 0) saveProgress();
     } else if (type === 'laser') {
         let t = entities.turrets.find(t => t.type === 'bolt');
         if (t) { score -= cost; t.type = 'laser'; }
+        if(lives > 0) saveProgress();
     } else if (type === 'drone') {
         score -= cost;
         entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40 });
+        if(lives > 0) saveProgress();
     } else if (type === 'fix') {
         if (lives < 3) { score -= cost; lives++; }
+        if(lives > 0) saveProgress();
+    } else if (type === 'base') {
+        // Покупка дополнительной базы на месте змеи
+        score -= cost;
+        entities.playerBases.push({
+            x: snake.x,
+            y: snake.y,
+            health: 100,
+            maxHealth: 100,
+            turrets: []
+        });
+        // Спавн турели вокруг новой базы
+        for(let i = 0; i < 2; i++) {
+            const ang = (i / 2) * 6.28;
+            entities.turrets.push({
+                x: snake.x + Math.cos(ang) * 120,
+                y: snake.y + Math.sin(ang) * 120,
+                type: 'bolt',
+                lastShot: 0,
+                baseId: entities.playerBases.length - 1
+            });
+        }
+        if(lives > 0) saveProgress();
     }
     updateUI();
 }
@@ -642,12 +774,9 @@ function update() {
         }
     });
     
-    // 10. Боссы
+    // 10. Боссы (база врага не двигается)
     if(entities.boss) {
-        // Босс движется к базе медленно
-        const ang = Math.atan2(BASE_POS.y - entities.boss.y, BASE_POS.x - entities.boss.x);
-        entities.boss.x += Math.cos(ang) * 0.8;
-        entities.boss.y += Math.sin(ang) * 0.8;
+        // Босс остается на месте - это стационарная база врага
         
         // Урон боссу от пуль
         entities.bullets.forEach((b, bi) => {
@@ -682,16 +811,18 @@ function update() {
         }
     }
     
-    // 11. Башни боссов (атакуют змею)
+    // 11. Башни и турели базы врага (атакуют змею)
     entities.bossTowers.forEach((tower, ti) => {
         const distToSnake = Math.hypot(tower.x - snake.x, tower.y - snake.y);
-        if(distToSnake < 400 && Date.now() - tower.lastShot > 2000) {
+        const fireRate = tower.type === 'turret' ? 1500 : 2000; // Турели стреляют чаще
+        if(distToSnake < 500 && Date.now() - tower.lastShot > fireRate) {
             // Выстрел в змею
             const ang = Math.atan2(snake.y - tower.y, snake.x - tower.x);
+            const speed = tower.type === 'turret' ? 14 : 12; // Турели стреляют быстрее
             const bullet = {
                 x: tower.x, y: tower.y,
-                vx: Math.cos(ang) * 12,
-                vy: Math.sin(ang) * 12,
+                vx: Math.cos(ang) * speed,
+                vy: Math.sin(ang) * speed,
                 isBossBullet: true
             };
             entities.bullets.push(bullet);
@@ -740,7 +871,7 @@ function draw() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
     }
 
-    // 1. Ядро
+    // 1. Ядро (главная база)
     if(shieldActive) {
         ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 15;
         ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 115, 0, 6.28); ctx.stroke();
@@ -749,6 +880,24 @@ function draw() {
     ctx.fillStyle = '#0a0a1a'; ctx.beginPath(); ctx.arc(BASE_POS.x, BASE_POS.y, 65, 0, 6.28); ctx.fill();
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
+    
+    // Дополнительные базы игрока
+    entities.playerBases.forEach(base => {
+        ctx.fillStyle = '#0a0a1a';
+        ctx.beginPath();
+        ctx.arc(base.x, base.y, 50, 0, 6.28);
+        ctx.fill();
+        ctx.strokeStyle = '#39ff14';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        // Полоска здоровья базы
+        const healthPercent = base.health / base.maxHealth;
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(base.x - 50, base.y - 60, 100, 6);
+        ctx.fillStyle = '#39ff14';
+        ctx.fillRect(base.x - 50, base.y - 60, 100 * healthPercent, 6);
+    });
 
     // 2. РАДАР (FIX: Остановка у границы 65px, разные цвета для типов врагов)
     entities.enemies.forEach(en => {
@@ -905,8 +1054,8 @@ function spawnFood() {
     entities.food.push({ x: 500+Math.random()*(WORLD_SIZE-1000), y: 500+Math.random()*(WORLD_SIZE-1000) });
 }
 
-function spawnBoss(roomId) {
-    // Спавн босса в случайном месте на краю карты
+function spawnBoss(level) {
+    // Спавн босса (базы врага) в случайном месте на краю карты
     const side = Math.floor(Math.random() * 4);
     let x, y;
     if(side === 0) { x = Math.random() * WORLD_SIZE; y = 200; }
@@ -914,23 +1063,44 @@ function spawnBoss(roomId) {
     else if(side === 2) { x = Math.random() * WORLD_SIZE; y = WORLD_SIZE - 200; }
     else { x = 200; y = Math.random() * WORLD_SIZE; }
     
+    // Мощь и здоровье базы врага зависят от уровня
+    const baseHealth = 150 + level * 100;
+    const baseSize = 90 + level * 15;
+    
     entities.boss = {
         x, y,
-        health: 100 + roomId * 50,
-        maxHealth: 100 + roomId * 50,
-        size: 80 + roomId * 10
+        health: baseHealth,
+        maxHealth: baseHealth,
+        size: baseSize,
+        level: level
     };
     
-    // Спавн башен вокруг босса
+    // Спавн башен и турелей вокруг базы врага (количество зависит от уровня)
     entities.bossTowers = [];
-    const towerCount = 3 + Math.floor(roomId / 2);
+    const towerCount = 3 + Math.floor(level / 2);
+    const turretCount = 2 + Math.floor(level / 3);
+    
+    // Башни (стреляют в змею)
     for(let i = 0; i < towerCount; i++) {
         const angle = (i / towerCount) * 6.28;
         const dist = 150;
         entities.bossTowers.push({
             x: x + Math.cos(angle) * dist,
             y: y + Math.sin(angle) * dist,
-            lastShot: 0
+            lastShot: 0,
+            type: 'tower'
+        });
+    }
+    
+    // Турели базы врага (стреляют в змею и врагов игрока)
+    for(let i = 0; i < turretCount; i++) {
+        const angle = (i / turretCount) * 6.28 + 1.57; // Смещение на 90 градусов
+        const dist = 180;
+        entities.bossTowers.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist,
+            lastShot: 0,
+            type: 'turret'
         });
     }
 }
