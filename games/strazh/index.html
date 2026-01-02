@@ -188,7 +188,6 @@ let score = 0, baseAmmo = 100, lives = 3;
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
-let audioContext = null, noiseNode = null, gainNode = null;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -203,7 +202,6 @@ window.onload = function() {
         ctx = canvas.getContext('2d');
         resize();
         initJoystick();
-        initAudio();
         window.addEventListener('resize', resize);
         console.log("Elite System v14.6: Online");
     }
@@ -218,14 +216,16 @@ function resize() {
 /** --- УПРАВЛЕНИЕ ОКНАМИ --- */
 function toggleShop(show) {
     if(!started) return;
-    paused = show;
     document.getElementById('shop-modal').classList.toggle('hidden', !show);
-    updateUI();
-    if(!show) { 
-        gameId = requestAnimationFrame(gameLoop); 
-    } else { 
-        cancelAnimationFrame(gameId); 
+    if(show) {
+        // Открытие магазина - ставим на паузу
+        paused = true;
+        cancelAnimationFrame(gameId);
+    } else {
+        // Закрытие магазина - игра остается на паузе (игрок должен нажать паузу для продолжения)
+        paused = true;
     }
+    updateUI();
 }
 
 function togglePause() {
@@ -312,13 +312,32 @@ const ROOMS_PER_LEVEL = 3; // Количество заданий перед б�
 function getLevelConfig(level) {
     // Базовая сложность растет с уровнем
     const baseDifficulty = level;
+    
+    // Первый уровень начинается с обучения
+    if (level === 1) {
+        return {
+            level: level,
+            rooms: [
+                { name: `Охраняй базу: съешь первый голубой байт данных`, enemiesToKill: 0, spawnRate: 0, description: "Собери байт данных (голубой круг) чтобы активировать систему" },
+                { name: `Перехват: Уничтожь Глюк головой змеи`, enemiesToKill: 1, spawnRate: 0.005, description: "Столкнись с красным квадратом головой - получишь +2 к длине" },
+                { name: `Защита: Собери 1200 CR на Пушку`, enemiesToKill: 0, spawnRate: 0.008, description: "Собирай байты и обломки врагов для получения кредитов" },
+                { name: `Модернизация: Купи ПУШКУ в магазине`, enemiesToKill: 0, spawnRate: 0, description: "Нажми на корзину вверху слева и купи первую турель" },
+                { name: `Зарядка: Коснись Ядра для пополнения заряда`, enemiesToKill: 0, spawnRate: 0.012, description: "Подлети к синему Ядру в центре - отдашь длину, получишь заряд" },
+                { name: `Разведка: Уничтожь 5 врагов для карты местности`, enemiesToKill: 5, spawnRate: 0.008, description: "Убей 5 врагов (квадраты или треугольники) любым способом" },
+                { name: `Очистка: Уничтожь 10 врагов в зоне`, enemiesToKill: 10, spawnRate: 0.012, description: "Очисти территорию от 10 врагов - турели помогут" },
+                { name: `Штурм: Уничтожь 15 врагов перед боссом`, enemiesToKill: 15, spawnRate: 0.015, description: "Последняя проверка перед боссом - убей 15 врагов" },
+                { name: `БОСС УРОВНЯ 1`, enemiesToKill: 1, spawnRate: 0, isBoss: true, description: "Уничтожь фиолетового босса - он спавнит вирусы и защищен башнями" }
+            ]
+        };
+    }
+    
     return {
         level: level,
         rooms: [
-            { name: `Задание 1: Разведка`, enemiesToKill: 5 + baseDifficulty * 3, spawnRate: 0.005 + baseDifficulty * 0.001 },
-            { name: `Задание 2: Очистка`, enemiesToKill: 10 + baseDifficulty * 5, spawnRate: 0.008 + baseDifficulty * 0.0015 },
-            { name: `Задание 3: Штурм`, enemiesToKill: 15 + baseDifficulty * 7, spawnRate: 0.012 + baseDifficulty * 0.002 },
-            { name: `БОСС УРОВНЯ ${level}`, enemiesToKill: 1, spawnRate: 0, isBoss: true }
+            { name: `Разведка: Уничтожь ${5 + baseDifficulty * 3} врагов для карты`, enemiesToKill: 5 + baseDifficulty * 3, spawnRate: 0.005 + baseDifficulty * 0.001, description: `Убей ${5 + baseDifficulty * 3} врагов для составления карты местности` },
+            { name: `Очистка: Уничтожь ${10 + baseDifficulty * 5} врагов в зоне`, enemiesToKill: 10 + baseDifficulty * 5, spawnRate: 0.008 + baseDifficulty * 0.0015, description: `Очисти территорию от ${10 + baseDifficulty * 5} врагов` },
+            { name: `Штурм: Уничтожь ${15 + baseDifficulty * 7} врагов перед боссом`, enemiesToKill: 15 + baseDifficulty * 7, spawnRate: 0.012 + baseDifficulty * 0.002, description: `Последняя проверка - убей ${15 + baseDifficulty * 7} врагов перед боссом` },
+            { name: `БОСС УРОВНЯ ${level}`, enemiesToKill: 1, spawnRate: 0, isBoss: true, description: `Уничтожь фиолетового босса - он спавнит вирусы и защищен башнями` }
         ]
     };
 }
@@ -338,7 +357,16 @@ function updateMission() {
     const mId = document.getElementById('m-id');
     const mText = document.getElementById('mission-text');
     if(mId) mId.innerText = curLevel;
-    if(mText) mText.innerText = `Уровень ${curLevel}: ${room.name}`;
+    // Убираем дублирование "Уровень X:" - показываем только название задания
+    if(mText) {
+        if (curLevel === 1 && curRoomInLevel < 5) {
+            // Для обучения показываем полное описание
+            mText.innerText = room.description || room.name;
+        } else {
+            // Для обычных заданий показываем название с описанием
+            mText.innerText = room.description || room.name;
+        }
+    }
     
     // Проверка завершения задания
     if (room.isBoss) {
@@ -375,6 +403,7 @@ function updateMission() {
                 spawnBoss(curLevel);
             }
             
+            // Открываем магазин после задания "Защита" (индекс 2) в обучении
             if(curLevel === 1 && curRoomInLevel === 2 && !paused) toggleShop(true); 
             updateMission();
         }
@@ -384,6 +413,37 @@ function updateMission() {
     if (room.isBoss && !entities.boss) {
         spawnBoss(curLevel);
         missionProgress = 0; // Сбрасываем прогресс для босса
+    }
+    
+    // Специальные проверки для обучения (уровень 1)
+    if (curLevel === 1) {
+        if (curRoomInLevel === 0 && missionProgress >= 1) {
+            // Первое задание - съесть байт (проверяется в update при сборе еды)
+            curRoomInLevel++;
+            missionProgress = 0;
+            updateMission();
+        } else if (curRoomInLevel === 1 && missionProgress >= 1) {
+            // Второе задание - убить врага головой (проверяется в update)
+            curRoomInLevel++;
+            missionProgress = 0;
+            updateMission();
+        } else if (curRoomInLevel === 2 && score >= 1200) {
+            // Третье задание - собрать 1200 CR
+            curRoomInLevel++;
+            missionProgress = 0;
+            if(!paused) toggleShop(true);
+            updateMission();
+        } else if (curRoomInLevel === 3 && entities.turrets.length > 0) {
+            // Четвертое задание - купить пушку
+            curRoomInLevel++;
+            missionProgress = 0;
+            updateMission();
+        } else if (curRoomInLevel === 4 && missionProgress >= 1) {
+            // Пятое задание - зарядить у ядра (проверяется в update)
+            curRoomInLevel++;
+            missionProgress = 0;
+            updateMission();
+        }
     }
 }
 
@@ -416,51 +476,8 @@ function updateUI() {
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
-    
-    // Обновление звука белого шума в зависимости от уровня сигнала
-    updateNoiseVolume();
 }
 
-function initAudio() {
-    try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        gainNode = audioContext.createGain();
-        gainNode.connect(audioContext.destination);
-        
-        // Создание белого шума
-        const bufferSize = 4096;
-        noiseNode = audioContext.createScriptProcessor(bufferSize, 0, 1);
-        noiseNode.onaudioprocess = function(e) {
-            const output = e.outputBuffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                output[i] = Math.random() * 2 - 1;
-            }
-        };
-        noiseNode.connect(gainNode);
-        noiseNode.start = noiseNode.start || noiseNode.noteOn;
-        noiseNode.start(0);
-        // Изначально шум выключен
-        gainNode.gain.value = 0;
-    } catch(e) {
-        console.log("Audio not supported");
-    }
-}
-
-function updateNoiseVolume() {
-    if (!gainNode || !started) {
-        // Убрать шум до старта игры
-        if (gainNode) gainNode.gain.value = 0;
-        return;
-    }
-    // Шум возрастает когда осталось менее 10% эфира
-    if (baseAmmo < 10) {
-        // Чем меньше эфира, тем громче шум (от 0.1 до 0.3)
-        const volume = 0.1 + ((10 - baseAmmo) / 10) * 0.2;
-        gainNode.gain.value = Math.min(0.3, volume);
-    } else {
-        gainNode.gain.value = 0; // Без шума при достаточном эфире
-    }
-}
 
 /** --- ОБНОВЛЕНИЕ (UPDATE) --- */
 function update() {
@@ -485,7 +502,10 @@ function update() {
     if(dCore < 80 && baseAmmo < 100 && snake.length > 12) {
         snake.length -= 0.25; 
         baseAmmo = Math.min(100, baseAmmo + 2.5);
-        // Зарядка у ядра (можно использовать для задания)
+        // Зарядка у ядра - для обучения (задание 4, индекс 4)
+        if(curLevel === 1 && curRoomInLevel === 4) {
+            missionProgress = 1;
+        }
         updateUI();
     }
     // 3. Камера
@@ -614,7 +634,10 @@ function update() {
         if(Math.hypot(f.x - snake.x, f.y - snake.y) < 65) { 
             snake.length += 4; score += 35;
             entities.food.splice(i, 1); spawnFood();
-            // Первый байт собран
+            // Первый байт собран - для обучения (задание 0)
+            if(curLevel === 1 && curRoomInLevel === 0) {
+                missionProgress = 1;
+            }
             updateUI();
         }
     });
