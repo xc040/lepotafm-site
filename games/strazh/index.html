@@ -139,12 +139,12 @@
         </div>
 
         <div id="joystick-zone">
-  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: -85px;transform: translateX(-50%);z-index:21;">
-    <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.12);border:2px solid var(--neon-purple);font-size:18px;box-shadow:0 0 12px var(--neon-purple);">
+  <div id="joystick-stick"></div>
+  <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
+    <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-purple);font-size:18px;box-shadow:0 0 15px var(--neon-purple);width:50px;height:50px;">
       <i id="pause-jicon" class="fas fa-pause"></i>
     </button>
   </div>
-  <div id="joystick-stick"></div>
 </div>
     </div>
 
@@ -250,8 +250,14 @@ function toggleShop(show) {
         paused = true;
         cancelAnimationFrame(gameId);
     } else {
-        // Закрытие магазина - игра остается на паузе (игрок должен нажать паузу для продолжения)
+        // Закрытие магазина - игра остается на паузе с показом кнопки паузы
         paused = true;
+        // Показываем кнопку паузы над стиком
+        const pauseBtn = document.getElementById('pause-btn');
+        if (pauseBtn) pauseBtn.style.display = 'block';
+        // Обновляем иконку паузы
+        const pjIcon = document.getElementById('pause-jicon');
+        if (pjIcon) pjIcon.className = 'fas fa-play';
     }
     updateUI();
 }
@@ -390,6 +396,10 @@ function startGame(newGame = true) {
     started = true;
     paused = false;
     shieldActive = false;
+    
+    // Скрываем кнопку паузы при запуске игры
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) pauseBtn.style.display = 'none';
 
     // 3. Сброс игрока и камеры
     snake.x = 2550; snake.y = 2550;
@@ -1216,10 +1226,30 @@ function gameOver() {
 /** --- ДЖОЙСТИК --- */
 function initJoystick() {
     const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
+    const pauseBtn = document.getElementById('pause-btn');
     let active = false;
+    
+    const isTouchingPauseButton = (touch) => {
+        if (!pauseBtn || pauseBtn.style.display === 'none') return false;
+        const r = pauseBtn.getBoundingClientRect();
+        return touch.clientX >= r.left && touch.clientX <= r.right && 
+               touch.clientY >= r.top && touch.clientY <= r.bottom;
+    };
+    
     const handle = (e) => {
         if(!active) return;
         const t = e.touches ? e.touches[0] : e;
+        
+        // Проверяем, не нажимает ли пользователь на кнопку паузы
+        if (isTouchingPauseButton(t)) {
+            active = false;
+            stick.style.left='50%'; 
+            stick.style.top='50%'; 
+            input.x=0; 
+            input.y=0;
+            return;
+        }
+        
         const r = zone.getBoundingClientRect();
         const cX = r.left + r.width/2, cY = r.top + r.height/2;
         let dx = t.clientX - cX, dy = t.clientY - cY;
@@ -1228,9 +1258,30 @@ function initJoystick() {
         stick.style.top = `calc(50% + ${Math.sin(ang)*dist}px)`;
         input.x = Math.cos(ang); input.y = Math.sin(ang);
     };
-    zone.addEventListener('touchstart', e => { active = true; handle(e); e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchmove', e => { if(active) { handle(e); e.preventDefault(); } }, {passive: false});
-    window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
+    
+    zone.addEventListener('touchstart', e => { 
+        const t = e.touches ? e.touches[0] : e;
+        if (!isTouchingPauseButton(t)) {
+            active = true; 
+            handle(e); 
+        }
+        e.preventDefault(); 
+    }, {passive: false});
+    
+    window.addEventListener('touchmove', e => { 
+        if(active) { 
+            handle(e); 
+            e.preventDefault(); 
+        } 
+    }, {passive: false});
+    
+    window.addEventListener('touchend', () => { 
+        active = false; 
+        stick.style.left='50%'; 
+        stick.style.top='50%'; 
+        input.x=0; 
+        input.y=0; 
+    });
 }
 
 window.setGamePause = function(state) {
