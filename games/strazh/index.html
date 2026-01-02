@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Страж Эфира 14.4 - Elite Fix</title>
+    <title>Страж Эфира 14.6 - Elite Fix</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
@@ -138,6 +138,14 @@
             <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
             <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
             <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
+            <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА</h3>
+                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
+                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
+                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
+                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
+                </p>
+            </div>
             <div class="shop-grid">
                 <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
                     <i class="fas fa-crosshairs"></i><b>Пушка</b><span>1200 CR</span>
@@ -180,6 +188,7 @@ let score = 0, baseAmmo = 100, lives = 3;
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curMission = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
+let audioContext = null, noiseNode = null, gainNode = null;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -194,8 +203,9 @@ window.onload = function() {
         ctx = canvas.getContext('2d');
         resize();
         initJoystick();
+        initAudio();
         window.addEventListener('resize', resize);
-        console.log("Elite System v14.4: Online");
+        console.log("Elite System v14.6: Online");
     }
 };
 
@@ -355,6 +365,39 @@ function updateUI() {
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
+    
+    // Обновление звука белого шума в зависимости от уровня сигнала
+    updateNoiseVolume();
+}
+
+function initAudio() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioContext.createGain();
+        gainNode.connect(audioContext.destination);
+        
+        // Создание белого шума
+        const bufferSize = 4096;
+        noiseNode = audioContext.createScriptProcessor(bufferSize, 0, 1);
+        noiseNode.onaudioprocess = function(e) {
+            const output = e.outputBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+        };
+        noiseNode.connect(gainNode);
+        noiseNode.start = noiseNode.start || noiseNode.noteOn;
+        noiseNode.start(0);
+    } catch(e) {
+        console.log("Audio not supported");
+    }
+}
+
+function updateNoiseVolume() {
+    if (!gainNode) return;
+    // Громкость зависит от уровня сигнала (baseAmmo)
+    const volume = Math.max(0, Math.min(0.15, (baseAmmo / 100) * 0.15));
+    gainNode.gain.value = volume;
 }
 
 /** --- ОБНОВЛЕНИЕ (UPDATE) --- */
@@ -391,8 +434,8 @@ function update() {
     if (baseAmmo > 0) {
         entities.turrets.forEach(t => {
             if (t.type === 'bolt') {
-                if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 15) {
-                    let target = entities.enemies.find(en => en.type === 'box');
+                if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 20) {
+                    let target = entities.enemies.find(en => en.type === 'box'); // Только квадраты
                     if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1000) {
                         const a = Math.atan2(target.y - t.y, target.x - t.x);
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
@@ -402,7 +445,7 @@ function update() {
                 }
             } else if (t.type === 'laser') {
                 if (Date.now() - t.lastShot > 2600) {
-                    let target = entities.enemies.find(en => en.type === 'tri');
+                    let target = entities.enemies.find(en => en.type === 'tri'); // Только треугольники
                     if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1600) {
                         t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
                         // Выпадение обломка при смерти от лазера
@@ -416,7 +459,7 @@ function update() {
         });
     }
 
-    // 5. Дроны (Feature 14)
+    // 5. Дроны (Feature 14) - Фиолетовые сферы
     entities.drones.forEach(d => {
         d.angle += 0.04;
         const dx = BASE_POS.x + Math.cos(d.angle) * d.dist;
@@ -445,16 +488,18 @@ function update() {
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
 
-        // Попадание пули (Loot Decay)
-        entities.bullets.forEach((b, bi) => {
-            if(Math.hypot(b.x - en.x, b.y - en.y) < 45) {
-                entities.enemies.splice(i,1); entities.bullets.splice(bi,1);
-                entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                score += (en.type === 'box' ? 50 : 25); 
-                if(curMission >= 5) missionProgress++;
-                createParticles(en.x, en.y, 'blue', 5);
-            }
-        });
+        // Попадание пули (только в квадраты, треугольники игнорируют пули)
+        if(en.type === 'box') {
+            entities.bullets.forEach((b, bi) => {
+                if(Math.hypot(b.x - en.x, b.y - en.y) < 45) {
+                    entities.enemies.splice(i,1); entities.bullets.splice(bi,1);
+                    entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
+                    score += 50; 
+                    if(curMission >= 5) missionProgress++;
+                    createParticles(en.x, en.y, 'blue', 5);
+                }
+            });
+        }
 
         // Урон Ядру
         if(Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y) < 70) {
@@ -465,10 +510,13 @@ function update() {
             updateUI();
         }
 
-        // Змея vs Враг (Убийство ГОЛОВОЙ)
+        // Змея vs Враг (Убийство ГОЛОВОЙ с потерей длины)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
             score += 100;
-            snake.length += 2; // Прямое поедание дает +2 к длине
+            snake.length = Math.max(5, snake.length - 8); // Потеря -8 сегментов при столкновении
+            snake.length += 2; // Прямое поедание дает +2 к длине (итого -6)
+            // Обновляем сегменты если длина уменьшилась
+            while(snake.segments.length > snake.length) snake.segments.pop();
             entities.enemies.splice(i, 1);
             createParticles(en.x, en.y, 'green', 10);
             if(curMission === 1) missionProgress++; 
@@ -536,7 +584,7 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // 2. РАДАР (FIX: Остановка у границы 65px)
+    // 2. РАДАР (FIX: Остановка у границы 65px, разные цвета для типов врагов)
     entities.enemies.forEach(en => {
         const ang = Math.atan2(en.y - BASE_POS.y, en.x - BASE_POS.x);
         const realDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
@@ -545,17 +593,24 @@ function draw() {
         ctx.save();
         ctx.translate(BASE_POS.x, BASE_POS.y);
         ctx.rotate(ang);
-        ctx.fillStyle = '#ff0055';
+        // Красный для квадратов, желтый для треугольников
+        ctx.fillStyle = en.type === 'box' ? '#ff0055' : '#ffcf00';
         if(en.type === 'box') { ctx.fillRect(radarDist, -8, 16, 16); }
         else { ctx.beginPath(); ctx.moveTo(radarDist, -10); ctx.lineTo(radarDist + 22, 0); ctx.lineTo(radarDist, 10); ctx.fill(); }
         ctx.restore();
     });
 
-    // 3. Турели и Лазеры
+    // 3. Турели и Лазеры (с индикацией заряда)
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
         ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
         ctx.lineWidth = 4; ctx.strokeRect(t.x-25, t.y-25, 50, 50);
+        // Отображение заряда внутри турели
+        ctx.fillStyle = baseAmmo < 30 ? '#ff0055' : '#39ff14';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Math.floor(baseAmmo), t.x, t.y);
         if (t.type === 'laser' && t.activeLaser && t.activeLaser.time > Date.now()) {
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
             ctx.beginPath(); ctx.moveTo(t.x, t.y); ctx.lineTo(t.activeLaser.x, t.activeLaser.y); ctx.stroke();
@@ -568,10 +623,26 @@ function draw() {
     ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 22, 0, 6.28); ctx.fill(); });
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; entities.loot.forEach(l => { ctx.fillRect(l.x-12, l.y-12, 24, 24); });
     
+    // Дроны - фиолетовые сферы
+    ctx.fillStyle = '#bc13fe';
+    entities.drones.forEach(d => {
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 20, 0, 6.28);
+        ctx.fill();
+        ctx.strokeStyle = '#bc13fe';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+    
     entities.enemies.forEach(en => {
-        ctx.fillStyle = '#ff0055'; 
-        if(en.type === 'tri') { ctx.beginPath(); ctx.moveTo(en.x, en.y-45); ctx.lineTo(en.x+35, en.y+20); ctx.lineTo(en.x-35, en.y+20); ctx.fill(); }
-        else { ctx.fillRect(en.x-35, en.y-35, 70, 70); }
+        if(en.type === 'tri') { 
+            ctx.fillStyle = '#ffcf00'; // Желтый цвет для Векторов (треугольников)
+            ctx.beginPath(); ctx.moveTo(en.x, en.y-45); ctx.lineTo(en.x+35, en.y+20); ctx.lineTo(en.x-35, en.y+20); ctx.fill(); 
+        }
+        else { 
+            ctx.fillStyle = '#ff0055'; // Светло-красный для Осколков (квадратов)
+            ctx.fillRect(en.x-35, en.y-35, 70, 70); 
+        }
     });
 
     // 5. Змейка
