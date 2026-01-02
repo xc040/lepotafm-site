@@ -804,7 +804,22 @@ function update() {
                 break;
             }
         }
-        const ang = Math.atan2(BASE_POS.y - en.y, BASE_POS.x - en.x);
+        // Поиск ближайшей цели (основная база или дополнительные базы)
+        let targetX = BASE_POS.x;
+        let targetY = BASE_POS.y;
+        let minDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
+        
+        // Проверяем все дополнительные базы
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(en.x - base.x, en.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                targetX = base.x;
+                targetY = base.y;
+            }
+        });
+        
+        const ang = Math.atan2(targetY - en.y, targetX - en.x);
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
 
@@ -1017,7 +1032,7 @@ function draw() {
     
     // Отображение жизни внутри ядра
     ctx.fillStyle = '#ff0055';
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 32px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
