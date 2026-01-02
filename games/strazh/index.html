@@ -129,7 +129,7 @@
   <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
 </div>
 <div id="top-right" class="stat-box">
-            <div>ЯДРО: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
+            <div>ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
             <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
         </div>
 
@@ -141,8 +141,8 @@
         <div id="joystick-zone">
   <div id="joystick-stick"></div>
   <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
-    <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-green);font-size:18px;box-shadow:0 0 15px var(--neon-green);width:50px;height:50px;">
-      <i id="pause-jicon" class="fas fa-pause" style="color: var(--neon-green);"></i>
+    <button class="control-btn" id="pause-btn-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:18px;box-shadow:0 0 15px var(--neon-red);width:50px;height:50px;">
+      <i id="pause-jicon" class="fas fa-pause" style="color: var(--neon-red);"></i>
     </button>
   </div>
 </div>
@@ -888,11 +888,16 @@ function update() {
         
         // Урон боссу от змеи
         if(Math.hypot(entities.boss.x - snake.x, entities.boss.y - snake.y) < 70 && snake.segments.length >= 2) {
-            // Урон боссу только если есть хотя бы 2 сегмента
+            // Урон боссу пропорционален длине хвоста
+            const tailDamage = Math.max(1, Math.floor(snake.segments.length / 5)); // 1 урон за каждые 5 сегментов
             const levelMul = 1 + (entities.boss.level||curLevel)/3;
-            entities.boss.health -= 20 * levelMul;
-            snake.length = Math.max(5, snake.length - 15 * levelMul);
+            entities.boss.health -= tailDamage * levelMul;
+            
+            // Змея теряет длину при атаке босса
+            const lengthLoss = Math.max(2, Math.floor(snake.segments.length / 10)); // Теряем 2 сегмента за каждые 10
+            snake.length = Math.max(5, snake.length - lengthLoss);
             while(snake.segments.length > snake.length) snake.segments.pop();
+            
             createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
             if(entities.boss.health <= 0) {
                 score += 500;
@@ -992,6 +997,13 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
     
+    // Отображение жизни внутри ядра
+    ctx.fillStyle = '#ff0055';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
+    
     // Дополнительные базы игрока
     entities.playerBases.forEach(base => {
         ctx.fillStyle = '#0a0a1a';
@@ -1081,13 +1093,13 @@ function draw() {
         ctx.fillStyle = '#39ff14';
         ctx.fillRect(entities.boss.x - entities.boss.size, entities.boss.y - entities.boss.size - 15, entities.boss.size * 2 * healthPercent, 8);
         
-        // Башни босса
+        // Турели босса
         ctx.fillStyle = '#ff0055';
         entities.bossTowers.forEach(tower => {
-            ctx.fillRect(tower.x - 20, tower.y - 20, 40, 40);
+            ctx.fillRect(tower.x - 15, tower.y - 15, 30, 30);
             ctx.strokeStyle = '#ff0055';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(tower.x - 20, tower.y - 20, 40, 40);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tower.x - 15, tower.y - 15, 30, 30);
         });
     }
     
@@ -1097,7 +1109,7 @@ function draw() {
         if(!b.isBossBullet) {
             ctx.beginPath(); ctx.arc(b.x, b.y, 10, 0, 6.28); ctx.fill(); 
         } else {
-            // Пули башен боссов - красные
+            // Пули турелей боссов - красные
             ctx.fillStyle = '#ff0055';
             ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, 6.28); ctx.fill();
             ctx.fillStyle = 'yellow';
@@ -1186,27 +1198,14 @@ function spawnBoss(level) {
         level: level
     };
     
-    // Спавн башен и турелей вокруг базы врага (количество зависит от уровня)
+    // Спавн только турелей вокруг базы врага (количество зависит от уровня)
     entities.bossTowers = [];
-    const towerCount = 3 + Math.floor(level / 2);
-    const turretCount = 2 + Math.floor(level / 3);
+    const turretCount = 5 + Math.floor(level / 2); // Увеличиваем количество турелей
     
-    // Башни (стреляют в змею)
-    for(let i = 0; i < towerCount; i++) {
-        const angle = (i / towerCount) * 6.28;
-        const dist = 150;
-        entities.bossTowers.push({
-            x: x + Math.cos(angle) * dist,
-            y: y + Math.sin(angle) * dist,
-            lastShot: 0,
-            type: 'tower'
-        });
-    }
-    
-    // Турели базы врага (стреляют в змею и врагов игрока)
+    // Турели базы врага (стреляют в змею)
     for(let i = 0; i < turretCount; i++) {
-        const angle = (i / turretCount) * 6.28 + 1.57; // Смещение на 90 градусов
-        const dist = 180;
+        const angle = (i / turretCount) * 6.28;
+        const dist = 150 + Math.random() * 50; // Случайное расстояние для разнообразия
         entities.bossTowers.push({
             x: x + Math.cos(angle) * dist,
             y: y + Math.sin(angle) * dist,
@@ -1245,6 +1244,22 @@ function initJoystick() {
         }, {passive: false});
         
         pauseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        });
+    }
+    
+    // Обработчик для внутренней кнопки
+    const pauseBtnInner = document.getElementById('pause-btn-inner');
+    if (pauseBtnInner) {
+        pauseBtnInner.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        }, {passive: false});
+        
+        pauseBtnInner.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             window.togglePause();
