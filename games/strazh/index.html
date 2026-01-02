@@ -115,7 +115,7 @@
         </div>
 
         <div id="top-left" class="stat-box">
-            <div>ЗАРЯД ТУРЕЛЕЙ</div>
+            <div>ЭФИР</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
@@ -395,9 +395,14 @@ function initAudio() {
 
 function updateNoiseVolume() {
     if (!gainNode) return;
-    // Громкость зависит от уровня сигнала (baseAmmo)
-    const volume = Math.max(0, Math.min(0.15, (baseAmmo / 100) * 0.15));
-    gainNode.gain.value = volume;
+    // Шум возрастает когда осталось менее 10% эфира
+    if (baseAmmo < 10) {
+        // Чем меньше эфира, тем громче шум (от 0.1 до 0.3)
+        const volume = 0.1 + ((10 - baseAmmo) / 10) * 0.2;
+        gainNode.gain.value = Math.min(0.3, volume);
+    } else {
+        gainNode.gain.value = 0; // Без шума при достаточном эфире
+    }
 }
 
 /** --- ОБНОВЛЕНИЕ (UPDATE) --- */
@@ -600,17 +605,36 @@ function draw() {
         ctx.restore();
     });
 
-    // 3. Турели и Лазеры (с индикацией заряда)
+    // 3. Турели и Лазеры (с визуальной индикацией заряда из 9 частей)
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
         ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
         ctx.lineWidth = 4; ctx.strokeRect(t.x-25, t.y-25, 50, 50);
-        // Отображение заряда внутри турели
-        ctx.fillStyle = baseAmmo < 30 ? '#ff0055' : '#39ff14';
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(Math.floor(baseAmmo), t.x, t.y);
+        
+        // Визуальная индикация заряда: 9 частей (3x3 сетка)
+        const cellSize = 12;
+        const cellSpacing = 2;
+        const startX = t.x - (cellSize * 3 + cellSpacing * 2) / 2;
+        const startY = t.y - (cellSize * 3 + cellSpacing * 2) / 2;
+        const totalCells = 9;
+        const filledCells = Math.floor((baseAmmo / 100) * totalCells);
+        
+        for (let i = 0; i < totalCells; i++) {
+            const row = Math.floor(i / 3);
+            const col = i % 3;
+            const x = startX + col * (cellSize + cellSpacing);
+            const y = startY + row * (cellSize + cellSpacing);
+            
+            if (i < filledCells) {
+                // Заряженные части - цветные
+                ctx.fillStyle = baseAmmo < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
+            } else {
+                // Обезцвеченные части - серые
+                ctx.fillStyle = '#333';
+            }
+            ctx.fillRect(x, y, cellSize, cellSize);
+        }
+        
         if (t.type === 'laser' && t.activeLaser && t.activeLaser.time > Date.now()) {
             ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
             ctx.beginPath(); ctx.moveTo(t.x, t.y); ctx.lineTo(t.activeLaser.x, t.activeLaser.y); ctx.stroke();
