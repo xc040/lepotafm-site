@@ -141,8 +141,8 @@
         <div id="joystick-zone">
   <div id="joystick-stick"></div>
   <div id="pause-btn" style="display:none;position: absolute;left: 50%;top: 50%;transform: translate(-50%, -50%);z-index:1000;pointer-events: auto;">
-    <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-purple);font-size:18px;box-shadow:0 0 15px var(--neon-purple);width:50px;height:50px;">
-      <i id="pause-jicon" class="fas fa-pause"></i>
+    <button class="control-btn" onclick="window.togglePause()" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-green);font-size:18px;box-shadow:0 0 15px var(--neon-green);width:50px;height:50px;">
+      <i id="pause-jicon" class="fas fa-pause" style="color: var(--neon-green);"></i>
     </button>
   </div>
 </div>
@@ -296,7 +296,12 @@ function saveProgress() {
         snakeLength: snake.length,
         turretsCount: entities.turrets.length,
         dronesCount: entities.drones.length,
-        playerBasesCount: entities.playerBases.length
+        playerBases: entities.playerBases.map(base => ({
+            x: base.x,
+            y: base.y,
+            health: base.health,
+            maxHealth: base.maxHealth
+        }))
     };
     localStorage.setItem('strazhEfira_progress', JSON.stringify(progress));
 }
@@ -333,15 +338,14 @@ function loadProgress() {
             }
             
             // Восстанавливаем базы игрока
-            const baseCount = progress.playerBasesCount || 0;
-            for(let i = 0; i < baseCount; i++) {
-                entities.playerBases.push({
-                    x: 1000 + i * 500,
-                    y: 1000 + i * 500,
-                    health: 100,
-                    maxHealth: 100,
+            if (progress.playerBases && Array.isArray(progress.playerBases)) {
+                entities.playerBases = progress.playerBases.map(base => ({
+                    x: base.x,
+                    y: base.y,
+                    health: base.health,
+                    maxHealth: base.maxHealth,
                     turrets: []
-                });
+                }));
             }
             
             return true;
@@ -617,17 +621,6 @@ function buyUpgrade(type, cost) {
             maxHealth: 100,
             turrets: []
         });
-        // Спавн турели вокруг новой базы
-        for(let i = 0; i < 2; i++) {
-            const ang = (i / 2) * 6.28;
-            entities.turrets.push({
-                x: snake.x + Math.cos(ang) * 120,
-                y: snake.y + Math.sin(ang) * 120,
-                type: 'bolt',
-                lastShot: 0,
-                baseId: entities.playerBases.length - 1
-            });
-        }
         if(lives > 0) saveProgress();
     }
     updateUI();
@@ -821,6 +814,20 @@ function update() {
             if(lives <= 0) gameOver();
             updateUI();
         }
+        
+        // Урон дополнительным базам
+        entities.playerBases.forEach((base, baseIndex) => {
+            if(Math.hypot(en.x - base.x, en.y - base.y) < 70) {
+                base.health -= 20;
+                entities.enemies.splice(i, 1);
+                createParticles(base.x, base.y, 'red', 8);
+                if(base.health <= 0) {
+                    entities.playerBases.splice(baseIndex, 1);
+                    createParticles(base.x, base.y, 'orange', 15);
+                }
+                updateUI();
+            }
+        });
 
         // Змея vs Враг (Убийство ГОЛОВОЙ с ростом)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
@@ -880,8 +887,8 @@ function update() {
         });
         
         // Урон боссу от змеи
-        if(Math.hypot(entities.boss.x - snake.x, entities.boss.y - snake.y) < 70 && snake.length > 1) {
-            // Урон боссу только если не одна голова
+        if(Math.hypot(entities.boss.x - snake.x, entities.boss.y - snake.y) < 70 && snake.segments.length >= 2) {
+            // Урон боссу только если есть хотя бы 2 сегмента
             const levelMul = 1 + (entities.boss.level||curLevel)/3;
             entities.boss.health -= 20 * levelMul;
             snake.length = Math.max(5, snake.length - 15 * levelMul);
@@ -1228,6 +1235,21 @@ function initJoystick() {
     const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
     const pauseBtn = document.getElementById('pause-btn');
     let active = false;
+    
+    // Отдельный обработчик для кнопки паузы
+    if (pauseBtn) {
+        pauseBtn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        }, {passive: false});
+        
+        pauseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.togglePause();
+        });
+    }
     
     const isTouchingPauseButton = (touch) => {
         if (!pauseBtn || pauseBtn.style.display === 'none') return false;
