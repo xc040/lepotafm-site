@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.1</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.2</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -1510,7 +1510,7 @@ function draw() {
                 // Заряженные части - цветные, цвет зависит от типа турели
                 ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
             } else {
-                // Обезцвеченные части - серые
+                // Обесцвеченные части - серые
                 ctx.fillStyle = '#333';
             }
             ctx.fillRect(x, y, cellSize, cellSize);
