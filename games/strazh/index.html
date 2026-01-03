@@ -211,6 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v1.8</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -236,7 +237,7 @@ let etherNoisePlaying = false;
 let gameStartTime = 0; // Время начала игры для сообщения защиты базы
 let totalPlayTime = 0; // Общее время игры без учета пауз
 let lastPauseTime = 0; // Время последней паузы
-let maxAmmoCapacity = 100; // Максимальный боезапас турелей
+let maxAmmoCapacity = 1; // Максимальный боезапас турелей
 let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
 let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
 let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
@@ -1407,7 +1408,6 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // Визуальная индикация дальности стрельбы турелей вокруг основной базы
     const turretsAtMainBase = entities.turrets.filter(t => 
         Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
     );
@@ -1415,15 +1415,22 @@ function draw() {
     turretsAtMainBase.forEach(t => {
         let range = 1000; // Базовая дальность для пушек
         let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
-        ctx.font = 'bold 96px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = '#00f0ff';
-        ctx.fillText('ЗАЩИТИ', BASE_POS.x, BASE_POS.y - 200);
-        ctx.fillText('БАЗУ', BASE_POS.x, BASE_POS.y - 120);
-        ctx.shadowBlur = 0;
-    }
+        
+        if (t.type === 'laser') {
+            range = 1600; // Базовая дальность для лазеров
+            rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
+        }
+        
+        // Применяем апгрейды дальности
+        range = range * (1 + (t.rangeBonus || 0));
+        
+        // Рисуем окружность дальности
+        ctx.strokeStyle = rangeColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, range, 0, 6.28);
+        ctx.stroke();
+    });
     
     // Дополнительные базы игрока
     entities.playerBases.forEach(base => {
