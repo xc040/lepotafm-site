@@ -150,7 +150,6 @@
             font-size: 12px;
         }
         .radio-btn:hover {
-            background: rgba(0, 243, 255, 0.2);
             transform: scale(1.1);
         }
         .radio-btn:active {
@@ -165,6 +164,13 @@
         @keyframes radioPulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
+        }
+        .radio-btn.playing i {
+            animation: albumSpin 3s linear infinite;
+        }
+        @keyframes albumSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         .radio-volume {
             width: 60px;
@@ -305,7 +311,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.0</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.1</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -319,7 +325,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.0</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.1</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -485,11 +491,6 @@ function toggleRadio() {
             setTimeout(() => {
                 radioBtn.style.background = '';
                 radioBtn.style.borderColor = '';
-            }, 1000);
-        }
-    }
-}
-
 // Инициализация радио при загрузке
 function initRadio() {
     // Восстанавливаем сохраненные настройки
@@ -502,24 +503,13 @@ function initRadio() {
         if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
     }
     
-    // Если было сохранено состояние воспроизведения, восстанавливаем его
-    if (savedPlaying === 'true' && typeof Android !== 'undefined' && Android.playAudio && Android.setVolume) {
-        radioPlaying = true;
-        Android.playAudio();
-        Android.setVolume(radioVolume);
-        
-        const radioBtn = document.getElementById('radio-toggle');
-        const radioIcon = document.getElementById('radio-icon');
-        if (radioBtn) radioBtn.classList.add('playing');
-        if (radioIcon) radioIcon.className = 'fas fa-pause';
-    }
-    
-    radioInitialized = true;
-}
-
-/** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
-function saveProgress() {
-    const progress = {
+    // Проверяем доступность Android интерфейса
+    if (typeof Android !== 'undefined' && Android.playAudio && Android.pauseAudio && Android.setVolume) {
+        // Если было сохранено состояние воспроизведения, восстанавливаем его
+        if (savedPlaying === 'true') {
+            radioPlaying = true;
+            Android.playAudio();
+            Android.setVolume(radioVolume);
         curLevel: curLevel,
         curRoomInLevel: curRoomInLevel,
         missionProgress: missionProgress,
