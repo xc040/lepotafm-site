@@ -183,6 +183,18 @@
                 <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 1200)">
                     <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>1200 CR</span>
                 </div>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 1000)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>1000 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 1500)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>1500 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 600)">
+                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>600 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 900)">
+                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>900 CR</span>
+                </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
                 <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.0</h3>
@@ -228,6 +240,8 @@ let maxAmmoCapacity = 100; // Максимальный боезапас туре
 let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
 let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
 let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
+let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
+let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -329,7 +343,9 @@ function saveProgress() {
             baseX: t.baseX,
             baseY: t.baseY,
             currentAmmo: t.currentAmmo || 100,
-            maxAmmo: t.maxAmmo || 100
+            maxAmmo: t.maxAmmo || 100,
+            fireRateBonus: t.fireRateBonus || 0,
+            rangeBonus: t.rangeBonus || 0
         })),
         dronesCount: entities.drones.length,
         playerBases: entities.playerBases.map(base => ({
@@ -341,7 +357,9 @@ function saveProgress() {
         maxAmmoCapacity: maxAmmoCapacity,
         ammoUpgradeLevel: ammoUpgradeLevel,
         boltAmmoUpgradeLevel: boltAmmoUpgradeLevel,
-        laserAmmoUpgradeLevel: laserAmmoUpgradeLevel
+        laserAmmoUpgradeLevel: laserAmmoUpgradeLevel,
+        fireRateUpgradeLevel: fireRateUpgradeLevel,
+        rangeUpgradeLevel: rangeUpgradeLevel
     };
     localStorage.setItem('strazhEfira_progress', JSON.stringify(progress));
 }
@@ -362,6 +380,8 @@ function loadProgress() {
             ammoUpgradeLevel = progress.ammoUpgradeLevel || 0;
             boltAmmoUpgradeLevel = progress.boltAmmoUpgradeLevel || 0;
             laserAmmoUpgradeLevel = progress.laserAmmoUpgradeLevel || 0;
+            fireRateUpgradeLevel = progress.fireRateUpgradeLevel || 0;
+            rangeUpgradeLevel = progress.rangeUpgradeLevel || 0;
             
             // Восстанавливаем турели с правильными типами и координатами
             if (progress.turrets && Array.isArray(progress.turrets)) {
@@ -375,7 +395,9 @@ function loadProgress() {
                     baseX: turret.baseX || BASE_POS.x,
                     baseY: turret.baseY || BASE_POS.y,
                     currentAmmo: turret.currentAmmo || 100,
-                    maxAmmo: turret.maxAmmo || 100
+                    maxAmmo: turret.maxAmmo || 100,
+                    fireRateBonus: turret.fireRateBonus || 0,
+                    rangeBonus: turret.rangeBonus || 0
                 }));
             } else {
                 // Fallback для старых сохранений
@@ -502,7 +524,15 @@ function startGame(newGame = true) {
     window.ammoTick = setInterval(() => { 
         if(started && !paused && curLevel > 0) {
             if(entities.turrets.length > 0 || entities.enemies.length > 0) {
-                baseAmmo = Math.max(0, baseAmmo - 0.5); 
+                baseAmmo = Math.max(0, baseAmmo - 0.5);
+                // Пополнение боезапаса турелей от общего заряда
+                entities.turrets.forEach(t => {
+                    if (t.currentAmmo < (t.maxAmmo || 100) && baseAmmo > 10) {
+                        const refillAmount = Math.min(2, (t.maxAmmo || 100) - t.currentAmmo);
+                        t.currentAmmo += refillAmount;
+                        baseAmmo -= refillAmount * 0.1; // Тратим общий заряд на пополнение
+                    }
+                });
             }
             updateUI(); 
         }
@@ -692,7 +722,9 @@ function buyUpgrade(type, cost) {
             baseX: nearestBase.x,
             baseY: nearestBase.y,
             currentAmmo: 100, // Индивидуальный заряд турели
-            maxAmmo: 100 // Максимальный заряд турели
+            maxAmmo: 100, // Максимальный заряд турели
+            fireRateBonus: 0, // Бонус к скорострельности
+            rangeBonus: 0 // Бонус к дальности
         });
         
         // Сохраняем прогресс при покупке турели (если игрок не погиб)
@@ -777,6 +809,130 @@ function buyUpgrade(type, cost) {
         if (nearbyLaser) {
             nearbyLaser.ammoBonus = (nearbyLaser.ammoBonus || 0) + 0.2; // +20% к эффективности
             nearbyLaser.ammoUpgraded = true;
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
+        }
+        
+        if(lives > 0) saveProgress();
+    } else if (type === 'fireRate-bolt') {
+        // Модернизация скорострельности одной пушки на 33%
+        score -= cost;
+        
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
+        });
+        
+        // Находим одну пушку (bolt) возле ближайшей базы, у которой еще нет апгрейда скорострельности
+        const nearbyBolt = entities.turrets.find(t => 
+            t.type === 'bolt' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.fireRateBonus || t.fireRateBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
+        );
+        
+        if (nearbyBolt) {
+            nearbyBolt.fireRateBonus = (nearbyBolt.fireRateBonus || 0) + 0.33; // +33% к скорострельности
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
+        }
+        
+        if(lives > 0) saveProgress();
+    } else if (type === 'fireRate-laser') {
+        // Модернизация скорострельности одного лазера на 33%
+        score -= cost;
+        
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
+        });
+        
+        // Находим один лазер (laser) возле ближайшей базы, у которого еще нет апгрейда скорострельности
+        const nearbyLaser = entities.turrets.find(t => 
+            t.type === 'laser' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.fireRateBonus || t.fireRateBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
+        );
+        
+        if (nearbyLaser) {
+            nearbyLaser.fireRateBonus = (nearbyLaser.fireRateBonus || 0) + 0.33; // +33% к скорострельности
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
+        }
+        
+        if(lives > 0) saveProgress();
+    } else if (type === 'range-bolt') {
+        // Модернизация дальности одной пушки на 33%
+        score -= cost;
+        
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
+        });
+        
+        // Находим одну пушку (bolt) возле ближайшей базы, у которой еще нет апгрейда дальности
+        const nearbyBolt = entities.turrets.find(t => 
+            t.type === 'bolt' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.rangeBonus || t.rangeBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
+        );
+        
+        if (nearbyBolt) {
+            nearbyBolt.rangeBonus = (nearbyBolt.rangeBonus || 0) + 0.33; // +33% к дальности
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
+        }
+        
+        if(lives > 0) saveProgress();
+    } else if (type === 'range-laser') {
+        // Модернизация дальности одного лазера на 33%
+        score -= cost;
+        
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
+        });
+        
+        // Находим один лазер (laser) возле ближайшей базы, у которого еще нет апгрейда дальности
+        const nearbyLaser = entities.turrets.find(t => 
+            t.type === 'laser' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.rangeBonus || t.rangeBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
+        );
+        
+        if (nearbyLaser) {
+            nearbyLaser.rangeBonus = (nearbyLaser.rangeBonus || 0) + 0.33; // +33% к дальности
         } else {
             // Если найти не удалось, возвращаем деньги
             score += cost;
@@ -886,9 +1042,15 @@ function update() {
         // Проверяем индивидуальный заряд турели
         if (t.currentAmmo > 0) {
             if (t.type === 'bolt') {
-                if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 20) {
+                // Применяем апгрейды скорострельности и дальности
+                const fireRateMultiplier = 1 - (t.fireRateBonus || 0); // Чем выше бонус, тем меньше задержка
+                const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
+                const baseFireRate = 1700;
+                const baseRange = 1000;
+                
+                if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier && entities.bullets.length < 20) {
                     let target = entities.enemies.find(en => en.type === 'box'); // Только квадраты
-                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1000) {
+                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < baseRange * rangeMultiplier) {
                         const a = Math.atan2(target.y - t.y, target.x - t.x);
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
                         t.lastShot = Date.now();
@@ -898,9 +1060,15 @@ function update() {
                     }
                 }
             } else if (t.type === 'laser') {
-                if (Date.now() - t.lastShot > 2600) {
+                // Применяем апгрейды скорострельности и дальности
+                const fireRateMultiplier = 1 - (t.fireRateBonus || 0); // Чем выше бонус, тем меньше задержка
+                const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
+                const baseFireRate = 2600;
+                const baseRange = 1600;
+                
+                if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
                     let target = entities.enemies.find(en => en.type === 'tri'); // Только треугольники
-                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < 1600) {
+                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < baseRange * rangeMultiplier) {
                         t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
                         // Выпадение обломка при смерти от лазера
                         entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
