@@ -1165,7 +1165,7 @@ function update() {
         entities.enemies.push({
             x: entities.boss.x + Math.cos(angle) * dist,
             y: entities.boss.y + Math.sin(angle) * dist,
-            speed: 2 + Math.random() * 1.5,
+            speed: Math.random() > 0.5 ? 1.7 : 3.5, // Исправлено: красные враги от босса имеют ту же скорость 1.7 как обычные
             type: Math.random() > 0.5 ? 'box' : 'tri'
         });
     }
@@ -1485,7 +1485,7 @@ function draw() {
             let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
             
             if (t.type === 'laser') {
-                range = 1600; // Базовая дальность для лазеров
+                range = 1000; // Базовая дальность для лазеров (изменено с 1600 на 1000)
                 rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
             }
             
