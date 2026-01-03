@@ -176,6 +176,9 @@
                 <div class="shop-item" onclick="window.buyUpgrade('base', 10000)">
                     <i class="fas fa-building"></i><b>База</b><span>10000 CR</span>
                 </div>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo', 800 + ammoUpgradeLevel * 400)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас</b><span id="ammo-upgrade-cost">800 CR</span>
+                </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
                 <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА</h3>
@@ -317,7 +320,9 @@ function saveProgress() {
             y: base.y,
             health: base.health,
             maxHealth: base.maxHealth
-        }))
+        })),
+        maxAmmoCapacity: maxAmmoCapacity,
+        ammoUpgradeLevel: ammoUpgradeLevel
     };
     localStorage.setItem('strazhEfira_progress', JSON.stringify(progress));
 }
@@ -334,6 +339,8 @@ function loadProgress() {
             baseAmmo = progress.baseAmmo || 100;
             lives = progress.lives || 3;
             snake.length = progress.snakeLength || 25;
+            maxAmmoCapacity = progress.maxAmmoCapacity || 100;
+            ammoUpgradeLevel = progress.ammoUpgradeLevel || 0;
             
             // Восстанавливаем турели с правильными типами
             if (progress.turrets && Array.isArray(progress.turrets)) {
@@ -678,6 +685,24 @@ function buyUpgrade(type, cost) {
             turrets: []
         });
         if(lives > 0) saveProgress();
+    } else if (type === 'ammo') {
+        // Модернизация боезапаса турелей
+        const allTurretsUpgraded = entities.turrets.every(t => t.ammoUpgraded);
+        if (allTurretsUpgraded) {
+            // Все турели уже апгрейдены - нельзя дальше улучшать боезапас
+            return;
+        }
+        
+        score -= cost;
+        maxAmmoCapacity += 25; // Увеличиваем максимальный боезапас на 25
+        ammoUpgradeLevel++;
+        
+        // Апгрейдим все существующие турели
+        entities.turrets.forEach(turret => {
+            turret.ammoUpgraded = true;
+        });
+        
+        if(lives > 0) saveProgress();
     }
     updateUI();
 }
@@ -692,6 +717,13 @@ function updateUI() {
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
+    
+    // Обновляем цену боезапаса
+    const ammoCost = document.getElementById('ammo-upgrade-cost');
+    if (ammoCost) {
+        const cost = 800 + ammoUpgradeLevel * 400;
+        ammoCost.innerText = cost + ' CR';
+    }
     
     // Управление звуком шума эфира
     updateEtherNoise();
@@ -1079,7 +1111,7 @@ function draw() {
     
     // Отображение жизни внутри ядра
     ctx.fillStyle = '#ff0055';
-    ctx.font = 'bold 40px Arial';
+    ctx.font = 'bold 80px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
@@ -1087,12 +1119,13 @@ function draw() {
     // Сообщение "Защити базу" в начале игры (первые 5 секунд)
     if (gameStartTime > 0 && (Date.now() - gameStartTime) < 5000) {
         ctx.fillStyle = '#ff0055';
-        ctx.font = 'bold 24px Arial';
+        ctx.font = 'bold 96px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 30;
         ctx.shadowColor = '#ff0055';
-        ctx.fillText('ЗАЩИТИ БАЗУ', BASE_POS.x, BASE_POS.y - 100);
+        ctx.fillText('ЗАЩИТИ', BASE_POS.x, BASE_POS.y - 140);
+        ctx.fillText('БАЗУ', BASE_POS.x, BASE_POS.y - 60);
         ctx.shadowBlur = 0;
     }
     
