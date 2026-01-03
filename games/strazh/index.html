@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.0</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.1</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -441,6 +441,22 @@ function loadProgress() {
     return false;
 }
 
+/** --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
+function findNearestBase(x, y) {
+    let nearestBase = BASE_POS;
+    let minDist = Math.hypot(x - BASE_POS.x, y - BASE_POS.y);
+    
+    entities.playerBases.forEach(base => {
+        const dist = Math.hypot(x - base.x, y - base.y);
+        if (dist < minDist) {
+            minDist = dist;
+            nearestBase = base;
+        }
+    });
+    
+    return nearestBase;
+}
+
 /** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
 function startGame(newGame = true) {
     if (started) return;
@@ -525,9 +541,12 @@ function startGame(newGame = true) {
         if(started && !paused && curLevel > 0) {
             if(entities.turrets.length > 0 || entities.enemies.length > 0) {
                 baseAmmo = Math.max(0, baseAmmo - 0.5);
-                // Пополнение боезапаса турелей от общего заряда
+                // Пополнение боезапаса только турелей у базы, где стоит змей
+                const snakeBase = findNearestBase(snake.x, snake.y);
                 entities.turrets.forEach(t => {
-                    if (t.currentAmmo < (t.maxAmmo || 100) && baseAmmo > 10) {
+                    // Проверяем, что турель принадлежит базе, где стоит змей
+                    if (t.currentAmmo < (t.maxAmmo || 100) && 
+                        Math.hypot(t.x - snakeBase.x, t.y - snakeBase.y) < 200) {
                         const refillAmount = Math.min(2, (t.maxAmmo || 100) - t.currentAmmo);
                         t.currentAmmo += refillAmount;
                         baseAmmo -= refillAmount * 0.1; // Тратим общий заряд на пополнение
@@ -1032,6 +1051,30 @@ function update() {
             missionProgress = 1;
         }
         updateUI();
+    }
+    
+    // 2.1. Механика: Пополнение боезапаса турелей у базы, где стоит змей
+    const snakeBase = findNearestBase(snake.x, snake.y);
+    if(Math.hypot(snake.x - snakeBase.x, snake.y - snakeBase.y) < 100 && snake.length > 15) {
+        // Находим турели у этой базы
+        const nearbyTurrets = entities.turrets.filter(t => 
+            Math.hypot(t.x - snakeBase.x, t.y - snakeBase.y) < 200
+        );
+        
+        if(nearbyTurrets.length > 0) {
+            // Уменьшаем хвост змея для пополнения турелей
+            snake.length -= 0.5;
+            while(snake.segments.length > snake.length) snake.segments.pop();
+            
+            // Распределяем заряд по турелям
+            const ammoPerTurret = 3; // Каждая турель получает +3 заряда
+            nearbyTurrets.forEach(t => {
+                if (t.currentAmmo < (t.maxAmmo || 100)) {
+                    t.currentAmmo = Math.min(t.maxAmmo || 100, t.currentAmmo + ammoPerTurret);
+                }
+            });
+            updateUI();
+        }
     }
     // 3. Камера
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
