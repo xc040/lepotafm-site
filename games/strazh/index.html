@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.6</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.7</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -1497,7 +1497,12 @@ function draw() {
         const totalCells = 9;
         // Используем индивидуальный заряд турели
         const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 100);
-        const filledCells = Math.floor(ammoPercent * totalCells);
+        let filledCells = Math.floor(ammoPercent * totalCells);
+        
+        // Гарантируем минимальную видимость: если есть хоть какой-то заряд, показываем хотя бы 1 квадратик
+        if (filledCells === 0 && (t.currentAmmo || 0) > 0) {
+            filledCells = 1;
+        }
         
         for (let i = 0; i < totalCells; i++) {
             const row = Math.floor(i / 3);
