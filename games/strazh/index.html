@@ -491,25 +491,74 @@ function toggleRadio() {
             setTimeout(() => {
                 radioBtn.style.background = '';
                 radioBtn.style.borderColor = '';
-// Инициализация радио при загрузке
+            }, 2000);
+        }
+    }
+}
+
 function initRadio() {
     // Восстанавливаем сохраненные настройки
     const savedPlaying = localStorage.getItem('radio_playing');
     const savedVolume = localStorage.getItem('radio_volume');
     
-    if (savedVolume) {
-        radioVolume = parseFloat(savedVolume);
-        const volumeBar = document.getElementById('radio-volume-bar');
-        if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
-    }
-    
     // Проверяем доступность Android интерфейса
     if (typeof Android !== 'undefined' && Android.playAudio && Android.pauseAudio && Android.setVolume) {
+        if (savedVolume) {
+            radioVolume = parseFloat(savedVolume);
+            Android.setVolume(radioVolume);
+        } else {
+            // Если громкость не сохранена, устанавливаем 30%
+            radioVolume = 0.3;
+            Android.setVolume(radioVolume);
+        }
+        
+        const volumeBar = document.getElementById('radio-volume-bar');
+        if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
+        
         // Если было сохранено состояние воспроизведения, восстанавливаем его
         if (savedPlaying === 'true') {
             radioPlaying = true;
-            Android.playAudio();
-            Android.setVolume(radioVolume);
+            const radioBtn = document.getElementById('radio-toggle');
+            const radioIcon = document.getElementById('radio-icon');
+            if (radioBtn) radioBtn.classList.add('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-pause';
+        } else if (savedPlaying === 'false') {
+            // Если явно сохранено что выключено
+            radioPlaying = false;
+            Android.pauseAudio();
+            const radioBtn = document.getElementById('radio-toggle');
+            const radioIcon = document.getElementById('radio-icon');
+            if (radioBtn) radioBtn.classList.remove('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-play';
+        } else {
+            // Если нет сохраненного состояния - значит радио играет по умолчанию от APK
+            radioPlaying = true;
+            const radioBtn = document.getElementById('radio-toggle');
+            const radioIcon = document.getElementById('radio-icon');
+            if (radioBtn) radioBtn.classList.add('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-pause';
+            // Сохраняем состояние для будущих запусков
+            localStorage.setItem('radio_playing', 'true');
+            localStorage.setItem('radio_volume', radioVolume.toString());
+        }
+    } else {
+        // Если Android интерфейс недоступен, показываем неактивное состояние
+        radioPlaying = false;
+        const radioBtn = document.getElementById('radio-toggle');
+        const radioIcon = document.getElementById('radio-icon');
+        if (radioBtn) {
+            radioBtn.classList.remove('playing');
+            radioBtn.style.opacity = '0.5';
+        }
+        if (radioIcon) radioIcon.className = 'fas fa-play';
+    }
+    
+    radioInitialized = true;
+}
+
+/** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
+function saveProgress() {
+    const progress = {
         curLevel: curLevel,
         curRoomInLevel: curRoomInLevel,
         missionProgress: missionProgress,
