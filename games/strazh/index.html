@@ -319,7 +319,16 @@ function saveProgress() {
         baseAmmo: baseAmmo,
         lives: lives,
         snakeLength: snake.length,
-        turrets: entities.turrets.map(t => ({ type: t.type, lastShot: t.lastShot })),
+        turrets: entities.turrets.map(t => ({ 
+            x: t.x, 
+            y: t.y, 
+            type: t.type, 
+            lastShot: t.lastShot,
+            ammoBonus: t.ammoBonus || 0,
+            ammoUpgraded: t.ammoUpgraded || false,
+            baseX: t.baseX,
+            baseY: t.baseY
+        })),
         dronesCount: entities.drones.length,
         playerBases: entities.playerBases.map(base => ({
             x: base.x,
@@ -352,13 +361,17 @@ function loadProgress() {
             boltAmmoUpgradeLevel = progress.boltAmmoUpgradeLevel || 0;
             laserAmmoUpgradeLevel = progress.laserAmmoUpgradeLevel || 0;
             
-            // Восстанавливаем турели с правильными типами
+            // Восстанавливаем турели с правильными типами и координатами
             if (progress.turrets && Array.isArray(progress.turrets)) {
                 entities.turrets = progress.turrets.map(turret => ({
-                    x: BASE_POS.x + Math.cos(Math.random() * 6.28) * 165,
-                    y: BASE_POS.y + Math.sin(Math.random() * 6.28) * 165,
+                    x: turret.x || BASE_POS.x + Math.cos(Math.random() * 6.28) * 165,
+                    y: turret.y || BASE_POS.y + Math.sin(Math.random() * 6.28) * 165,
                     type: turret.type || 'bolt',
-                    lastShot: turret.lastShot || 0
+                    lastShot: turret.lastShot || 0,
+                    ammoBonus: turret.ammoBonus || 0,
+                    ammoUpgraded: turret.ammoUpgraded || false,
+                    baseX: turret.baseX || BASE_POS.x,
+                    baseY: turret.baseY || BASE_POS.y
                 }));
             } else {
                 // Fallback для старых сохранений
@@ -662,12 +675,16 @@ function buyUpgrade(type, cost) {
         ).length;
         const angle = (turretCount / 8) * 6.28; // 8 турелей вокруг базы
         const dist = 165;
+        const turretX = nearestBase.x + Math.cos(angle) * dist;
+        const turretY = nearestBase.y + Math.sin(angle) * dist;
         
         entities.turrets.push({ 
-            x: nearestBase.x + Math.cos(angle) * dist, 
-            y: nearestBase.y + Math.sin(angle) * dist, 
+            x: turretX, 
+            y: turretY, 
             type: 'bolt', 
             lastShot: 0,
+            ammoBonus: 0,
+            ammoUpgraded: false,
             baseX: nearestBase.x,
             baseY: nearestBase.y
         });
@@ -868,7 +885,9 @@ function update() {
                         const a = Math.atan2(target.y - t.y, target.x - t.x);
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
                         t.lastShot = Date.now();
-                        baseAmmo -= 0.6; // Расход энергии
+                        // Разный расход энергии в зависимости от апгрейда
+                        const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
+                        baseAmmo -= 0.6 * ammoEfficiency;
                     }
                 }
             } else if (t.type === 'laser') {
@@ -879,8 +898,11 @@ function update() {
                         // Выпадение обломка при смерти от лазера
                         entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
                         entities.enemies = entities.enemies.filter(e => e !== target);
-                        score += 95; t.lastShot = Date.now();
-                        baseAmmo -= 2.5; // Лазер потребляет больше
+                        // Убираем очки за убийство турелью
+                        t.lastShot = Date.now();
+                        // Разный расход энергии в зависимости от апгрейда
+                        const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
+                        baseAmmo -= 2.5 * ammoEfficiency;
                     }
                 }
             }
@@ -1222,11 +1244,26 @@ function draw() {
         ctx.restore();
     });
 
-    // 3. Турели и Лазеры (с визуальной индикацией заряда из 9 частей)
+    // 3. Турели и Лазеры (с визуальной индикацией заряда из 9 частей и апгрейдов)
     entities.turrets.forEach(t => {
         ctx.fillStyle = '#fff'; ctx.fillRect(t.x-25, t.y-25, 50, 50);
-        ctx.strokeStyle = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
-        ctx.lineWidth = 4; ctx.strokeRect(t.x-25, t.y-25, 50, 50);
+        
+        // Цвет рамки зависит от уровня апгрейда
+        let turretColor = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
+        if (t.ammoUpgraded && t.ammoBonus > 0) {
+            // Чем выше апгрейд, тем ярче цвет
+            const intensity = Math.min(1, t.ammoBonus);
+            if (t.type === 'laser') {
+                // Фиолетовый становится ярче
+                turretColor = `rgb(188, 19, 254, ${0.5 + intensity * 0.5})`;
+            } else {
+                // Голубой становится ярче
+                turretColor = `rgb(0, 243, 255, ${0.5 + intensity * 0.5})`;
+            }
+        }
+        ctx.strokeStyle = turretColor;
+        ctx.lineWidth = 4 + (t.ammoBonus || 0) * 2; // Чем толще рамка, тем выше апгрейд
+        ctx.strokeRect(t.x-25, t.y-25, 50, 50);
         
         // Визуальная индикация заряда: 9 частей (3x3 сетка)
         const cellSize = 12;
@@ -1250,6 +1287,19 @@ function draw() {
                 ctx.fillStyle = '#333';
             }
             ctx.fillRect(x, y, cellSize, cellSize);
+        }
+        
+        // Индикатор уровня апгрейда (звездочки)
+        if (t.ammoUpgraded && t.ammoBonus > 0) {
+            const upgradeLevel = Math.ceil(t.ammoBonus / 0.2); // Количество апгрейдов
+            ctx.fillStyle = '#ffcf00';
+            ctx.font = 'bold 10px Arial';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < upgradeLevel && i < 5; i++) {
+                const starX = t.x - 20 + i * 10;
+                const starY = t.y - 35;
+                ctx.fillText('★', starX, starY);
+            }
         }
         
         if (t.type === 'laser' && t.activeLaser && t.activeLaser.time > Date.now()) {
