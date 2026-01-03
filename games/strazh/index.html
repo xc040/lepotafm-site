@@ -185,7 +185,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.0</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -893,7 +893,7 @@ function update() {
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
                         t.lastShot = Date.now();
                         // Разный расход энергии в зависимости от апгрейда
-                        const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
+                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0)); // Максимальная экономия 80%
                         t.currentAmmo -= 0.6 * ammoEfficiency;
                     }
                 }
@@ -908,7 +908,7 @@ function update() {
                         // Убираем очки за убийство турелью
                         t.lastShot = Date.now();
                         // Разный расход энергии в зависимости от апгрейда
-                        const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
+                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0)); // Максимальная экономия 80%
                         t.currentAmmo -= 2.5 * ammoEfficiency;
                     }
                 }
@@ -992,7 +992,7 @@ function update() {
                 if(Math.hypot(b.x - en.x, b.y - en.y) < 45) {
                     entities.enemies.splice(i,1); entities.bullets.splice(bi,1);
                     entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                    score += 50; 
+                    // Убираем очки за убийство турелью - только змея получает очки
                     missionProgress++;
                     createParticles(en.x, en.y, 'blue', 5);
                 }
@@ -1269,8 +1269,15 @@ function draw() {
             }
         }
         ctx.strokeStyle = turretColor;
-        ctx.lineWidth = 4 + (t.ammoBonus || 0) * 2; // Чем толще рамка, тем выше апгрейд
+        ctx.lineWidth = 4 + (t.ammoBonus || 0) * 8; // Значительно увеличена толщина для видимости
         ctx.strokeRect(t.x-25, t.y-25, 50, 50);
+        
+        // Дополнительная рамка для апгрейденных турелей
+        if (t.ammoUpgraded && t.ammoBonus > 0) {
+            ctx.strokeStyle = '#ffcf00'; // Золотая рамка для апгрейденных
+            ctx.lineWidth = 2;
+            ctx.strokeRect(t.x-27, t.y-27, 54, 54);
+        }
         
         // Визуальная индикация заряда: 9 частей (3x3 сетка) - ИНДИВИДУАЛЬНЫЙ ЗАРЯД
         const cellSize = 12;
