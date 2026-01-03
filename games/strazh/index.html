@@ -327,7 +327,9 @@ function saveProgress() {
             ammoBonus: t.ammoBonus || 0,
             ammoUpgraded: t.ammoUpgraded || false,
             baseX: t.baseX,
-            baseY: t.baseY
+            baseY: t.baseY,
+            currentAmmo: t.currentAmmo || 100,
+            maxAmmo: t.maxAmmo || 100
         })),
         dronesCount: entities.drones.length,
         playerBases: entities.playerBases.map(base => ({
@@ -371,7 +373,9 @@ function loadProgress() {
                     ammoBonus: turret.ammoBonus || 0,
                     ammoUpgraded: turret.ammoUpgraded || false,
                     baseX: turret.baseX || BASE_POS.x,
-                    baseY: turret.baseY || BASE_POS.y
+                    baseY: turret.baseY || BASE_POS.y,
+                    currentAmmo: turret.currentAmmo || 100,
+                    maxAmmo: turret.maxAmmo || 100
                 }));
             } else {
                 // Fallback для старых сохранений
@@ -686,7 +690,9 @@ function buyUpgrade(type, cost) {
             ammoBonus: 0,
             ammoUpgraded: false,
             baseX: nearestBase.x,
-            baseY: nearestBase.y
+            baseY: nearestBase.y,
+            currentAmmo: 100, // Индивидуальный заряд турели
+            maxAmmo: 100 // Максимальный заряд турели
         });
         
         // Сохраняем прогресс при покупке турели (если игрок не погиб)
@@ -876,8 +882,9 @@ function update() {
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
     // 4. Отработка защиты (Специализация + Расход патронов)
-    if (baseAmmo > 0) {
-        entities.turrets.forEach(t => {
+    entities.turrets.forEach(t => {
+        // Проверяем индивидуальный заряд турели
+        if (t.currentAmmo > 0) {
             if (t.type === 'bolt') {
                 if (Date.now() - t.lastShot > 1700 && entities.bullets.length < 20) {
                     let target = entities.enemies.find(en => en.type === 'box'); // Только квадраты
@@ -887,7 +894,7 @@ function update() {
                         t.lastShot = Date.now();
                         // Разный расход энергии в зависимости от апгрейда
                         const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
-                        baseAmmo -= 0.6 * ammoEfficiency;
+                        t.currentAmmo -= 0.6 * ammoEfficiency;
                     }
                 }
             } else if (t.type === 'laser') {
@@ -902,12 +909,12 @@ function update() {
                         t.lastShot = Date.now();
                         // Разный расход энергии в зависимости от апгрейда
                         const ammoEfficiency = 1 - (t.ammoBonus || 0); // Чем больше бонус, тем меньше расход
-                        baseAmmo -= 2.5 * ammoEfficiency;
+                        t.currentAmmo -= 2.5 * ammoEfficiency;
                     }
                 }
             }
-        });
-    }
+        }
+    });
 
     // 5. Дроны (Feature 14) - Фиолетовые сферы
     entities.drones.forEach(d => {
@@ -1265,13 +1272,15 @@ function draw() {
         ctx.lineWidth = 4 + (t.ammoBonus || 0) * 2; // Чем толще рамка, тем выше апгрейд
         ctx.strokeRect(t.x-25, t.y-25, 50, 50);
         
-        // Визуальная индикация заряда: 9 частей (3x3 сетка)
+        // Визуальная индикация заряда: 9 частей (3x3 сетка) - ИНДИВИДУАЛЬНЫЙ ЗАРЯД
         const cellSize = 12;
         const cellSpacing = 2;
         const startX = t.x - (cellSize * 3 + cellSpacing * 2) / 2;
         const startY = t.y - (cellSize * 3 + cellSpacing * 2) / 2;
         const totalCells = 9;
-        const filledCells = Math.floor((baseAmmo / 100) * totalCells);
+        // Используем индивидуальный заряд турели
+        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 100);
+        const filledCells = Math.floor(ammoPercent * totalCells);
         
         for (let i = 0; i < totalCells; i++) {
             const row = Math.floor(i / 3);
@@ -1280,8 +1289,8 @@ function draw() {
             const y = startY + row * (cellSize + cellSpacing);
             
             if (i < filledCells) {
-                // Заряженные части - цветные
-                ctx.fillStyle = baseAmmo < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
+                // Заряженные части - цветные, цвет зависит от типа турели
+                ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
             } else {
                 // Обезцвеченные части - серые
                 ctx.fillStyle = '#333';
