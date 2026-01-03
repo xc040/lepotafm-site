@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.4</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.5</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.4</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.5</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -1098,8 +1098,20 @@ function update() {
                 const baseRange = 1000;
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier && entities.bullets.length < 20) {
-                    let target = entities.enemies.find(en => en.type === 'box'); // Только квадраты
-                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < baseRange * rangeMultiplier) {
+                    // Ищем ближайшего врага в дальности, а не первого попавшегося
+                    let target = null;
+                    let minDist = Infinity;
+                    entities.enemies.forEach(en => {
+                        if (en.type === 'box') { // Только квадраты
+                            const dist = Math.hypot(t.x - en.x, t.y - en.y);
+                            if (dist < baseRange * rangeMultiplier && dist < minDist) {
+                                minDist = dist;
+                                target = en;
+                            }
+                        }
+                    });
+                    
+                    if (target) {
                         const a = Math.atan2(target.y - t.y, target.x - t.x);
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
                         t.lastShot = Date.now();
@@ -1116,8 +1128,20 @@ function update() {
                 const baseRange = 1000; // Изменено с 1600 на 1000 для равенства с пушкой
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
-                    let target = entities.enemies.find(en => en.type === 'tri'); // Только треугольники
-                    if (target && Math.hypot(t.x - target.x, t.y - target.y) < baseRange * rangeMultiplier) {
+                    // Ищем ближайшего врага в дальности, а не первого попавшегося
+                    let target = null;
+                    let minDist = Infinity;
+                    entities.enemies.forEach(en => {
+                        if (en.type === 'tri') { // Только треугольники
+                            const dist = Math.hypot(t.x - en.x, t.y - en.y);
+                            if (dist < baseRange * rangeMultiplier && dist < minDist) {
+                                minDist = dist;
+                                target = en;
+                            }
+                        }
+                    });
+                    
+                    if (target) {
                         t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
                         // Выпадение обломка при смерти от лазера
                         entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
