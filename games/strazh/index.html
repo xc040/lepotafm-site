@@ -162,42 +162,42 @@
             <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#aaa;">ВРЕМЯ ИГРЫ: <span id="play-time">00:00</span></div>
             <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
             <div class="shop-grid">
-                <div class="shop-item" onclick="window.buyUpgrade('turret', 12)">
-                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>12 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('turret', 120)">
+                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>120 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('laser', 30)">
-                    <i class="fas fa-bolt"></i><b>Лазер</b><span>30 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('laser', 300)">
+                    <i class="fas fa-bolt"></i><b>Лазер</b><span>300 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('drone', 20)">
-                    <i class="fas fa-robot"></i><b>Дрон</b><span>20 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('drone', 200)">
+                    <i class="fas fa-robot"></i><b>Дрон</b><span>200 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fix', 25)">
-                    <i class="fas fa-tools"></i><b>Ремонт</b><span>25 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fix', 250)">
+                    <i class="fas fa-tools"></i><b>Ремонт</b><span>250 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('base', 100)">
-                    <i class="fas fa-building"></i><b>База</b><span>100 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('base', 1000)">
+                    <i class="fas fa-building"></i><b>База</b><span>1000 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 8)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>8 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 80)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>80 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 12)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>12 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 120)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>120 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 10)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>10 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 100)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>100 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 15)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>15 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 150)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>150 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 6)">
-                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>6 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
+                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>60 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 9)">
-                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>9 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
+                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>90 CR</span>
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.3</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.5</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -541,17 +541,7 @@ function startGame(newGame = true) {
         if(started && !paused && curLevel > 0) {
             if(entities.turrets.length > 0 || entities.enemies.length > 0) {
                 baseAmmo = Math.max(0, baseAmmo - 0.5);
-                // Пополнение боезапаса только турелей у базы, где стоит змей
-                const snakeBase = findNearestBase(snake.x, snake.y);
-                entities.turrets.forEach(t => {
-                    // Проверяем, что турель принадлежит базе, где стоит змей
-                    if (t.currentAmmo < (t.maxAmmo || 100) && 
-                        Math.hypot(t.x - snakeBase.x, t.y - snakeBase.y) < 200) {
-                        const refillAmount = Math.min(2, (t.maxAmmo || 100) - t.currentAmmo);
-                        t.currentAmmo += refillAmount;
-                        baseAmmo -= refillAmount * 0.1; // Тратим общий заряд на пополнение
-                    }
-                });
+                // УБРАНО автоматическое пополнение турелей - только через змея над базой
             }
             updateUI(); 
         }
