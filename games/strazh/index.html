@@ -162,38 +162,38 @@
             <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#aaa;">ВРЕМЯ ИГРЫ: <span id="play-time">00:00</span></div>
             <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
             <div class="shop-grid">
-                <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
-                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>1200 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('turret', 12)">
+                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>12 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('laser', 3000)">
-                    <i class="fas fa-bolt"></i><b>Лазер</b><span>3000 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('laser', 30)">
+                    <i class="fas fa-bolt"></i><b>Лазер</b><span>30 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('drone', 2000)">
-                    <i class="fas fa-robot"></i><b>Дрон</b><span>2000 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('drone', 20)">
+                    <i class="fas fa-robot"></i><b>Дрон</b><span>20 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fix', 2500)">
-                    <i class="fas fa-tools"></i><b>Ремонт</b><span>2500 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fix', 25)">
+                    <i class="fas fa-tools"></i><b>Ремонт</b><span>25 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('base', 10000)">
-                    <i class="fas fa-building"></i><b>База</b><span>10000 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('base', 100)">
+                    <i class="fas fa-building"></i><b>База</b><span>100 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 800)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>800 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 8)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>8 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 1200)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>1200 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 12)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>12 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 1000)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>1000 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 10)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>10 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 1500)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>1500 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 15)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>15 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 600)">
-                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>600 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 6)">
+                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>6 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 900)">
-                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>900 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 9)">
+                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>9 CR</span>
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
@@ -1053,9 +1053,10 @@ function update() {
         updateUI();
     }
     
-    // 2.1. Механика: Пополнение боезапаса турелей у базы, где стоит змей
+    // 2.1. Механика: Пополнение боезапаса турелей только когда змей НАД базой
     const snakeBase = findNearestBase(snake.x, snake.y);
-    if(Math.hypot(snake.x - snakeBase.x, snake.y - snakeBase.y) < 100 && snake.length > 15) {
+    // Проверяем что змей непосредственно НАД базой (близко к центру)
+    if(Math.hypot(snake.x - snakeBase.x, snake.y - snakeBase.y) < 50 && snake.length > 15) {
         // Находим турели у этой базы
         const nearbyTurrets = entities.turrets.filter(t => 
             Math.hypot(t.x - snakeBase.x, t.y - snakeBase.y) < 200
@@ -1137,7 +1138,7 @@ function update() {
             if(Math.hypot(en.x - dx, en.y - dy) < 55) {
                 entities.enemies.splice(ei, 1);
                 entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                score += 40;
+                score += 4; updateUI();
             }
         });
     });
@@ -1239,7 +1240,7 @@ function update() {
 
         // Змея vs Враг (Убийство ГОЛОВОЙ с ростом)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 55) {
-            score += 100;
+            score += 10;
             snake.length += 2; // При лобовом столкновении змея растет (+2)
             while(snake.segments.length > snake.length) snake.segments.pop();
             entities.enemies.splice(i, 1);
@@ -1262,7 +1263,7 @@ function update() {
     // 9. Байты данных (Еда)
     entities.food.forEach((f, i) => {
         if(Math.hypot(f.x - snake.x, f.y - snake.y) < 65) { 
-            snake.length += 4; score += 35;
+            snake.length += 4; score += 3.5;
             entities.food.splice(i, 1); spawnFood();
             // Первый байт собран - для обучения (задание 0)
             if(curLevel === 1 && curRoomInLevel === 0) {
@@ -1507,11 +1508,11 @@ function draw() {
             const y = startY + row * (cellSize + cellSpacing);
             
             if (i < filledCells) {
-                // Заряженные части - цветные, цвет зависит от типа турели
+                // Заряженные части - цветные
                 ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
             } else {
-                // Обесцвеченные части - прозрачные
-                ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+                // Обесцвеченные части - черные
+                ctx.fillStyle = '#000';
             }
             ctx.fillRect(x, y, cellSize, cellSize);
         }
