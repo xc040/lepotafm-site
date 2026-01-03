@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.0</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.1</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.0</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.1</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -1434,6 +1434,30 @@ function draw() {
         ctx.shadowBlur = 0;
     }
     
+    // Окружности дальности от основной базы
+    const turretsAtMainBase = entities.turrets.filter(t => 
+        Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+    );
+    
+    // Собираем все уникальные уровни дальности для основной базы
+    const mainBaseRanges = new Set();
+    turretsAtMainBase.forEach(t => {
+        let range = t.type === 'laser' ? 1600 : 1000;
+        range = range * (1 + (t.rangeBonus || 0));
+        mainBaseRanges.add(range);
+    });
+    
+    // Рисуем окружности для каждого уровня дальности от основной базы
+    mainBaseRanges.forEach(range => {
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 10]);
+        ctx.beginPath();
+        ctx.arc(BASE_POS.x, BASE_POS.y, range, 0, 6.28);
+        ctx.stroke();
+    });
+    ctx.setLineDash([]); // Сбрасываем пунктир
+    
     // Дополнительные базы игрока
     entities.playerBases.forEach(base => {
         ctx.fillStyle = '#0a0a1a';
@@ -1544,7 +1568,7 @@ function draw() {
             
             if (i < filledCells) {
                 // Заряженные части - цветные
-                ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#ff0055' : (t.type === 'laser' ? '#bc13fe' : '#00f3ff');
+                ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#00f3ff' : (t.type === 'laser' ? '#ff69b4' : '#00f3ff');
             } else {
                 // Обесцвеченные части - черные
                 ctx.fillStyle = '#000';
