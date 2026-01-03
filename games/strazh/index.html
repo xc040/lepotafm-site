@@ -190,14 +190,14 @@
                     <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>150 CR</span>
                 </div>
                 <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
-                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +33%</b><span>60 CR</span>
+                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +20%</b><span>60 CR</span>
                 </div>
                 <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
-                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +33%</b><span>90 CR</span>
+                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +20%</b><span>90 CR</span>
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.2</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.3</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.2</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.3</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -925,7 +925,7 @@ function buyUpgrade(type, cost) {
         );
         
         if (nearbyBolt) {
-            nearbyBolt.rangeBonus = (nearbyBolt.rangeBonus || 0) + 0.33; // +33% к дальности
+            nearbyBolt.rangeBonus = (nearbyBolt.rangeBonus || 0) + 0.2; // +20% к дальности (уменьшено с 33%)
         } else {
             // Если найти не удалось, возвращаем деньги
             score += cost;
@@ -956,7 +956,7 @@ function buyUpgrade(type, cost) {
         );
         
         if (nearbyLaser) {
-            nearbyLaser.rangeBonus = (nearbyLaser.rangeBonus || 0) + 0.33; // +33% к дальности
+            nearbyLaser.rangeBonus = (nearbyLaser.rangeBonus || 0) + 0.2; // +20% к дальности (уменьшено с 33%)
         } else {
             // Если найти не удалось, возвращаем деньги
             score += cost;
@@ -1092,7 +1092,7 @@ function update() {
         if (t.currentAmmo > 0) {
             if (t.type === 'bolt') {
                 // Применяем апгрейды скорострельности и дальности
-                const fireRateMultiplier = 1 - (t.fireRateBonus || 0); // Чем выше бонус, тем меньше задержка
+                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 1700;
                 const baseRange = 1000;
@@ -1110,7 +1110,7 @@ function update() {
                 }
             } else if (t.type === 'laser') {
                 // Применяем апгрейды скорострельности и дальности
-                const fireRateMultiplier = 1 - (t.fireRateBonus || 0); // Чем выше бонус, тем меньше задержка
+                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 2600;
                 const baseRange = 1600;
