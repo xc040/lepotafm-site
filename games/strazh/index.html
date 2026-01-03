@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.8</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.9</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v1.8</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v1.9</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -343,8 +343,8 @@ function saveProgress() {
             ammoUpgraded: t.ammoUpgraded || false,
             baseX: t.baseX,
             baseY: t.baseY,
-            currentAmmo: t.currentAmmo || 1,
-            maxAmmo: t.maxAmmo || 1,
+            currentAmmo: t.currentAmmo || 9,
+            maxAmmo: t.maxAmmo || 9,
             fireRateBonus: t.fireRateBonus || 0,
             rangeBonus: t.rangeBonus || 0
         })),
@@ -395,8 +395,8 @@ function loadProgress() {
                     ammoUpgraded: turret.ammoUpgraded || false,
                     baseX: turret.baseX || BASE_POS.x,
                     baseY: turret.baseY || BASE_POS.y,
-                    currentAmmo: turret.currentAmmo || 1,
-                    maxAmmo: turret.maxAmmo || 1,
+                    currentAmmo: turret.currentAmmo || 9,
+                    maxAmmo: turret.maxAmmo || 9,
                     fireRateBonus: turret.fireRateBonus || 0,
                     rangeBonus: turret.rangeBonus || 0
                 }));
@@ -410,8 +410,8 @@ function loadProgress() {
                         y: BASE_POS.y + Math.sin(ang)*165, 
                         type: 'bolt', 
                         lastShot: 0,
-                        currentAmmo: 1, // Добавляем индивидуальный заряд
-                        maxAmmo: 1, // Добавляем максимальный заряд
+                        currentAmmo: 9, // Добавляем индивидуальный заряд
+                        maxAmmo: 9, // Добавляем максимальный заряд
                         ammoBonus: 0,
                         ammoUpgraded: false,
                         baseX: BASE_POS.x,
@@ -735,8 +735,8 @@ function buyUpgrade(type, cost) {
             y: turretY, 
             type: 'bolt', 
             lastShot: 0,
-            currentAmmo: 1, // Индивидуальный заряд турели
-            maxAmmo: 1, // Максимальный заряд турели
+            currentAmmo: 9, // Индивидуальный заряд турели
+            maxAmmo: 9, // Максимальный заряд турели
             ammoBonus: 0,
             ammoUpgraded: false,
             baseX: nearestBase.x,
@@ -1069,8 +1069,8 @@ function update() {
             // Распределяем заряд по турелям
             const ammoPerTurret = 3; // Каждая турель получает +3 заряда
             nearbyTurrets.forEach(t => {
-                if (t.currentAmmo < (t.maxAmmo || 1)) {
-                    t.currentAmmo = Math.min(t.maxAmmo || 1, t.currentAmmo + ammoPerTurret);
+                if (t.currentAmmo < (t.maxAmmo || 9)) {
+                    t.currentAmmo = Math.min(t.maxAmmo || 9, t.currentAmmo + ammoPerTurret);
                 }
             });
             updateUI();
@@ -1408,6 +1408,13 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
     
+    // Отображение жизни внутри ядра
+    ctx.fillStyle = '#ff0055';
+    ctx.font = 'bold 80px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
+    
     const turretsAtMainBase = entities.turrets.filter(t => 
         Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
     );
@@ -1526,7 +1533,7 @@ function draw() {
         const startY = t.y - (cellSize * 3 + cellSpacing * 2) / 2;
         const totalCells = 9;
         // Используем индивидуальный заряд турели
-        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 1);
+        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 9);
         let filledCells = Math.floor(ammoPercent * totalCells);
         
         // Гарантируем минимальную видимость: если есть хоть какой-то заряд, показываем хотя бы 1 квадратик
