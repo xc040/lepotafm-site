@@ -468,9 +468,18 @@ function findNearestBase(x, y) {
 
 /** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
 function startGame(newGame = true) {
-    // Принудительный сброс флага started для новой игры
+    if (started) return;
+
+    // 1. Очистка интерфейса
+    const startOverlay = document.getElementById('start-screen');
+    if (startOverlay) startOverlay.style.display = 'none';
+    const gov = document.getElementById('game-over-screen');
+    if (gov) gov.classList.add('hidden');
+    document.getElementById('mission-box').classList.remove('hidden');
+
+    // 2. Загрузка или сброс прогресса
     if (newGame) {
-        started = false;
+        // Новая игра - полный сброс
         score = 0;
         baseAmmo = 100;
         lives = 3;
@@ -1049,7 +1058,7 @@ function update() {
         updateUI();
     }
     
-    // 2.1. Механика: Пополнение боезапаса турелей только когда змей НАД базой
+    // 2.1. Механика: Пополнение боезапаса турелей и дронов только когда змей НАД базой
     const snakeBase = findNearestBase(snake.x, snake.y);
     // Проверяем что змей непосредственно НАД базой (близко к центру)
     if(Math.hypot(snake.x - snakeBase.x, snake.y - snakeBase.y) < 50 && snake.length > 15) {
@@ -1058,13 +1067,13 @@ function update() {
             Math.hypot(t.x - snakeBase.x, t.y - snakeBase.y) < 200
         );
         
-        // Находим дроны у этой базы для зарядки
+        // Находим дроны у этой базы
         const nearbyDrones = entities.drones.filter(d => 
             Math.hypot(d.x - snakeBase.x, d.y - snakeBase.y) < 200
         );
         
         if(nearbyTurrets.length > 0 || nearbyDrones.length > 0) {
-            // Уменьшаем хвост змея для пополнения
+            // Уменьшаем хвост змея для пополнения турелей и дронов
             snake.length -= 0.5;
             while(snake.segments.length > snake.length) snake.segments.pop();
             
@@ -1076,11 +1085,11 @@ function update() {
                 }
             });
             
-            // Восстанавливаем заряд дронов
+            // Распределяем заряд по дронам (восстановление столкновений)
             nearbyDrones.forEach(d => {
                 const collisions = d.collisions || 0;
                 if (collisions > 0) {
-                    // Восстанавливаем 1 сегмент за зарядку
+                    // Восстанавливаем 1 столкновение за каждую зарядку
                     d.collisions = Math.max(0, collisions - 1);
                 }
             });
@@ -1101,7 +1110,7 @@ function update() {
                 const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 1700;
-                const baseRange = 667; // Уменьшено на треть с 1000
+                const baseRange = 667; // Уменьшено на треть (1000 -> 667)
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier && entities.bullets.length < 20) {
                     // Ищем ближайшего врага в дальности, а не первого попавшегося
@@ -1131,7 +1140,7 @@ function update() {
                 const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 2600;
-                const baseRange = 667; // Уменьшено на треть с 1000
+                const baseRange = 667; // Уменьшено на треть (1000 -> 667)
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
                     // Ищем ближайшего врага в дальности, а не первого попавшегося
@@ -1482,7 +1491,7 @@ function draw() {
     // Собираем все уникальные уровни дальности для основной базы
     const mainBaseRanges = new Set();
     turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 667 : 667; // Уменьшено на треть с 1000
+        let range = t.type === 'laser' ? 667 : 667; // Уменьшено на треть (1000 -> 667)
         range = range * (1 + (t.rangeBonus || 0));
         mainBaseRanges.add(range);
     });
@@ -1521,11 +1530,11 @@ function draw() {
         );
         
         turretsAtBase.forEach(t => {
-            let range = 667; // Уменьшено на треть с 1000
+            let range = 667; // Уменьшено на треть (1000 -> 667)
             let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
             
             if (t.type === 'laser') {
-                range = 667; // Уменьшено на треть с 1000
+                range = 667; // Уменьшено на треть (1000 -> 667)
                 rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
             }
             
