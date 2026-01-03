@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.5</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.6</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -408,7 +408,15 @@ function loadProgress() {
                         x: BASE_POS.x + Math.cos(ang)*165, 
                         y: BASE_POS.y + Math.sin(ang)*165, 
                         type: 'bolt', 
-                        lastShot: 0 
+                        lastShot: 0,
+                        currentAmmo: 100, // Добавляем индивидуальный заряд
+                        maxAmmo: 100, // Добавляем максимальный заряд
+                        ammoBonus: 0,
+                        ammoUpgraded: false,
+                        baseX: BASE_POS.x,
+                        baseY: BASE_POS.y,
+                        fireRateBonus: 0,
+                        rangeBonus: 0
                     });
                 }
             }
