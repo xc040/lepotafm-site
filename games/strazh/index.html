@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.3</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.4</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.3</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.4</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -1113,7 +1113,7 @@ function update() {
                 const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 2600;
-                const baseRange = 1600;
+                const baseRange = 1000; // Изменено с 1600 на 1000 для равенства с пушкой
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
                     let target = entities.enemies.find(en => en.type === 'tri'); // Только треугольники
@@ -1442,7 +1442,7 @@ function draw() {
     // Собираем все уникальные уровни дальности для основной базы
     const mainBaseRanges = new Set();
     turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 1600 : 1000;
+        let range = t.type === 'laser' ? 1000 : 1000; // Изменено с 1600 на 1000 для равенства с пушкой
         range = range * (1 + (t.rangeBonus || 0));
         mainBaseRanges.add(range);
     });
