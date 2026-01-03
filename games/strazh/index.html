@@ -1079,34 +1079,23 @@ function update() {
                     t.currentAmmo = Math.min(t.maxAmmo || 9, t.currentAmmo + ammoPerTurret);
                 }
             });
-            updateUI();
-        }
-    }
-    // 2.2. Механика: Пополнение заряда дронов только когда змей НАД базой
-    const snakeBase = findNearestBase(snake.x, snake.y);
-    // Проверяем что змей непосредственно НАД базой (близко к центру)
-    if(Math.hypot(snake.x - snakeBase.x, snake.y - snakeBase.y) < 50 && snake.length > 15) {
-        // Находим дроны у этой базы
-        const nearbyDrones = entities.drones.filter(d => 
-            Math.hypot(d.x - snakeBase.x, d.y - snakeBase.y) < 200
-        );
-        
-        if(nearbyDrones.length > 0) {
-            // Уменьшаем хвост змея для пополнения дронов
-            snake.length -= 0.3;
-            while(snake.segments.length > snake.length) snake.segments.pop();
             
-            // Распределяем заряд по дронам
-            const chargePerDrone = 1; // Каждый дрон получает +1 к восстановлению
-            nearbyDrones.forEach(d => {
+            // Заряжаем дроны так же, как турели
+            const nearbyDrones = entities.drones.filter(d => 
+                Math.hypot(d.x - snakeBase.x, d.y - snakeBase.y) < 200
+            );
+            
+            nearbyDrones.forEach(drone => {
                 // Восстанавливаем столкновения дрона (уменьшаем счетчик)
-                if ((d.collisions || 0) > 0) {
-                    d.collisions = Math.max(0, d.collisions - chargePerDrone);
+                if (drone.collisions > 0) {
+                    drone.collisions = Math.max(0, drone.collisions - 0.5); // Восстанавливаем по 0.5 за зарядку
                 }
             });
+            
             updateUI();
         }
     }
+    // 3. Камера
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
@@ -1119,7 +1108,7 @@ function update() {
                 const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 1700;
-                const baseRange = 667; // Уменьшено на 1/3 от 1000
+                const baseRange = 667; // Уменьшено на треть с 1000 до 667
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier && entities.bullets.length < 20) {
                     // Ищем ближайшего врага в дальности, а не первого попавшегося
@@ -1149,7 +1138,7 @@ function update() {
                 const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
                 const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
                 const baseFireRate = 2600;
-                const baseRange = 667; // Уменьшено на 1/3 от 1000
+                const baseRange = 667; // Уменьшено на треть с 1000 до 667
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
                     // Ищем ближайшего врага в дальности, а не первого попавшегося
@@ -1500,7 +1489,7 @@ function draw() {
     // Собираем все уникальные уровни дальности для основной базы
     const mainBaseRanges = new Set();
     turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 667 : 667; // Уменьшено на 1/3 от 1000
+        let range = t.type === 'laser' ? 667 : 667; // Уменьшено на треть с 1000 до 667
         range = range * (1 + (t.rangeBonus || 0));
         mainBaseRanges.add(range);
     });
@@ -1537,18 +1526,6 @@ function draw() {
         const turretsAtBase = entities.turrets.filter(t => 
             Math.hypot(t.x - base.x, t.y - base.y) < 200
         );
-        
-        turretsAtBase.forEach(t => {
-            let range = 667; // Уменьшено на 1/3 от 1000
-            let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
-            
-            if (t.type === 'laser') {
-                range = 667; // Уменьшено на 1/3 от 1000
-                rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
-            }
-            
-            // Применяем апгрейды дальности
-            range = range * (1 + (t.rangeBonus || 0));
             
             // Рисуем окружность дальности
             ctx.strokeStyle = rangeColor;
