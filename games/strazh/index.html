@@ -1120,7 +1120,7 @@ function update() {
                         t.lastShot = Date.now();
                         // Разный расход энергии в зависимости от апгрейда
                         const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0)); // Максимальная экономия 80%
-                        t.currentAmmo -= 2.5 * ammoEfficiency;
+                        t.currentAmmo -= 1.0 * ammoEfficiency; // Уменьшен расход до 1.0 для 9 выстрелов
                     }
                 }
             }
@@ -1415,35 +1415,66 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
     
-    const turretsAtMainBase = entities.turrets.filter(t => 
-        Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+    // Надпись ЗАЩИТИ БАЗУ (первые 5 секунд игры)
+    if (gameStartTime && Date.now() - gameStartTime < 5000) {
+        ctx.font = 'bold 96px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = '#00f0ff';
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillText('ЗАЩИТИ', BASE_POS.x, BASE_POS.y - 200);
+        ctx.fillText('БАЗУ', BASE_POS.x, BASE_POS.y - 120);
+        ctx.shadowBlur = 0;
+    }
+    
+    const hasBoltTurret = entities.turrets.some(t => 
+        t.type === 'bolt' && Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+    );
+    const hasLaserTurret = entities.turrets.some(t => 
+        t.type === 'laser' && Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
     );
     
-    turretsAtMainBase.forEach(t => {
+    // Рисуем окружности от основной базы
+    if (hasBoltTurret) {
         let range = 1000; // Базовая дальность для пушек
-        let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
+        let rangeColor = 'rgba(0, 243, 255, 0.25)'; // Более видимая голубая
         
-        if (t.type === 'laser') {
-            range = 1600; // Базовая дальность для лазеров
-            rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
+        // Применяем апгрейды дальности от пушек
+        const boltTurrets = entities.turrets.filter(t => 
+            t.type === 'bolt' && Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+        );
+        if (boltTurrets.length > 0) {
+            const maxRangeBonus = Math.max(...boltTurrets.map(t => t.rangeBonus || 0));
+            range = range * (1 + maxRangeBonus);
         }
         
-        // Применяем апгрейды дальности
-        range = range * (1 + (t.rangeBonus || 0));
-        
-        // Рисуем окружность дальности
+        // Рисуем окружность дальности от базы
         ctx.strokeStyle = rangeColor;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(t.x, t.y, range, 0, 6.28);
+        ctx.arc(BASE_POS.x, BASE_POS.y, range, 0, 6.28);
         ctx.stroke();
-    });
+    }
     
-    // Дополнительные базы игрока
-    entities.playerBases.forEach(base => {
-        ctx.fillStyle = '#0a0a1a';
+    if (hasLaserTurret) {
+        let range = 1600; // Базовая дальность для лазеров
+        let rangeColor = 'rgba(188, 19, 254, 0.25)'; // Более видимая фиолетовая
+        
+        // Применяем апгрейды дальности от лазеров
+        const laserTurrets = entities.turrets.filter(t => 
+            t.type === 'laser' && Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+        );
+        if (laserTurrets.length > 0) {
+            const maxRangeBonus = Math.max(...laserTurrets.map(t => t.rangeBonus || 0));
+            range = range * (1 + maxRangeBonus);
+        }
+        
+        // Рисуем окружность дальности от базы
+        ctx.strokeStyle = rangeColor;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(base.x, base.y, 50, 0, 6.28);
+        ctx.arc(BASE_POS.x, BASE_POS.y, range, 0, 6.28);
         ctx.fill();
         ctx.strokeStyle = '#39ff14';
         ctx.lineWidth = 4;
@@ -1456,30 +1487,56 @@ function draw() {
         ctx.fillStyle = '#39ff14';
         ctx.fillRect(base.x - 50, base.y - 60, 100 * healthPercent, 6);
         
-        // Визуальная индикация дальности стрельбы турелей вокруг базы
-        const turretsAtBase = entities.turrets.filter(t => 
-            Math.hypot(t.x - base.x, t.y - base.y) < 200
+        // Визуальная индикация дальности стрельбы от ДОПОЛНИТЕЛЬНЫХ БАЗ
+        const hasBoltTurret = entities.turrets.some(t => 
+            t.type === 'bolt' && Math.hypot(t.x - base.x, t.y - base.y) < 200
+        );
+        const hasLaserTurret = entities.turrets.some(t => 
+            t.type === 'laser' && Math.hypot(t.x - base.x, t.y - base.y) < 200
         );
         
-        turretsAtBase.forEach(t => {
+        // Рисуем окружности от дополнительной базы
+        if (hasBoltTurret) {
             let range = 1000; // Базовая дальность для пушек
-            let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
+            let rangeColor = 'rgba(0, 243, 255, 0.25)'; // Более видимая голубая
             
-            if (t.type === 'laser') {
-                range = 1600; // Базовая дальность для лазеров
-                rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
+            // Применяем апгрейды дальности от пушек
+            const boltTurrets = entities.turrets.filter(t => 
+                t.type === 'bolt' && Math.hypot(t.x - base.x, t.y - base.y) < 200
+            );
+            if (boltTurrets.length > 0) {
+                const maxRangeBonus = Math.max(...boltTurrets.map(t => t.rangeBonus || 0));
+                range = range * (1 + maxRangeBonus);
             }
             
-            // Применяем апгрейды дальности
-            range = range * (1 + (t.rangeBonus || 0));
-            
-            // Рисуем окружность дальности
+            // Рисуем окружность дальности от базы
             ctx.strokeStyle = rangeColor;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(t.x, t.y, range, 0, 6.28);
+            ctx.arc(base.x, base.y, range, 0, 6.28);
             ctx.stroke();
-        });
+        }
+        
+        if (hasLaserTurret) {
+            let range = 1600; // Базовая дальность для лазеров
+            let rangeColor = 'rgba(188, 19, 254, 0.25)'; // Более видимая фиолетовая
+            
+            // Применяем апгрейды дальности от лазеров
+            const laserTurrets = entities.turrets.filter(t => 
+                t.type === 'laser' && Math.hypot(t.x - base.x, t.y - base.y) < 200
+            );
+            if (laserTurrets.length > 0) {
+                const maxRangeBonus = Math.max(...laserTurrets.map(t => t.rangeBonus || 0));
+                range = range * (1 + maxRangeBonus);
+            }
+            
+            // Рисуем окружность дальности от базы
+            ctx.strokeStyle = rangeColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(base.x, base.y, range, 0, 6.28);
+            ctx.stroke();
+        }
     });
 
     // 2. РАДАР (FIX: Остановка у границы 65px, разные цвета для типов врагов)
