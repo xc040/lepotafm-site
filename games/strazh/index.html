@@ -159,6 +159,7 @@
             <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
             <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
             <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
+            <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#aaa;">ВРЕМЯ ИГРЫ: <span id="play-time">00:00</span></div>
             <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
             <div class="shop-grid">
                 <div class="shop-item" onclick="window.buyUpgrade('turret', 1200)">
@@ -176,11 +177,11 @@
                 <div class="shop-item" onclick="window.buyUpgrade('base', 10000)">
                     <i class="fas fa-building"></i><b>База</b><span>10000 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 800 + boltAmmoUpgradeLevel * 400)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span id="bolt-ammo-cost">800 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 800)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>800 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 1200 + laserAmmoUpgradeLevel * 600)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span id="laser-ammo-cost">1200 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 1200)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>1200 CR</span>
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
@@ -422,6 +423,7 @@ function startGame(newGame = true) {
         curRoomInLevel = 0;
         missionProgress = 0;
         snake.length = 25;
+        totalPlayTime = 0; // Сбрасываем время игры
         
         // Очистка массивов
         entities.turrets = [];
@@ -695,9 +697,8 @@ function buyUpgrade(type, cost) {
         });
         if(lives > 0) saveProgress();
     } else if (type === 'ammo-bolt') {
-        // Модернизация боезапаса пушек на 20%
+        // Модернизация боезапаса одной пушки на 20%
         score -= cost;
-        boltAmmoUpgradeLevel++;
         
         // Находим ближайшую базу к змею
         let nearestBase = BASE_POS;
@@ -711,22 +712,25 @@ function buyUpgrade(type, cost) {
             }
         });
         
-        // Находим одну пушку (bolt) возле ближайшей базы и увеличиваем её боезапас
+        // Находим одну пушку (bolt) возле ближайшей базы, у которой еще нет апгрейда
         const nearbyBolt = entities.turrets.find(t => 
             t.type === 'bolt' && 
-            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.ammoUpgraded || t.ammoBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
         );
         
         if (nearbyBolt) {
             nearbyBolt.ammoBonus = (nearbyBolt.ammoBonus || 0) + 0.2; // +20% к эффективности
             nearbyBolt.ammoUpgraded = true;
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
         }
         
         if(lives > 0) saveProgress();
     } else if (type === 'ammo-laser') {
-        // Модернизация боезапаса лазеров на 20%
+        // Модернизация боезапаса одного лазера на 20%
         score -= cost;
-        laserAmmoUpgradeLevel++;
         
         // Находим ближайшую базу к змею
         let nearestBase = BASE_POS;
@@ -740,22 +744,25 @@ function buyUpgrade(type, cost) {
             }
         });
         
-        // Находим один лазер (laser) возле ближайшей базы и увеличиваем его боезапас
+        // Находим один лазер (laser) возле ближайшей базы, у которого еще нет апгрейда
         const nearbyLaser = entities.turrets.find(t => 
             t.type === 'laser' && 
-            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200 &&
+            (!t.ammoUpgraded || t.ammoBonus < 1.0) // Можно апгрейдить если не улучшена или улучшена менее чем на 100%
         );
         
         if (nearbyLaser) {
             nearbyLaser.ammoBonus = (nearbyLaser.ammoBonus || 0) + 0.2; // +20% к эффективности
             nearbyLaser.ammoUpgraded = true;
+        } else {
+            // Если найти не удалось, возвращаем деньги
+            score += cost;
         }
         
         if(lives > 0) saveProgress();
     }
     updateUI();
 }
-
 function updateUI() {
     const bar = document.getElementById('signal-bar');
     if (bar) {
@@ -767,18 +774,14 @@ function updateUI() {
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
     
-    // Обновляем цены боезапаса
-    const boltAmmoCost = document.getElementById('bolt-ammo-cost');
-    if (boltAmmoCost) {
-        const cost = 800 + boltAmmoUpgradeLevel * 400;
-        boltAmmoCost.innerText = cost + ' CR';
+    // Обновляем время игры
+    const playTimeElement = document.getElementById('play-time');
+    if (playTimeElement) {
+        const minutes = Math.floor(totalPlayTime / 60);
+        const seconds = Math.floor(totalPlayTime % 60);
+        playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
-    const laserAmmoCost = document.getElementById('laser-ammo-cost');
-    if (laserAmmoCost) {
-        const cost = 1200 + laserAmmoUpgradeLevel * 600;
-        laserAmmoCost.innerText = cost + ' CR';
-    }
     // Управление звуком шума эфира
     updateEtherNoise();
     const bossBox = document.getElementById('boss-info');
@@ -821,6 +824,10 @@ function update() {
     if(!started || paused) return;
     frameCount++;
     updateMission();
+    
+    // Обновляем время игры (только когда не на паузе)
+    totalPlayTime += 1/60; // Предполагаем 60 FPS
+    updateUI();
 
     // 1. Движение змеи
     // Принудительно восстанавливаем скорость чтобы избежать падения при попадании
