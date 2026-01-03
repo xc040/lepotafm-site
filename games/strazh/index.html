@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.8</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.7</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.8</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.7</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -1182,6 +1182,12 @@ function update() {
     // Удаляем дроны с 8+ столкновений (израсходовали весь ресурс)
     entities.drones = entities.drones.filter(d => (d.collisions || 0) < 8);
 
+    // 6. Снаряды
+    entities.bullets.forEach((b, i) => {
+        b.x += b.vx; b.y += b.vy;
+        if(Math.hypot(b.x - BASE_POS.x, b.y - BASE_POS.y) > 2500) entities.bullets.splice(i,1);
+    });
+
     // 7. Враги (Глюки) - Спавн в зависимости от задания
     const room = getCurrentRoom();
     if(started && room && !room.isBoss && Math.random() < room.spawnRate) spawnEnemy();
@@ -1595,7 +1601,7 @@ function draw() {
             const y = startY + row * (cellSize + cellSpacing);
             
             if (i < filledCells) {
-                // Заряженные части - цветные (убран желтый цвет)
+                // Заряженные части - цветные
                 ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#00f3ff' : (t.type === 'laser' ? '#ff69b4' : '#00f3ff');
             } else {
                 // Обесцвеченные части - черные
@@ -1667,30 +1673,43 @@ function draw() {
     ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 22, 0, 6.28); ctx.fill(); });
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; entities.loot.forEach(l => { ctx.fillRect(l.x-12, l.y-12, 24, 24); });
     
-    // Дроны - теплые оранжевые сферы с индикацией столкновений
-    ctx.fillStyle = '#ff8c00';
+    // Дроны - фиолетовые сферы с индикацией столкновений на весь дрон
     entities.drones.forEach(d => {
-        // Основная сфера дрона (теплый оранжевый цвет)
+        // Определяем цвет дрона в зависимости от столкновений
+        const collisions = d.collisions || 0;
+        let droneColor = '#bc13fe'; // Фиолетовый по умолчанию (полный ресурс)
+        
+        // Если есть столкновения, красим соответствующие части в белый
+        if (collisions > 0) {
+            // Создаем градиентную окраску в зависимости от количества столкновений
+            const whitePercent = Math.min(collisions / 4, 1); // 4 столкновения = полностью белый
+            const r = Math.round(188 + (255 - 188) * whitePercent);
+            const g = Math.round(19 + (255 - 19) * whitePercent);
+            const b = Math.round(254 + (255 - 254) * whitePercent);
+            droneColor = `rgb(${r}, ${g}, ${b})`;
+        }
+        
+        // Рисуем сферу дрона с соответствующим цветом
+        ctx.fillStyle = droneColor;
         ctx.beginPath();
         ctx.arc(d.x, d.y, 20, 0, 6.28);
         ctx.fill();
-        ctx.strokeStyle = '#ff8c00';
+        ctx.strokeStyle = droneColor;
         ctx.lineWidth = 2;
         ctx.stroke();
         
-        // Индикация столкновений - 4 сегмента внутри дрона
-        const segmentSize = 8;
+        // Добавляем индикацию сегментов для наглядности
+        const segmentSize = 6;
         const segments = [
-            { x: d.x - segmentSize/2, y: d.y - segmentSize/2 }, // верхний левый
-            { x: d.x + segmentSize/2, y: d.y - segmentSize/2 }, // верхний правый
-            { x: d.x - segmentSize/2, y: d.y + segmentSize/2 }, // нижний левый
-            { x: d.x + segmentSize/2, y: d.y + segmentSize/2 }  // нижний правый
+            { x: d.x - 10, y: d.y - 10 }, // верхний левый
+            { x: d.x + 10, y: d.y - 10 }, // верхний правый
+            { x: d.x - 10, y: d.y + 10 }, // нижний левый
+            { x: d.x + 10, y: d.y + 10 }  // нижний правый
         ];
         
-        const collisions = d.collisions || 0;
         segments.forEach((seg, index) => {
             // Сегмент становится белым после столкновения
-            ctx.fillStyle = index < collisions ? '#ffffff' : '#555555';
+            ctx.fillStyle = index < collisions ? '#ffffff' : 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(seg.x - segmentSize/2, seg.y - segmentSize/2, segmentSize, segmentSize);
         });
     });
