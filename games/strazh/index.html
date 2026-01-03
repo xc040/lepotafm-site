@@ -214,6 +214,7 @@ let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [],
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
 let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
 let etherNoisePlaying = false;
+let gameStartTime = 0; // Время начала игры для сообщения защиты базы
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -421,6 +422,7 @@ function startGame(newGame = true) {
     started = true;
     paused = false;
     shieldActive = false;
+    gameStartTime = Date.now(); // Устанавливаем время начала игры для сообщения защиты базы
     
     // Скрываем кнопку паузы при запуске игры
     const pauseBtn = document.getElementById('pause-btn');
@@ -1040,10 +1042,22 @@ function draw() {
     
     // Отображение жизни внутри ядра
     ctx.fillStyle = '#ff0055';
-    ctx.font = 'bold 32px Arial';
+    ctx.font = 'bold 40px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
+    
+    // Сообщение "Защити базу" в начале игры (первые 5 секунд)
+    if (gameStartTime > 0 && (Date.now() - gameStartTime) < 5000) {
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0055';
+        ctx.fillText('ЗАЩИТИ БАЗУ', BASE_POS.x, BASE_POS.y - 100);
+        ctx.shadowBlur = 0;
+    }
     
     // Дополнительные базы игрока
     entities.playerBases.forEach(base => {
