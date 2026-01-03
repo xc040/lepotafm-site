@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.7</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.8</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +211,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.7</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.8</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -1595,7 +1595,7 @@ function draw() {
             const y = startY + row * (cellSize + cellSpacing);
             
             if (i < filledCells) {
-                // Заряженные части - цветные
+                // Заряженные части - цветные (убран желтый цвет)
                 ctx.fillStyle = (t.currentAmmo || 0) < 30 ? '#00f3ff' : (t.type === 'laser' ? '#ff69b4' : '#00f3ff');
             } else {
                 // Обесцвеченные части - черные
@@ -1667,14 +1667,14 @@ function draw() {
     ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 22, 0, 6.28); ctx.fill(); });
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; entities.loot.forEach(l => { ctx.fillRect(l.x-12, l.y-12, 24, 24); });
     
-    // Дроны - фиолетовые сферы с индикацией столкновений
-    ctx.fillStyle = '#bc13fe';
+    // Дроны - теплые оранжевые сферы с индикацией столкновений
+    ctx.fillStyle = '#ff8c00';
     entities.drones.forEach(d => {
-        // Основная сфера дрона
+        // Основная сфера дрона (теплый оранжевый цвет)
         ctx.beginPath();
         ctx.arc(d.x, d.y, 20, 0, 6.28);
         ctx.fill();
-        ctx.strokeStyle = '#bc13fe';
+        ctx.strokeStyle = '#ff8c00';
         ctx.lineWidth = 2;
         ctx.stroke();
         
