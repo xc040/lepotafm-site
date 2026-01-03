@@ -85,6 +85,25 @@
         .shop-item { 
             background: rgba(255,255,255,0.05); border: 1px solid #333; 
             padding: 12px; border-radius: 12px; text-align: center; cursor: pointer; 
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+        }
+        .shop-item:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-blue);
+        }
+        .shop-item:active {
+            transform: scale(1.15);
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--neon-green);
+        }
+        .shop-item.purchased {
+            animation: purchasePulse 0.6s ease-out;
+        }
+        @keyframes purchasePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background: rgba(57, 255, 20, 0.3); border-color: var(--neon-green); }
+            100% { transform: scale(1); }
         }
         .shop-item i { color: var(--neon-blue); font-size: 22px; margin-bottom: 5px; display: block; }
         .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
@@ -197,7 +216,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.8</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.9</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -211,7 +230,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.8</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.9</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -706,6 +725,20 @@ function updateMission() {
 /** --- МАГАЗИН И ОБНОВЛЕНИЕ UI --- */
 function buyUpgrade(type, cost) {
     if (score < cost) return;
+    
+    // Добавляем анимацию кнопки покупки
+    const shopItems = document.querySelectorAll('.shop-item');
+    shopItems.forEach(item => {
+        if (item.getAttribute('onclick').includes(type)) {
+            // Убираем предыдущий класс если есть
+            item.classList.remove('purchased');
+            // Принудительно перезапускаем анимацию
+            void item.offsetWidth; // Trigger reflow
+            // Добавляем класс для анимации
+            item.classList.add('purchased');
+        }
+    });
+    
     if (type === 'turret') {
         score -= cost;
         
