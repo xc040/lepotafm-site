@@ -176,8 +176,11 @@
                 <div class="shop-item" onclick="window.buyUpgrade('base', 10000)">
                     <i class="fas fa-building"></i><b>База</b><span>10000 CR</span>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo', 800 + ammoUpgradeLevel * 400)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас</b><span id="ammo-upgrade-cost">800 CR</span>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 800 + boltAmmoUpgradeLevel * 400)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас +20%</b><span id="bolt-ammo-cost">800 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 1200 + laserAmmoUpgradeLevel * 600)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас +20%</b><span id="laser-ammo-cost">1200 CR</span>
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
@@ -222,6 +225,8 @@ let totalPlayTime = 0; // Общее время игры без учета па�
 let lastPauseTime = 0; // Время последней паузы
 let maxAmmoCapacity = 100; // Максимальный боезапас турелей
 let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
+let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
+let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -322,12 +327,11 @@ function saveProgress() {
             maxHealth: base.maxHealth
         })),
         maxAmmoCapacity: maxAmmoCapacity,
-        ammoUpgradeLevel: ammoUpgradeLevel
+        ammoUpgradeLevel: ammoUpgradeLevel,
+        boltAmmoUpgradeLevel: boltAmmoUpgradeLevel,
+        laserAmmoUpgradeLevel: laserAmmoUpgradeLevel
     };
-    localStorage.setItem('strazhEfira_progress', JSON.stringify(progress));
-}
-
-function loadProgress() {
+    // ... остальной код ...
     const saved = localStorage.getItem('strazhEfira_progress');
     if (saved) {
         try {
@@ -341,6 +345,8 @@ function loadProgress() {
             snake.length = progress.snakeLength || 25;
             maxAmmoCapacity = progress.maxAmmoCapacity || 100;
             ammoUpgradeLevel = progress.ammoUpgradeLevel || 0;
+            boltAmmoUpgradeLevel = progress.boltAmmoUpgradeLevel || 0;
+            laserAmmoUpgradeLevel = progress.laserAmmoUpgradeLevel || 0;
             
             // Восстанавливаем турели с правильными типами
             if (progress.turrets && Array.isArray(progress.turrets)) {
@@ -685,22 +691,62 @@ function buyUpgrade(type, cost) {
             turrets: []
         });
         if(lives > 0) saveProgress();
-    } else if (type === 'ammo') {
-        // Модернизация боезапаса турелей
-        const allTurretsUpgraded = entities.turrets.every(t => t.ammoUpgraded);
-        if (allTurretsUpgraded) {
-            // Все турели уже апгрейдены - нельзя дальше улучшать боезапас
-            return;
+    } else if (type === 'ammo-bolt') {
+        // Модернизация боезапаса пушек на 20%
+        score -= cost;
+        boltAmmoUpgradeLevel++;
+        
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
+        });
+        
+        // Находим одну пушку (bolt) возле ближайшей базы и увеличиваем её боезапас
+        const nearbyBolt = entities.turrets.find(t => 
+            t.type === 'bolt' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        );
+        
+        if (nearbyBolt) {
+            nearbyBolt.ammoBonus = (nearbyBolt.ammoBonus || 0) + 0.2; // +20% к эффективности
+            nearbyBolt.ammoUpgraded = true;
         }
         
+        if(lives > 0) saveProgress();
+    } else if (type === 'ammo-laser') {
+        // Модернизация боезапаса лазеров на 20%
         score -= cost;
-        maxAmmoCapacity += 25; // Увеличиваем максимальный боезапас на 25
-        ammoUpgradeLevel++;
+        laserAmmoUpgradeLevel++;
         
-        // Апгрейдим все существующие турели
-        entities.turrets.forEach(turret => {
-            turret.ammoUpgraded = true;
+        // Находим ближайшую базу к змею
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestBase = base;
+            }
         });
+        
+        // Находим один лазер (laser) возле ближайшей базы и увеличиваем его боезапас
+        const nearbyLaser = entities.turrets.find(t => 
+            t.type === 'laser' && 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        );
+        
+        if (nearbyLaser) {
+            nearbyLaser.ammoBonus = (nearbyLaser.ammoBonus || 0) + 0.2; // +20% к эффективности
+            nearbyLaser.ammoUpgraded = true;
+        }
         
         if(lives > 0) saveProgress();
     }
@@ -718,17 +764,20 @@ function updateUI() {
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
     
-    // Обновляем цену боезапаса
-    const ammoCost = document.getElementById('ammo-upgrade-cost');
-    if (ammoCost) {
-        const cost = 800 + ammoUpgradeLevel * 400;
-        ammoCost.innerText = cost + ' CR';
+    // Обновляем цены боезапаса
+    const boltAmmoCost = document.getElementById('bolt-ammo-cost');
+    if (boltAmmoCost) {
+        const cost = 800 + boltAmmoUpgradeLevel * 400;
+        boltAmmoCost.innerText = cost + ' CR';
     }
     
+    const laserAmmoCost = document.getElementById('laser-ammo-cost');
+    if (laserAmmoCost) {
+        const cost = 1200 + laserAmmoUpgradeLevel * 600;
+        laserAmmoCost.innerText = cost + ' CR';
+    }
     // Управление звуком шума эфира
     updateEtherNoise();
-    
-    // Информация про босса
     const bossBox = document.getElementById('boss-info');
     const bossStrength = document.getElementById('boss-strength');
     const bossHp = document.getElementById('boss-hp');
@@ -1118,14 +1167,14 @@ function draw() {
     
     // Сообщение "Защити базу" в начале игры (первые 5 секунд)
     if (gameStartTime > 0 && (Date.now() - gameStartTime) < 5000) {
-        ctx.fillStyle = '#ff0055';
+        ctx.fillStyle = '#00f0ff';
         ctx.font = 'bold 96px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowBlur = 30;
-        ctx.shadowColor = '#ff0055';
-        ctx.fillText('ЗАЩИТИ', BASE_POS.x, BASE_POS.y - 140);
-        ctx.fillText('БАЗУ', BASE_POS.x, BASE_POS.y - 60);
+        ctx.shadowColor = '#00f0ff';
+        ctx.fillText('ЗАЩИТИ', BASE_POS.x, BASE_POS.y - 200);
+        ctx.fillText('БАЗУ', BASE_POS.x, BASE_POS.y - 120);
         ctx.shadowBlur = 0;
     }
     
