@@ -140,15 +140,17 @@
         </div>
 
         <div id="joystick-zone">
-  <div id="joystick-stick"></div>
-</div>
-        
-        <!-- Кнопка плей/пауза в центре экрана справа -->
-        <div id="pause-btn-center" style="display:none;position: absolute;right: 25%;top: 50%;transform: translate(50%, -50%);z-index:1000;pointer-events: auto;">
-            <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
-                <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
-            </button>
+            <div id="joystick-stick"></div>
+            <!-- Кнопка плей над стиком -->
+            <div id="pause-btn-center" style="display:none;position: absolute;top: -70px;left: 50%;transform: translateX(-50%);z-index:1000;pointer-events: auto;">
+                <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
+                    <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
+                </button>
+            </div>
         </div>
+        
+        <!-- УДАЛИТЬ ДУБЛИКАТ КНОПКИ ПЛЕЙ -->
+        
     </div>
 
     <!-- МАГАЗИН -->
@@ -277,8 +279,14 @@ function togglePause() {
     if(pIcon) pIcon.className = newIcon;
     if(centerIcon) centerIcon.className = newIcon;
     
-    // Показываем/скрываем центральную кнопку паузы
-    if(centerBtn) centerBtn.style.display = paused ? 'block' : 'none';
+    // Показываем/скрываем центральную кнопку паузы только при паузе
+    if(centerBtn) {
+        if (paused) {
+            centerBtn.style.display = 'block';
+        } else {
+            centerBtn.style.display = 'none';
+        }
+    }
     
     if(!paused) { 
         gameId = requestAnimationFrame(gameLoop); 
@@ -1287,13 +1295,37 @@ function initJoystick() {
         centerBtn.addEventListener('touchstart', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            window.togglePause();
+            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
+            if (paused && started) {
+                paused = false;
+                const centerBtnContainer = document.getElementById('pause-btn-center');
+                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
+                
+                // Обновляем иконку паузы в верхнем углу
+                const pIcon = document.getElementById('pause-icon');
+                if (pIcon) pIcon.className = 'fas fa-pause';
+                
+                // Запускаем игровой цикл
+                gameId = requestAnimationFrame(gameLoop);
+            }
         }, {passive: false});
         
         centerBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            window.togglePause();
+            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
+            if (paused && started) {
+                paused = false;
+                const centerBtnContainer = document.getElementById('pause-btn-center');
+                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
+                
+                // Обновляем иконку паузы в верхнем углу
+                const pIcon = document.getElementById('pause-icon');
+                if (pIcon) pIcon.className = 'fas fa-pause';
+                
+                // Запускаем игровой цикл
+                gameId = requestAnimationFrame(gameLoop);
+            }
         });
     }
 }
