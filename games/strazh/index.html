@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.7</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v1.8</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -342,8 +342,8 @@ function saveProgress() {
             ammoUpgraded: t.ammoUpgraded || false,
             baseX: t.baseX,
             baseY: t.baseY,
-            currentAmmo: t.currentAmmo || 100,
-            maxAmmo: t.maxAmmo || 100,
+            currentAmmo: t.currentAmmo || 10,
+            maxAmmo: t.maxAmmo || 10,
             fireRateBonus: t.fireRateBonus || 0,
             rangeBonus: t.rangeBonus || 0
         })),
@@ -376,7 +376,7 @@ function loadProgress() {
             baseAmmo = progress.baseAmmo || 100;
             lives = progress.lives || 3;
             snake.length = progress.snakeLength || 25;
-            maxAmmoCapacity = progress.maxAmmoCapacity || 100;
+            maxAmmoCapacity = progress.maxAmmoCapacity || 10;
             ammoUpgradeLevel = progress.ammoUpgradeLevel || 0;
             boltAmmoUpgradeLevel = progress.boltAmmoUpgradeLevel || 0;
             laserAmmoUpgradeLevel = progress.laserAmmoUpgradeLevel || 0;
@@ -394,8 +394,8 @@ function loadProgress() {
                     ammoUpgraded: turret.ammoUpgraded || false,
                     baseX: turret.baseX || BASE_POS.x,
                     baseY: turret.baseY || BASE_POS.y,
-                    currentAmmo: turret.currentAmmo || 100,
-                    maxAmmo: turret.maxAmmo || 100,
+                    currentAmmo: turret.currentAmmo || 10,
+                    maxAmmo: turret.maxAmmo || 10,
                     fireRateBonus: turret.fireRateBonus || 0,
                     rangeBonus: turret.rangeBonus || 0
                 }));
@@ -409,8 +409,8 @@ function loadProgress() {
                         y: BASE_POS.y + Math.sin(ang)*165, 
                         type: 'bolt', 
                         lastShot: 0,
-                        currentAmmo: 100, // Добавляем индивидуальный заряд
-                        maxAmmo: 100, // Добавляем максимальный заряд
+                        currentAmmo: 10, // Добавляем индивидуальный заряд
+                        maxAmmo: 10, // Добавляем максимальный заряд
                         ammoBonus: 0,
                         ammoUpgraded: false,
                         baseX: BASE_POS.x,
@@ -734,12 +734,12 @@ function buyUpgrade(type, cost) {
             y: turretY, 
             type: 'bolt', 
             lastShot: 0,
+            currentAmmo: 10, // Индивидуальный заряд турели
+            maxAmmo: 10, // Максимальный заряд турели
             ammoBonus: 0,
             ammoUpgraded: false,
             baseX: nearestBase.x,
             baseY: nearestBase.y,
-            currentAmmo: 100, // Индивидуальный заряд турели
-            maxAmmo: 100, // Максимальный заряд турели
             fireRateBonus: 0, // Бонус к скорострельности
             rangeBonus: 0 // Бонус к дальности
         });
@@ -1068,8 +1068,8 @@ function update() {
             // Распределяем заряд по турелям
             const ammoPerTurret = 3; // Каждая турель получает +3 заряда
             nearbyTurrets.forEach(t => {
-                if (t.currentAmmo < (t.maxAmmo || 100)) {
-                    t.currentAmmo = Math.min(t.maxAmmo || 100, t.currentAmmo + ammoPerTurret);
+                if (t.currentAmmo < (t.maxAmmo || 10)) {
+                    t.currentAmmo = Math.min(t.maxAmmo || 10, t.currentAmmo + ammoPerTurret);
                 }
             });
             updateUI();
@@ -1407,16 +1407,14 @@ function draw() {
     ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
     ctx.shadowBlur = 0;
     
-    // Отображение жизни внутри ядра
-    ctx.fillStyle = '#ff0055';
-    ctx.font = 'bold 80px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(lives.toString(), BASE_POS.x, BASE_POS.y);
+    // Визуальная индикация дальности стрельбы турелей вокруг основной базы
+    const turretsAtMainBase = entities.turrets.filter(t => 
+        Math.hypot(t.x - BASE_POS.x, t.y - BASE_POS.y) < 200
+    );
     
-    // Сообщение "Защити базу" в начале игры (первые 5 секунд)
-    if (gameStartTime > 0 && (Date.now() - gameStartTime) < 5000) {
-        ctx.fillStyle = '#00f0ff';
+    turretsAtMainBase.forEach(t => {
+        let range = 1000; // Базовая дальность для пушек
+        let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
         ctx.font = 'bold 96px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1443,6 +1441,31 @@ function draw() {
         ctx.fillRect(base.x - 50, base.y - 60, 100, 6);
         ctx.fillStyle = '#39ff14';
         ctx.fillRect(base.x - 50, base.y - 60, 100 * healthPercent, 6);
+        
+        // Визуальная индикация дальности стрельбы турелей вокруг базы
+        const turretsAtBase = entities.turrets.filter(t => 
+            Math.hypot(t.x - base.x, t.y - base.y) < 200
+        );
+        
+        turretsAtBase.forEach(t => {
+            let range = 1000; // Базовая дальность для пушек
+            let rangeColor = 'rgba(0, 243, 255, 0.1)'; // Голубой для пушек
+            
+            if (t.type === 'laser') {
+                range = 1600; // Базовая дальность для лазеров
+                rangeColor = 'rgba(188, 19, 254, 0.1)'; // Фиолетовый для лазеров
+            }
+            
+            // Применяем апгрейды дальности
+            range = range * (1 + (t.rangeBonus || 0));
+            
+            // Рисуем окружность дальности
+            ctx.strokeStyle = rangeColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, range, 0, 6.28);
+            ctx.stroke();
+        });
     });
 
     // 2. РАДАР (FIX: Остановка у границы 65px, разные цвета для типов врагов)
@@ -1496,7 +1519,7 @@ function draw() {
         const startY = t.y - (cellSize * 3 + cellSpacing * 2) / 2;
         const totalCells = 9;
         // Используем индивидуальный заряд турели
-        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 100);
+        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 10);
         let filledCells = Math.floor(ammoPercent * totalCells);
         
         // Гарантируем минимальную видимость: если есть хоть какой-то заряд, показываем хотя бы 1 квадратик
