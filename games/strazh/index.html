@@ -49,70 +49,64 @@
         }
         #signal-bar { width: 100%; height: 100%; background: var(--neon-blue); transition: width 0.3s; }
 
-        /* ЗАДАНИЯ */
-        #mission-box { 
-            position: absolute; top: 70px; left: 50%; transform: translateX(-50%); 
-            background: rgba(5, 5, 20, 0.9); border: 1px solid var(--neon-purple); 
-            border-radius: 10px; padding: 8px 15px; pointer-events: auto; font-size: 11px; 
-            text-align: center; min-width: 200px; z-index: 15;
+        /* МИССИИ (УРОВЕНЬ) */
+        #mission-box {
+            position: absolute; bottom: 35px; left: 20px;
+            background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
+            padding: 8px 12px; border-radius: 12px; width: 160px; z-index: 20;
+            pointer-events: auto; border-left: 4px solid var(--neon-purple);
         }
-        #mission-text { color: var(--neon-gold); font-weight: bold; margin-bottom: 4px; }
-        #mission-desc { color: #aaa; font-size: 10px; }
+        #mission-title { font-size: 8px; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 2px; }
+        #mission-text { font-size: 10px; font-weight: bold; color: #fff; line-height: 1.2; }
 
-        /* ДЖОЙСТИК */
+        /* ДЖОЙСТИК СПРАВА */
         #joystick-zone { 
-            position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; 
-            background: rgba(15, 15, 30, 0.8); border: 2px solid var(--neon-blue); 
-            border-radius: 50%; pointer-events: auto; z-index: 15;
+            position: absolute; bottom: 40px; right: 30px; width: 110px; height: 110px; 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.2); 
+            border-radius: 50%; pointer-events: auto; 
         }
         #joystick-stick { 
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; 
+            position: absolute; top: 50%; left: 50%; width: 45px; height: 45px; 
             background: var(--neon-blue); border-radius: 50%; transform: translate(-50%, -50%); 
-            transition: none; pointer-events: none;
-        }
-        #pause-btn-center { 
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            width: 60px; height: 60px; background: rgba(15, 15, 30, 0.9); 
-            border: 2px solid var(--neon-purple); border-radius: 50%; 
-            display: none; align-items: center; justify-content: center; 
-            pointer-events: auto; z-index: 16;
-        }
-        #pause-btn-center-inner { 
-            width: 40px; height: 40px; background: var(--neon-purple); 
-            border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; color: white; font-size: 18px; cursor: pointer;
+            box-shadow: 0 0 15px var(--neon-blue);
         }
 
         /* МАГАЗИН */
-        #shop-modal { 
+        .modal { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0, 0, 0, 0.8); display: none; align-items: center; 
-            justify-content: center; z-index: 50; pointer-events: auto;
+            background: rgba(0,0,0,0.95); z-index: 1000; display: flex; 
+            align-items: center; justify-content: center; pointer-events: auto; 
         }
-        #shop-content { 
-            background: rgba(5, 5, 20, 0.95); border: 2px solid var(--neon-purple); 
-            border-radius: 15px; padding: 20px; max-width: 320px; width: 90%; max-height: 80vh; 
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        .shop-content { 
+            width: 92%; max-width: 380px; background: #0a0a1a; 
+            border: 2px solid var(--neon-purple); padding: 20px; border-radius: 20px; overflow-y: auto; max-height: 85vh;
         }
-        .shop-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--neon-purple);
-        }
-        .shop-title { color: var(--neon-purple); font-size: 16px; font-weight: bold; }
-        .shop-close { 
-            width: 30px; height: 30px; background: none; border: 1px solid var(--neon-red); 
-            color: var(--neon-red); border-radius: 50%; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center;
-        }
-        .shop-section { margin-bottom: 15px; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .shop-item { 
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--neon-blue); 
-            border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; 
-            display: flex; align-items: center; gap: 10px; transition: all 0.2s;
+            background: rgba(255,255,255,0.05); border: 1px solid #333; 
+            padding: 12px; border-radius: 12px; text-align: center; cursor: pointer; 
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
         }
-        .shop-item:hover { background: rgba(57, 255, 20, 0.1); border-color: var(--neon-green); }
-        .shop-item i { font-size: 16px; color: var(--neon-blue); width: 20px; text-align: center; }
-        .shop-item b { flex: 1; font-size: 12px; color: white; }
+        .shop-item:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-blue);
+        }
+        .shop-item:active {
+            transform: scale(1.15);
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--neon-green);
+        }
+        .shop-item.purchased {
+            animation: purchasePulse 0.6s ease-out;
+        }
+        @keyframes purchasePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background: rgba(57, 255, 20, 0.3); border-color: var(--neon-green); }
+            100% { transform: scale(1); }
+        }
+        .shop-item i { color: var(--neon-blue); font-size: 22px; margin-bottom: 5px; display: block; }
+        .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
 
         /* ЭКРАНЫ */
@@ -135,148 +129,140 @@
     
     <!-- Аудио элементы -->
     <audio id="ether-noise" loop>
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
     </audio>
 
-    <!-- Интерфейсные слои -->
     <div id="ui-layer">
-        <!-- Контролы приложения -->
         <div class="app-controls">
-            <button class="control-btn" id="shop-btn" onclick="window.toggleShop(true)">
-                <i class="fas fa-shopping-cart"></i>
-            </button>
-            <button class="control-btn" id="pause-btn" onclick="window.togglePause()">
-                <i class="fas fa-pause" id="pause-icon"></i>
-            </button>
+            <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
+            <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
+            <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
         </div>
 
-        <!-- Статистика -->
-        <div class="stat-box" id="top-left">
-            <div>ЭНЕРГИЯ: <span id="signal-val">100%</span></div>
+        <div id="top-left" class="stat-box">
+            <div>ЭФИР</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
-            <div>ВРЕМЯ: <span id="play-time">00:00</span></div>
         </div>
-        <div class="stat-box" id="top-right">
-            <div>КРЕДИТЫ: <span id="score-val">0</span></div>
-            <div>ЖИЗНИ: <span id="lives-val">3</span></div>
-        </div>
-        <div class="stat-box hidden" id="boss-info">
-            <div style="color:var(--neon-purple); font-weight:bold;">БОСС</div>
-            <div id="boss-strength">Lv.1</div>
-            <div id="boss-hp">HP: 100/100</div>
-        </div>
-
-        <!-- Задания -->
-        <div id="mission-box">
-            <div>УРОВЕНЬ <span id="m-id">1</span></div>
-            <div id="mission-text">Защищай базу</div>
-            <div id="mission-desc">Собирай данные и уничтожай врагов</div>
+        
+        <div id="boss-info" class="stat-box" style="left:50%;top:70px;transform:translateX(-50%);min-width:120px;text-align:center;">
+  <div>БОСС <span id="boss-strength" style="color:var(--neon-purple);font-weight:bold;"></span></div>
+  <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
+</div>
+<div id="top-right" class="stat-box">
+            <div>ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
+            <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
         </div>
 
-        <!-- Джойстик -->
+        <div id="mission-box" class="hidden">
+            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
+            <div id="mission-text">Загрузка протоколов...</div>
+        </div>
+
         <div id="joystick-zone">
             <div id="joystick-stick"></div>
-        </div>
-        <div id="pause-btn-center">
-            <div id="pause-btn-center-inner">
-                <i class="fas fa-play" id="pause-center-icon"></i>
+            <!-- Кнопка плей над стиком -->
+            <div id="pause-btn-center" style="display:none;position: absolute;top: -70px;left: 50%;transform: translateX(-50%);z-index:1000;pointer-events: auto;">
+                <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
+                    <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
+                </button>
             </div>
         </div>
+        
+    </div>
 
-        <!-- Магазин -->
-        <div id="shop-modal" class="hidden">
-            <div id="shop-content">
-                <div class="shop-header">
-                    <div class="shop-title">МАГАЗИН <span id="shop-credits">0 CR</span></div>
-                    <button class="shop-close" onclick="window.toggleShop(false)">
-                        <i class="fas fa-times"></i>
-                    </button>
+    <!-- МАГАЗИН -->
+    <div id="shop-modal" class="modal hidden">
+        <div class="shop-content">
+            <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
+            <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
+            <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
+            <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#aaa;">ВРЕМЯ ИГРЫ: <span id="play-time">00:00</span></div>
+            <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
+            <div class="shop-grid">
+                <div class="shop-item" onclick="window.buyUpgrade('turret', 120)">
+                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>120 CR</span>
                 </div>
-                <div class="shop-section">
-                    <div class="shop-item" onclick="window.buyUpgrade('turret', 100)">
-                        <i class="fas fa-crosshairs"></i><b>ПУШКА</b><span>100 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('laser', 200)">
-                        <i class="fas fa-bolt"></i><b>ЛАЗЕР</b><span>200 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('drone', 300)">
-                        <i class="fas fa-satellite-dish"></i><b>ДРОН</b><span>300 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('base', 500)">
-                        <i class="fas fa-home"></i><b>БАЗА</b><span>500 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('fix', 150)">
-                        <i class="fas fa-heart"></i><b>РЕМОНТ</b><span>150 CR</span>
-                    </div>
+                <div class="shop-item" onclick="window.buyUpgrade('laser', 300)">
+                    <i class="fas fa-bolt"></i><b>Лазер</b><span>300 CR</span>
                 </div>
-                <div class="shop-section">
-                    <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 40)">
-                        <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>40 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 60)">
-                        <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>60 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 80)">
-                        <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>80 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 120)">
-                        <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>120 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
-                        <i class="fas fa-radar"></i><b>Дальность ПУШКИ +20%</b><span>60 CR</span>
-                    </div>
-                    <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
-                        <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +20%</b><span>90 CR</span>
-                    </div>
+                <div class="shop-item" onclick="window.buyUpgrade('drone', 200)">
+                    <i class="fas fa-robot"></i><b>Дрон</b><span>200 CR</span>
                 </div>
-                <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                    <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.4</h3>
-                    <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
-                        <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
-                        <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
-                        <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
-                    </p>
+                <div class="shop-item" onclick="window.buyUpgrade('fix', 250)">
+                    <i class="fas fa-tools"></i><b>Ремонт</b><span>250 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('base', 1000)">
+                    <i class="fas fa-building"></i><b>База</b><span>1000 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 80)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>80 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 120)">
+                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>120 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 100)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>100 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 150)">
+                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>150 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
+                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +20%</b><span>60 CR</span>
+                </div>
+                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
+                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +20%</b><span>90 CR</span>
                 </div>
             </div>
+            <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.4</h3>
+                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
+                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
+                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
+                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
+                </p>
+            </div>
         </div>
+    </div>
 
-        <div id="start-screen" class="overlay">
-            <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
-            <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
-            <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-            <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.4</div>
-        </div>
+    <div id="start-screen" class="overlay">
+        <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
+        <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
+        <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.4</div>
+    </div>
 
-        <div id="game-over-screen" class="overlay hidden">
-            <h1 style="color: var(--neon-red);">СВЯЗЬ ПОТЕРЯНА</h1>
-            <div id="final-stats" style="margin-bottom:20px; color:#888;"></div>
-            <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
-        </div>
+    <div id="game-over-screen" class="overlay hidden">
+        <h1 style="color: var(--neon-red);">СВЯЗЬ ПОТЕРЯНА</h1>
+        <div id="final-stats" style="margin-bottom:20px; color:#888;"></div>
+        <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
     </div>
 
 <script>
 /** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
-const WORLD_SIZE = 5000, ZOOM = 1.5, BASE_POS = {x: 2500, y: 2500};
-let canvas, ctx, started = false, paused = false, gameId = 0, frameCount = 0;
-let camera = {x: 0, y: 0}, input = {x: 0, y: 0};
-let score = 0, baseAmmo = 100, lives = 3, curLevel = 1, curRoomInLevel = 0, missionProgress = 0;
-let totalPlayTime = 0, gameStartTime = 0, shieldActive = false, etherNoisePlaying = false;
-let snake = {x: 2500, y: 2500, angle: 0, speed: 5.5, size: 25, length: 25, segments: []};
-let entities = {
-    food: [], enemies: [], particles: [], bullets: [], loot: [], turrets: [], drones: [], 
-    playerBases: [], boss: null, bossTowers: []
-};
+const WORLD_SIZE = 5000;
+const BASE_POS = { x: 2500, y: 2500 };
+const ZOOM = 0.28;
+
+let canvas, ctx, gameId;
+let started = false, paused = false;
+let score = 0, baseAmmo = 100, lives = 3;
+let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
+let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
+let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
+let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
+let etherNoisePlaying = false;
+let gameStartTime = 0; // Время начала игры для сообщения защиты базы
+let totalPlayTime = 0; // Общее время игры без учета пауз
+let lastPauseTime = 0; // Время последней паузы
+let maxAmmoCapacity = 9; // Максимальный боезапас турелей - ИЗМЕНЕНО НА 9
+let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
+let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
+let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
+let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
+let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
 
 // ПЕРЕМЕННАЯ ДЛЯ ПРОВЕРКИ ПЛАТНОГО ПОЛЬЗОВАТЕЛЯ (УПРАВЛЯЕТСЯ ВНЕШНИМ ПРИЛОЖЕНИЕМ)
 window.isPaidUser = false; // По умолчанию - бесплатный пользователь
-
-// Глобальные переменные для апгрейдов
-let maxAmmoCapacity = 1;
-let ammoUpgradeLevel = 0;
-let boltAmmoUpgradeLevel = 0;
-let laserAmmoUpgradeLevel = 0;
-let fireRateUpgradeLevel = 0;
-let rangeUpgradeLevel = 0;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -307,7 +293,7 @@ function resize() {
     if (!canvas) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-};
+}
 
 /** --- УПРАВЛЕНИЕ ОКНАМИ --- */
 function toggleShop(show) {
@@ -328,7 +314,7 @@ function toggleShop(show) {
         if (centerIcon) centerIcon.className = 'fas fa-play';
     }
     updateUI();
-};
+}
 
 function togglePause() {
     if(!started) return;
@@ -357,37 +343,6 @@ function togglePause() {
         cancelAnimationFrame(gameId); 
     }
 }
-
-function updateEtherNoise() {
-    const etherNoise = document.getElementById('ether-noise');
-    if (!etherNoise) return;
-    
-    // Звуки игры включаются только для платных пользователей
-    if (window.isPaidUser && baseAmmo < 10 && started && !paused) {
-        // Включаем шум эфира при менее 10% заряда для платных пользователей
-        if (!etherNoisePlaying) {
-            etherNoise.volume = 0.5; // 50% громкости
-            etherNoise.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
-            etherNoisePlaying = true;
-        }
-    } else {
-        // Выключаем шум для бесплатных пользователей или при достаточном заряде/паузе
-        if (etherNoisePlaying) {
-            etherNoise.pause();
-            etherNoise.currentTime = 0;
-            etherNoisePlaying = false;
-        }
-    }
-}
-
-// ФУНКЦИЯ ДЛЯ ВНЕШНЕГО УПРАВЛЕНИЯ ПЛАТНЫМ ПОЛЬЗОВАТЕЛЕМ
-// Вызывается из Android приложения для управления звуками игры
-window.setPaidUser = function(isPaid) {
-    window.isPaidUser = Boolean(isPaid);
-    console.log("Статус платного пользователя изменен:", window.isPaidUser);
-    // Сразу обновляем состояние звуков
-    updateEtherNoise();
-};
 
 /** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
 function saveProgress() {
@@ -515,333 +470,243 @@ function loadProgress() {
     return false;
 }
 
-/** --- ЗАПУСК ИГРЫ (ГЛУБОКИЙ СБРОС) --- */
-function startGame(newGame = true) {
-    if (started) return;
-
-    // 1. Очистка интерфейса
-    const startOverlay = document.getElementById('start-screen');
-    if (startOverlay) startOverlay.style.display = 'none';
-    const gov = document.getElementById('game-over-screen');
-    if (gov) gov.classList.add('hidden');
-    document.getElementById('mission-box').classList.remove('hidden');
-
-    // 2. Загрузка или сброс прогресса
-    if (newGame) {
-        // Новая игра - полный сброс
-        score = 0;
-        baseAmmo = 100;
-        lives = 3;
-        curLevel = 1;
-        curRoomInLevel = 0;
-        missionProgress = 0;
-        snake.length = 25;
-        totalPlayTime = 0; // Сбрасываем время игры
-        
-        // Очистка массивов
-        entities.turrets = [];
-        entities.drones = [];
-        entities.playerBases = [];
-    } else {
-        // Продолжить игру - загружаем прогресс
-        if (!loadProgress()) {
-            // Если загрузка не удалась, начинаем новую игру
-            score = 0;
-            baseAmmo = 100;
-            lives = 3;
-            curLevel = 1;
-            curRoomInLevel = 0;
-            missionProgress = 0;
-            snake.length = 25;
-        }
-    }
+/** --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
+function findNearestBase(x, y) {
+    let nearestBase = BASE_POS;
+    let minDist = Math.hypot(x - BASE_POS.x, y - BASE_POS.y);
     
-    started = true;
-    paused = false;
-    shieldActive = false;
-    gameStartTime = Date.now(); // Устанавливаем время начала игры для сообщения защиты базы
-    
-    // Скрываем кнопку паузы при запуске игры
-    const pauseBtn = document.getElementById('pause-btn');
-    if (pauseBtn) pauseBtn.style.display = 'none';
-
-    // 3. Сброс игрока и камеры
-    snake.x = 2550; snake.y = 2550;
-    snake.segments = [];
-    for(let i=0; i < snake.length; i++) {
-        snake.segments.push({x: snake.x, y: snake.y});
-    }
-
-    // 4. Очистка массивов (FIX ПУСТОГО ЭКРАНА)
-    entities.food = [];
-    entities.enemies = [];
-    entities.particles = [];
-    entities.bullets = [];
-    entities.loot = [];
-    entities.boss = null;
-    entities.bossTowers = [];
-
-    // Первичный спавн еды
-    for(let i=0; i<15; i++) spawnFood();
-
-    camera.x = snake.x - (canvas.width / ZOOM) / 2;
-    camera.y = snake.y - (canvas.height / ZOOM) / 2;
-
-    // 5. Запуск циклов
-    if (gameId) cancelAnimationFrame(gameId);
-    gameId = requestAnimationFrame(gameLoop);
-    updateMission();
-    updateUI();
-
-    // 6. Таймер Энергии (Расход заряда)
-    if (window.ammoTick) clearInterval(window.ammoTick);
-    window.ammoTick = setInterval(() => { 
-        if(started && !paused && curLevel > 0) {
-            if(entities.turrets.length > 0 || entities.enemies.length > 0) {
-                baseAmmo = Math.max(0, baseAmmo - 0.5);
-                // УБРАНО автоматическое пополнение турелей - только через змея над базой
-            }
-            updateUI(); 
-        }
-    }, 1000);
-}
-
-// Запуск инициализации джойстика
-initJoystick();
-
-/** --- СИСТЕМА УРОВНЕЙ (УРОВЕНЬ = СЦЕНАРИЙ ЗАДАНИЙ + БОСС) --- */
-// Каждый уровень состоит из нескольких заданий, последнее - босс
-const ROOMS_PER_LEVEL = 3; // Количество заданий перед боссом в каждом уровне
-
-function getLevelConfig(level) {
-    // Базовая сложность растет с уровнем
-    const baseDifficulty = level;
-    
-    // Первый уровень начинается с обучения
-    if (level === 1) {
-        return {
-            level: level,
-            rooms: [
-                { name: `Охраняй базу: съешь первый голубой байт данных`, enemiesToKill: 0, spawnRate: 0, description: "Собери байт данных (голубой круг) чтобы активировать систему" },
-                { name: `Перехват: Уничтожь Глюк головой змеи`, enemiesToKill: 1, spawnRate: 0.005, description: "Столкнись с красным квадратом головой - получишь +2 к длине" },
-                { name: `Защита: Собери 1200 CR на Пушку`, enemiesToKill: 0, spawnRate: 0.008, description: "Собирай байты и обломки врагов для получения кредитов" },
-                { name: `Модернизация: Купи ПУШКУ в магазине`, enemiesToKill: 0, spawnRate: 0, description: "Нажми на корзину вверху слева и купи первую турель" },
-                { name: `Зарядка: Коснись Ядра для пополнения заряда`, enemiesToKill: 0, spawnRate: 0.012, description: "Подлети к синему Ядру в центре - отдашь длину, получишь заряд" },
-                { name: `Разведка: Уничтожь 5 врагов для карты местности`, enemiesToKill: 5, spawnRate: 0.008, description: "Убей 5 врагов (квадраты или треугольники) любым способом" },
-                { name: `Очистка: Уничтожь 10 врагов в зоне`, enemiesToKill: 10, spawnRate: 0.012, description: "Очисти территорию от 10 врагов - турели помогут" },
-                { name: `Штурм: Уничтожь 15 врагов перед боссом`, enemiesToKill: 15, spawnRate: 0.015, description: "Последняя проверка перед боссом - убей 15 врагов" },
-                { name: `БОСС УРОВНЯ 1`, enemiesToKill: 1, spawnRate: 0, isBoss: true, description: "Уничтожь фиолетового босса - он спавнит вирусы и защищен башнями" }
-            ]
-        };
-    }
-    
-    return {
-        level: level,
-        rooms: [
-            { name: `Разведка: Уничтожь ${5 + baseDifficulty * 3} врагов для карты`, enemiesToKill: 5 + baseDifficulty * 3, spawnRate: 0.005 + baseDifficulty * 0.001, description: `Убей ${5 + baseDifficulty * 3} врагов для составления карты местности` },
-            { name: `Очистка: Уничтожь ${10 + baseDifficulty * 5} врагов в зоне`, enemiesToKill: 10 + baseDifficulty * 5, spawnRate: 0.008 + baseDifficulty * 0.0015, description: `Очисти территорию от ${10 + baseDifficulty * 5} врагов` },
-            { name: `Штурм: Уничтожь ${15 + baseDifficulty * 7} врагов перед боссом`, enemiesToKill: 15 + baseDifficulty * 7, spawnRate: 0.012 + baseDifficulty * 0.002, description: `Последняя проверка - убей ${15 + baseDifficulty * 7} врагов перед боссом` },
-            { name: `БОСС УРОВНЯ ${level}`, enemiesToKill: 1, spawnRate: 0, isBoss: true, description: `Уничтожь фиолетового босса - он спавнит вирусы и защищен башнями` }
-        ]
-    };
-}
-
-function getCurrentRoom() {
-    const levelConfig = getLevelConfig(curLevel);
-    if (curRoomInLevel < levelConfig.rooms.length) {
-        return levelConfig.rooms[curRoomInLevel];
-    }
-    return null;
-}
-
-function updateMission() {
-    const room = getCurrentRoom();
-    if (!room) return;
-    
-    const mId = document.getElementById('m-id');
-    const mText = document.getElementById('mission-text');
-    if(mId) mId.innerText = curLevel;
-    // Убираем дублирование "Уровень X:" - показываем только название задания
-    if(mText) {
-        if (curLevel === 1 && curRoomInLevel < 5) {
-            // Для обучения показываем полное описание
-            mText.innerText = room.description || room.name;
-        } else {
-            // Для обычных заданий показываем название с описанием
-            mText.innerText = room.description || room.name;
-        }
-    }
-    
-    // Проверка завершения задания
-    if (room.isBoss) {
-        // Для босса проверяем его смерть
-        if (!entities.boss && missionProgress >= 1) {
-            // Босс убит, переход на следующий уровень
-            curLevel++;
-            curRoomInLevel = 0;
-            missionProgress = 0;
-            entities.enemies = [];
-            entities.bossTowers = [];
-            
-            // Сохраняем прогресс при переходе на новый уровень
-            saveProgress();
-            
-            // Спавн первого задания нового уровня
-            const newRoom = getCurrentRoom();
-            if (newRoom && !newRoom.isBoss) {
-                missionProgress = 0;
-            }
-            updateMission();
-        } else if (entities.boss && !room.isBoss) {
-            // Если босс еще жив, но мы не в задании босса - исправляем
-            // Это не должно происходить, но на всякий случай
-        }
-    } else {
-        // Обычное задание - проверяем количество убитых врагов
-        if (missionProgress >= room.enemiesToKill) {
-            // Задание завершено, переход к следующему
-            curRoomInLevel++;
-            missionProgress = 0;
-            // Прогресс сохраняем, врагов НЕ обнуляем - продолжаем игру
-            saveProgress();
-            
-            const nextRoom = getCurrentRoom();
-            if (nextRoom && nextRoom.isBoss) {
-                // Следующее задание - босс, спавним его
-                spawnBoss(curLevel);
-            }
-            
-            // Открываем магазин после задания "Защита" (индекс 2) в обучении
-            if(curLevel === 1 && curRoomInLevel === 2 && !paused) toggleShop(true); 
-            updateMission();
-        }
-    }
-    
-    // Спавн босса при входе в задание босса
-    if (room.isBoss && !entities.boss) {
-        spawnBoss(curLevel);
-        missionProgress = 0; // Сбрасываем прогресс для босса
-    }
-    
-    // Специальные проверки для обучения (уровень 1)
-    if (curLevel === 1) {
-        if (curRoomInLevel === 0 && missionProgress >= 1) {
-            // Первое задание - съесть байт (проверяется в update при сборе еды)
-            curRoomInLevel++;
-            missionProgress = 0;
-            updateMission();
-        } else if (curRoomInLevel === 1 && missionProgress >= 1) {
-            // Второе задание - убить врага головой (проверяется в update)
-            curRoomInLevel++;
-            missionProgress = 0;
-            updateMission();
-        } else if (curRoomInLevel === 2 && score >= 1200) {
-            // Третье задание - собрать 1200 CR
-            curRoomInLevel++;
-            missionProgress = 0;
-            if(!paused) toggleShop(true);
-            updateMission();
-        } else if (curRoomInLevel === 3 && entities.turrets.length > 0) {
-            // Четвертое задание - купить пушку
-            curRoomInLevel++;
-            missionProgress = 0;
-            updateMission();
-        } else if (curRoomInLevel === 4 && missionProgress >= 1) {
-            // Пятое задание - зарядить у ядра (проверяется в update)
-            curRoomInLevel++;
-            missionProgress = 0;
-            updateMission();
-        }
-    }
-}
-
-/** --- МАГАЗИН И ОБНОВЛЕНИЕ UI --- */
-function buyUpgrade(type, cost) {
-    if (score < cost) return;
-    
-    // Добавляем анимацию кнопки покупки
-    const shopItems = document.querySelectorAll('.shop-item');
-    shopItems.forEach(item => {
-        if (item.getAttribute('onclick').includes(type)) {
-            // Убираем предыдущий класс если есть
-            item.classList.remove('purchased');
-            // Принудительно перезапускаем анимацию
-            void item.offsetWidth; // Trigger reflow
-            // Добавляем класс для анимации
-            item.classList.add('purchased');
+    entities.playerBases.forEach(base => {
+        const dist = Math.hypot(x - base.x, y - base.y);
+        if (dist < minDist) {
+            minDist = dist;
+            nearestBase = base;
         }
     });
     
-    if (type === 'turret') {
+    return nearestBase;
+}
+
+function createParticles(x, y, color, count) {
+    if (entities.particles.length > 50) return;
+    for(let i=0; i<count; i++) {
+        entities.particles.push({ x, y, color, vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25, life: 1.0 });
+    }
+}
+
+/** --- ЗАПУСК ИГРЫ --- */
+function startGame(newGame) {
+    if(started) return;
+    started = true;
+    paused = false;
+    
+    if(newGame) {
+        // Новая игра - сброс всех параметров
+        curLevel = 1;
+        curRoomInLevel = 0;
+        missionProgress = 0;
+        score = 0;
+        baseAmmo = 100;
+        lives = 3;
+        snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
+        entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
+        gameStartTime = Date.now();
+        totalPlayTime = 0;
+        lastPauseTime = 0;
+        maxAmmoCapacity = 9;
+        ammoUpgradeLevel = 0;
+        boltAmmoUpgradeLevel = 0;
+        laserAmmoUpgradeLevel = 0;
+        fireRateUpgradeLevel = 0;
+        rangeUpgradeLevel = 0;
+        
+        // Начальная миссия
+        missionProgress = 0;
+    } else {
+        // Загрузка прогресса
+        if(!loadProgress()) {
+            // Если загрузка не удалась, начинаем новую игру
+            startGame(true);
+            return;
+        }
+    }
+    
+    // Инициализация начальных сущностей
+    for(let i = 0; i < 5; i++) spawnFood();
+    
+    // Сразу запускаем игровой цикл
+    gameId = requestAnimationFrame(gameLoop);
+    
+    // Скрываем все экраны
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.add('hidden');
+    document.getElementById('shop-modal').classList.add('hidden');
+    
+    updateUI();
+}
+
+/** --- УПРАВЛЕНИЕ ЗВУКАМИ ИГРЫ ДЛЯ ПЛАТНЫХ ПОЛЬЗОВАТЕЛЕЙ --- */
+function updateEtherNoise() {
+    const etherNoise = document.getElementById('ether-noise');
+    if (!etherNoise) return;
+    
+    // Платные пользователи могут включать звуки без ограничений
+    if (window.isPaidUser && started && !paused) {
+        // Включаем шум эфира для платных пользователей без ограничения по заряду
+        if (!etherNoisePlaying) {
+            etherNoise.volume = 0.5; // 50% громкости
+            etherNoise.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+            etherNoisePlaying = true;
+        }
+    } else {
+        // Выключаем шум для бесплатных пользователей или при паузе
+        if (etherNoisePlaying) {
+            etherNoise.pause();
+            etherNoise.currentTime = 0;
+            etherNoisePlaying = false;
+        }
+    }
+}
+
+// ФУНКЦИЯ ДЛЯ ВНЕШНЕГО УПРАВЛЕНИЯ ПЛАТНЫМ ПОЛЬЗОВАТЕЛЕМ
+// Вызывается из Android приложения для управления звуками игры
+window.setPaidUser = function(isPaid) {
+    window.isPaidUser = Boolean(isPaid);
+    console.log("Статус платного пользователя изменен:", window.isPaidUser);
+    // Сразу обновляем состояние звуков
+    updateEtherNoise();
+};
+
+/** --- ОСНОВНЫЕ ФУНКЦИИ ИГРЫ --- */
+function updateUI() {
+    const bar = document.getElementById('signal-bar');
+    if (bar) {
+        bar.style.width = baseAmmo + '%';
+        bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
+    }
+    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
+    if(sv) sv.innerText = Math.floor(score);
+    if(sc) sc.innerText = Math.floor(score);
+    if(lv) lv.innerText = lives;
+    
+    // Обновляем время игры
+    const playTimeElement = document.getElementById('play-time');
+    if (playTimeElement) {
+        const minutes = Math.floor(totalPlayTime / 60);
+        const seconds = Math.floor(totalPlayTime % 60);
+        playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Управление звуком шума эфира
+    updateEtherNoise();
+    
+    const bossBox = document.getElementById('boss-info');
+    const bossStrength = document.getElementById('boss-strength');
+    const bossHp = document.getElementById('boss-hp');
+    if (entities.boss && bossBox && bossStrength && bossHp) {
+        bossBox.style.display = 'block';
+        bossStrength.innerText = 'Lv.' + (entities.boss.level||curLevel);
+        bossHp.innerText = 'HP: ' + Math.round(entities.boss.health) + ' / ' + Math.round(entities.boss.maxHealth);
+    } else if (bossBox) {
+        bossBox.style.display = 'none';
+    }
+}
+
+function buyUpgrade(type, cost) {
+    if(!started || paused) return;
+    if(score < cost) {
+        // Недостаточно средств - визуальная обратная связь
+        const shopContent = document.querySelector('.shop-content');
+        if(shopContent) {
+            shopContent.style.animation = 'shake 0.3s';
+            setTimeout(() => shopContent.style.animation = '', 300);
+        }
+        return;
+    }
+    
+    if(type === 'turret') {
         score -= cost;
-        
-        // Находим ближайшую базу к змею
-        let nearestBase = BASE_POS;
-        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
-        
-        entities.playerBases.forEach(base => {
-            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestBase = base;
-            }
-        });
-        
-        // Размещаем турель равномерно вокруг ближайшей базы
-        const turretCount = entities.turrets.filter(t => 
-            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
-        ).length;
-        const angle = (turretCount / 8) * 6.28; // 8 турелей вокруг базы
-        const dist = 165;
-        const turretX = nearestBase.x + Math.cos(angle) * dist;
-        const turretY = nearestBase.y + Math.sin(angle) * dist;
-        
+        const ang = Math.random() * 6.28;
+        const nearestBase = findNearestBase(snake.x, snake.y);
         entities.turrets.push({ 
-            x: turretX, 
-            y: turretY, 
+            x: nearestBase.x + Math.cos(ang)*165, 
+            y: nearestBase.y + Math.sin(ang)*165, 
             type: 'bolt', 
             lastShot: 0,
-            currentAmmo: 9, // Индивидуальный заряд турели
-            maxAmmo: 9, // Максимальный заряд турели
+            currentAmmo: 9, // Новая турель с полным боезапасом
+            maxAmmo: 9,
             ammoBonus: 0,
             ammoUpgraded: false,
             baseX: nearestBase.x,
             baseY: nearestBase.y,
-            fireRateBonus: 0, // Бонус к скорострельности
-            rangeBonus: 0 // Бонус к дальности
+            fireRateBonus: 0,
+            rangeBonus: 0
         });
-        
-        // Сохраняем прогресс при покупке турели (если игрок не погиб)
         if(lives > 0) saveProgress();
-    } else if (type === 'laser') {
-        let t = entities.turrets.find(t => t.type === 'bolt');
-        if (t) { 
-            score -= cost; 
-            t.type = 'laser'; 
-            // Сбрасываем боезапас лазера на 9 выстрелов при преобразовании
-            t.currentAmmo = 9;
-            t.maxAmmo = 9;
+    } else if(type === 'laser') {
+        score -= cost;
+        const ang = Math.random() * 6.28;
+        const nearestBase = findNearestBase(snake.x, snake.y);
+        entities.turrets.push({ 
+            x: nearestBase.x + Math.cos(ang)*165, 
+            y: nearestBase.y + Math.sin(ang)*165, 
+            type: 'laser', 
+            lastShot: 0,
+            currentAmmo: 9, // Новый лазер с полным боезапасом
+            maxAmmo: 9,
+            ammoBonus: 0,
+            ammoUpgraded: false,
+            baseX: nearestBase.x,
+            baseY: nearestBase.y,
+            fireRateBonus: 0,
+            rangeBonus: 0
+        });
+        if(lives > 0) saveProgress();
+    } else if(type === 'drone') {
+        score -= cost;
+        entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40 });
+        if(lives > 0) saveProgress();
+    } else if(type === 'fix') {
+        score -= cost;
+        lives = Math.min(5, lives + 1);
+        if(lives > 0) saveProgress();
+    } else if(type === 'base') {
+        score -= cost;
+        // Находим свободное место для новой базы
+        let placed = false;
+        let attempts = 0;
+        while(!placed && attempts < 50) {
+            const angle = Math.random() * 6.28;
+            const dist = 800 + Math.random() * 1000; // База на расстоянии 800-1800 от центра
+            const baseX = BASE_POS.x + Math.cos(angle) * dist;
+            const baseY = BASE_POS.y + Math.sin(angle) * dist;
+            
+            // Проверяем что не слишком близко к другим базам
+            let tooClose = false;
+            entities.playerBases.forEach(existingBase => {
+                if(Math.hypot(baseX - existingBase.x, baseY - existingBase.y) < 600) {
+                    tooClose = true;
+                }
+            });
+            
+            if(!tooClose) {
+                entities.playerBases.push({
+                    x: baseX,
+                    y: baseY,
+                    health: 100,
+                    maxHealth: 100,
+                    turrets: []
+                });
+                placed = true;
+                if(lives > 0) saveProgress();
+            }
+            attempts++;
         }
-        if(lives > 0) saveProgress();
-    } else if (type === 'drone') {
-        score -= cost;
-        entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40, collisions: 0 });
-        if(lives > 0) saveProgress();
-    } else if (type === 'fix') {
-        if (lives < 3) { score -= cost; lives++; }
-        if(lives > 0) saveProgress();
-    } else if (type === 'base') {
-        // Покупка дополнительной базы на месте змея
-        score -= cost;
-        entities.playerBases.push({
-            x: snake.x,
-            y: snake.y,
-            health: 100,
-            maxHealth: 100,
-            turrets: []
-        });
-        if(lives > 0) saveProgress();
-    } else if (type === 'ammo-bolt') {
+        
+        if(!placed) {
+            // Если не удалось разместить, возвращаем деньги
+            score += cost;
+        }
+    } else if(type === 'ammo-bolt') {
         // Модернизация боезапаса одной пушки на 20%
         score -= cost;
         
@@ -873,7 +738,7 @@ function buyUpgrade(type, cost) {
         }
         
         if(lives > 0) saveProgress();
-    } else if (type === 'ammo-laser') {
+    } else if(type === 'ammo-laser') {
         // Модернизация боезапаса одного лазера на 20%
         score -= cost;
         
@@ -905,7 +770,7 @@ function buyUpgrade(type, cost) {
         }
         
         if(lives > 0) saveProgress();
-    } else if (type === 'fireRate-bolt') {
+    } else if(type === 'fireRate-bolt') {
         // Модернизация скорострельности одной пушки на 33%
         score -= cost;
         
@@ -936,7 +801,7 @@ function buyUpgrade(type, cost) {
         }
         
         if(lives > 0) saveProgress();
-    } else if (type === 'fireRate-laser') {
+    } else if(type === 'fireRate-laser') {
         // Модернизация скорострельности одного лазера на 33%
         score -= cost;
         
@@ -967,7 +832,7 @@ function buyUpgrade(type, cost) {
         }
         
         if(lives > 0) saveProgress();
-    } else if (type === 'range-bolt') {
+    } else if(type === 'range-bolt') {
         // Модернизация дальности одной пушки на 33%
         score -= cost;
         
@@ -998,7 +863,7 @@ function buyUpgrade(type, cost) {
         }
         
         if(lives > 0) saveProgress();
-    } else if (type === 'range-laser') {
+    } else if(type === 'range-laser') {
         // Модернизация дальности одного лазера на 33%
         score -= cost;
         
@@ -1031,167 +896,6 @@ function buyUpgrade(type, cost) {
         if(lives > 0) saveProgress();
     }
     updateUI();
-}
-function updateUI() {
-    const bar = document.getElementById('signal-bar');
-    if (bar) {
-        bar.style.width = baseAmmo + '%';
-        bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
-    }
-    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
-    if(sv) sv.innerText = Math.floor(score);
-    if(sc) sc.innerText = Math.floor(score);
-    if(lv) lv.innerText = lives;
-    
-    // Обновляем время игры
-    const playTimeElement = document.getElementById('play-time');
-    if (playTimeElement) {
-        const minutes = Math.floor(totalPlayTime / 60);
-        const seconds = Math.floor(totalPlayTime % 60);
-        playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    
-    // Управление звуком шума эфира
-    updateEtherNoise();
-    const bossBox = document.getElementById('boss-info');
-    const bossStrength = document.getElementById('boss-strength');
-    const bossHp = document.getElementById('boss-hp');
-    if (entities.boss && bossBox && bossStrength && bossHp) {
-        bossBox.style.display = 'block';
-        bossStrength.innerText = 'Lv.' + (entities.boss.level||curLevel);
-        bossHp.innerText = 'HP: ' + Math.round(entities.boss.health) + ' / ' + Math.round(entities.boss.maxHealth);
-    } else if (bossBox) {
-        bossBox.style.display = 'none';
-    }
-}
-
-/** --- ГЕНЕРАТОРЫ --- */
-function spawnEnemy() {
-    const side = Math.floor(Math.random() * 4);
-    let x, y;
-    if(side===0) {x=Math.random()*WORLD_SIZE; y=-250;}
-    else if(side===1) {x=WORLD_SIZE+250; y=Math.random()*WORLD_SIZE;}
-    else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+250;}
-    else {x=-250; y=Math.random()*WORLD_SIZE;}
-    const isTri = Math.random() > 0.75;
-    entities.enemies.push({ x, y, speed: isTri ? 3.5 : 1.7, type: isTri ? 'tri' : 'box' });
-}
-
-function spawnFood() {
-    entities.food.push({ x: 500+Math.random()*(WORLD_SIZE-1000), y: 500+Math.random()*(WORLD_SIZE-1000) });
-}
-
-function spawnBoss(level) {
-    // Спавн босса (базы врага) в случайном месте на краю карты
-    const side = Math.floor(Math.random() * 4);
-    let x, y;
-    if(side === 0) { x = Math.random() * WORLD_SIZE; y = 200; }
-    else if(side === 1) { x = WORLD_SIZE - 200; y = Math.random() * WORLD_SIZE; }
-    else if(side === 2) { x = Math.random() * WORLD_SIZE; y = WORLD_SIZE - 200; }
-    else { x = 200; y = Math.random() * WORLD_SIZE; }
-    
-    // Мощь и здоровье базы врага зависят от уровня
-    const baseHealth = 150 + level * 100;
-    const baseSize = 90 + level * 15;
-    
-    entities.boss = {
-        x, y,
-        health: baseHealth,
-        maxHealth: baseHealth,
-        size: baseSize,
-        level: level
-    };
-    
-    // Спавн только турелей вокруг базы врага (количество зависит от уровня)
-    entities.bossTowers = [];
-    const turretCount = 5 + Math.floor(level / 2); // Увеличиваем количество турелей
-    
-    // Турели базы врага (стреляют в змею)
-    for(let i = 0; i < turretCount; i++) {
-        const angle = (i / turretCount) * 6.28;
-        const dist = 150 + Math.random() * 50; // Случайное расстояние для разнообразия
-        entities.bossTowers.push({
-            x: x + Math.cos(angle) * dist,
-            y: y + Math.sin(angle) * dist,
-            lastShot: Date.now(), // Устанавливаем текущее время, чтобы турели не стреляли сразу
-            type: 'turret' // Только турели, без башен
-        });
-    }
-}
-
-function createParticles(x, y, color, count) {
-    if (entities.particles.length > 50) return;
-    for(let i=0; i<count; i++) {
-        entities.particles.push({ x, y, color, vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25, life: 1.0 });
-    }
-}
-
-function gameOver() {
-    started = false;
-    if(window.ammoTick) clearInterval(window.ammoTick);
-    
-    // Обнуляем счет при смерти
-    score = 0;
-    
-    document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Уровней пройдено: " + (curLevel - 1) + " | Собрано данных: " + Math.floor(score);
-}
-
-/** --- ДЖОЙСТИК --- */
-function initJoystick() {
-    const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
-    let active = false;
-    const handle = (e) => {
-        if(!active) return;
-        const t = e.touches ? e.touches[0] : e;
-        const r = zone.getBoundingClientRect();
-        const cX = r.left + r.width/2, cY = r.top + r.height/2;
-        let dx = t.clientX - cX, dy = t.clientY - cY;
-        const dist = Math.min(r.width/2, Math.hypot(dx, dy)), ang = Math.atan2(dy, dx);
-        stick.style.left = `calc(50% + ${Math.cos(ang)*dist}px)`;
-        stick.style.top = `calc(50% + ${Math.sin(ang)*dist}px)`;
-        input.x = Math.cos(ang); input.y = Math.sin(ang);
-    };
-    zone.addEventListener('touchstart', e => { active = true; handle(e); e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchmove', e => { if(active) { handle(e); e.preventDefault(); } }, {passive: false});
-    window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
-    
-    // Обработчики для центральной кнопки паузы
-    const centerBtn = document.getElementById('pause-btn-center-inner');
-    if (centerBtn) {
-        centerBtn.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
-            if (paused && started) {
-                paused = false;
-                const centerBtnContainer = document.getElementById('pause-btn-center');
-                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
-                
-                // Обновляем иконку паузы в верхнем углу
-                const pIcon = document.getElementById('pause-icon');
-                if (pIcon) pIcon.className = 'fas fa-pause';
-                
-                // Запускаем игровой цикл
-                gameId = requestAnimationFrame(gameLoop);
-            }
-        }, {passive: false});
-        
-        centerBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
-            if (paused && started) {
-                paused = false;
-                const centerBtnContainer = document.getElementById('pause-btn-center');
-                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
-                
-                // Обновляем иконку паузы в верхнем углу
-                const pIcon = document.getElementById('pause-icon');
-                if (pIcon) pIcon.className = 'fas fa-pause';
-                
-        });
-    }
 }
 
 /** --- ОБНОВЛЕНИЕ (UPDATE) --- */
@@ -1245,7 +949,7 @@ function update() {
         );
         
         if(nearbyTurrets.length > 0 || nearbyDrones.length > 0) {
-            // Уменьшаем хвост змеи для пополнения турелей и дронов
+            // Уменьшаем хвост змея для пополнения турелей и дронов
             snake.length -= 0.5;
             while(snake.segments.length > snake.length) snake.segments.pop();
             
@@ -1400,126 +1104,116 @@ function update() {
                 snake.length = Math.max(5, snake.length - 80);
                 while(snake.segments.length > snake.length) snake.segments.pop();
                 createParticles(seg.x, seg.y, 'red', 10);
-                entities.enemies.splice(i,1);
-                if(lives <= 0) { gameOver(); return; }
-                lives--;
+                entities.enemies.splice(i, 1);
                 updateUI();
-                return;
+                break;
             }
         }
+        // Поиск ближайшей цели (основная база или дополнительные базы)
+        let targetX = BASE_POS.x;
+        let targetY = BASE_POS.y;
+        let minDist = Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y);
         
-        // Урон врагам от змеи (головой)
-        if(Math.hypot(en.x - snake.x, en.y - snake.y) < 40) {
-            if(en.type === 'box') {
-                // Квадраты (Осколки) - голова змеи получает +2 к длине
-                snake.length += 2;
-                missionProgress++; // Убийство врага головой засчитывается в миссию
-            } else {
-                // Треугольники (Векторы) - голова змеи получает +1 к длине
-                snake.length += 1;
+        // Проверяем все дополнительные базы
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(en.x - base.x, en.y - base.y);
+            if (dist < minDist) {
+                minDist = dist;
+                targetX = base.x;
+                targetY = base.y;
             }
-            createParticles(en.x, en.y, en.type === 'tri' ? 'yellow' : 'red', 8);
-            entities.enemies.splice(i,1);
-            score += 4; updateUI();
-        }
-    });
-
-    // 8. Еда (байты данных)
-    entities.food.forEach((f, i) => {
-        if(Math.hypot(f.x - snake.x, f.y - snake.y) < 35) {
-            entities.food.splice(i,1);
-            snake.length += 3;
-            score += 2; updateUI();
-            // Первое задание обучения - съесть байт
-            if(curLevel === 1 && curRoomInLevel === 0) {
-                missionProgress = 1;
+        });
+        
+        const ang = Math.atan2(targetY - en.y, targetX - en.x);
+        en.x += Math.cos(ang) * en.speed;
+        en.y += Math.sin(ang) * en.speed;
+        
+        // Проверка столкновения с базой
+        if(Math.hypot(en.x - targetX, en.y - targetY) < 60) {
+            entities.playerBases.forEach(base => {
+                if(Math.hypot(en.x - base.x, en.y - base.y) < 60) {
+                    base.health -= 0.5;
+                    createParticles(base.x, base.y, 'red', 5);
+                    if(base.health <= 0) {
+                        // База уничтожена
+                        createParticles(base.x, base.y, 'orange', 20);
+                        // Удаляем все турели у этой базы
+                        entities.turrets = entities.turrets.filter(t => 
+                            Math.hypot(t.x - base.x, t.y - base.y) > 250
+                        );
+                    }
+                }
+            });
+            
+            // Урон по основной базе
+            if(Math.hypot(en.x - BASE_POS.x, en.y - BASE_POS.y) < 60) {
+                baseAmmo = Math.max(0, baseAmmo - 0.5);
+                createParticles(BASE_POS.x, BASE_POS.y, 'red', 5);
             }
-        }
-    });
-
-    // 9. Обломки (дроп с врагов)
-    entities.loot.forEach((l, i) => {
-        if(l.dieTime < Date.now()) { entities.loot.splice(i,1); }
-        else if(Math.hypot(l.x - snake.x, l.y - snake.y) < 35) {
-            entities.loot.splice(i,1);
-            score += 20; updateUI();
-        }
-    });
-
-    // 10. Башни босса стреляют в змею
-    entities.bossTowers.forEach(tower => {
-        if (Date.now() - tower.lastShot > 1500) {
-            const a = Math.atan2(snake.y - tower.y, snake.x - tower.x);
-            entities.bullets.push({x: tower.x, y: tower.y, vx: Math.cos(a)*12, vy: Math.sin(a)*12, isBoss: true});
-            tower.lastShot = Date.now();
-        }
-    });
-
-    // 11. Снаряды босса наносят урон змею
-    entities.bullets.forEach((b, i) => {
-        if(b.isBoss && Math.hypot(b.x - snake.x, b.y - snake.y) < 35) {
-            snake.length = Math.max(5, snake.length - 40);
-            while(snake.segments.length > snake.length) snake.segments.pop();
-            createParticles(snake.x, snake.y, 'purple', 12);
-            entities.bullets.splice(i,1);
-            if(lives <= 0) { gameOver(); return; }
-            lives--;
+            
+            entities.enemies.splice(i, 1);
             updateUI();
         }
     });
 
-    // 12. Проверка смерти босса
-    if(entities.boss) {
-        // Урон боссу от пуль змеи (только если есть турели)
-        entities.bullets.forEach((b, bi) => {
-            if(!b.isBoss && Math.hypot(b.x - entities.boss.x, b.y - entities.boss.y) < entities.boss.size) {
-                entities.boss.health -= 10;
-                createParticles(b.x, b.y, 'purple', 5);
-                entities.bullets.splice(bi,1);
-                if(entities.boss.health <= 0) {
-                    createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
-                    entities.boss = null;
-                    entities.bossTowers = [];
-                    score += 500; updateUI();
-                    missionProgress = 1; // Босс убит
-                }
+    // 8. Проверка столкновений снарядов с врагами
+    entities.bullets.forEach((b, i) => {
+        entities.enemies.forEach((en, ei) => {
+            if(Math.hypot(b.x - en.x, b.y - en.y) < 35) {
+                entities.bullets.splice(i, 1);
+                entities.enemies.splice(ei, 1);
+                entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
+                score += en.type === 'tri' ? 6 : 3;
+                createParticles(en.x, en.y, 'yellow', 8);
+                updateUI();
             }
         });
-    }
-}
+    });
 
-/** --- ОТСЧЕТ ВРЕМЕНИ ИГРЫ --- */
-function updatePlayTime() {
-    if(started && !paused) {
-        totalPlayTime += 1/60; // Добавляем 1/60 секунды за каждый кадр (60 FPS)
-    }
-}
+    // 9. Сбор лута
+    entities.loot.forEach((l, i) => {
+        if(Date.now() > l.dieTime) { entities.loot.splice(i, 1); return; }
+        if(Math.hypot(snake.x - l.x, snake.y - l.y) < 35) {
+            entities.loot.splice(i, 1);
+            score += 2;
+            snake.length = Math.min(100, snake.length + 2);
+            createParticles(l.x, l.y, 'var(--neon-blue)', 5);
+            updateUI();
+        }
+    });
 
-function findNearestBase(x, y) {
-    let nearestBase = BASE_POS;
-    let minDist = Math.hypot(x - BASE_POS.x, y - BASE_POS.y);
-    
+    // 10. Проверка столкновения змеи с едой
+    entities.food.forEach((f, i) => {
+        if(Math.hypot(snake.x - f.x, snake.y - f.y) < 35) {
+            entities.food.splice(i, 1);
+            snake.length = Math.min(100, snake.length + 3);
+            score += 1;
+            createParticles(f.x, f.y, 'var(--neon-green)', 5);
+            updateUI();
+        }
+    });
+
+    // 11. Проверка здоровья базы
     entities.playerBases.forEach(base => {
-        const dist = Math.hypot(x - base.x, y - base.y);
-        if (dist < minDist) {
-            minDist = dist;
-            nearestBase = base;
+        if(base.health <= 0) {
+            createParticles(base.x, base.y, 'orange', 20);
+            // Удаляем турели у уничтоженной базы
+            entities.turrets = entities.turrets.filter(t => 
+                Math.hypot(t.x - base.x, t.y - base.y) > 250
+            );
         }
     });
     
-    return nearestBase;
+    // Удаляем уничтоженные базы
+    entities.playerBases = entities.playerBases.filter(base => base.health > 0);
+
+    // 12. Проверка Game Over
+    if(baseAmmo <= 0 || snake.length < 5) {
+        gameOver();
+    }
 }
 
-/** --- ГЛАВНЫЙ ЦИКЛ ИГРЫ --- */
-function gameLoop() {
-    if(!started || paused) return;
-    update();
-    updatePlayTime();
-    render();
-    gameId = requestAnimationFrame(gameLoop);
-}
-
-/** --- РЕНДЕРИНГ --- */
+/** --- РЕНДЕР --- */
 function render() {
     if(!ctx) return;
     ctx.fillStyle = '#05050f';
@@ -1528,106 +1222,122 @@ function render() {
     ctx.translate(-camera.x * ZOOM, -camera.y * ZOOM);
     ctx.scale(ZOOM, ZOOM);
 
-    // 1. Сетка мира
+    // Сетка
     ctx.strokeStyle = 'rgba(0, 243, 255, 0.05)';
     ctx.lineWidth = 1;
-    for(let i = 0; i <= WORLD_SIZE; i += 250) {
+    for(let x = 0; x < WORLD_SIZE; x += 100) {
         ctx.beginPath();
-        ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE);
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WORLD_SIZE);
         ctx.stroke();
+    }
+    for(let y = 0; y < WORLD_SIZE; y += 100) {
         ctx.beginPath();
-        ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i);
+        ctx.moveTo(0, y);
+        ctx.lineTo(WORLD_SIZE, y);
         ctx.stroke();
     }
 
-    // 2. Ядро базы
-    ctx.fillStyle = 'rgba(0, 243, 255, 0.2)';
+    // Ядро базы
+    const gradient = ctx.createRadialGradient(BASE_POS.x, BASE_POS.y, 0, BASE_POS.x, BASE_POS.y, 80);
+    gradient.addColorStop(0, 'rgba(57, 255, 20, 0.8)');
+    gradient.addColorStop(0.5, 'rgba(57, 255, 20, 0.3)');
+    gradient.addColorStop(1, 'rgba(57, 255, 20, 0.1)');
+    ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(BASE_POS.x, BASE_POS.y, 80, 0, 6.28);
     ctx.fill();
-    ctx.strokeStyle = 'var(--neon-blue)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    
+    // Внутреннее свечение ядра
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(BASE_POS.x, BASE_POS.y, 25, 0, 6.28);
+    ctx.fill();
 
-    // 3. Дополнительные базы игрока
+    // Дополнительные базы игрока
     entities.playerBases.forEach(base => {
-        ctx.fillStyle = 'rgba(57, 255, 20, 0.15)';
+        // Основа базы
+        const baseGradient = ctx.createRadialGradient(base.x, base.y, 0, base.x, base.y, 60);
+        baseGradient.addColorStop(0, 'rgba(0, 243, 255, 0.6)');
+        baseGradient.addColorStop(0.5, 'rgba(0, 243, 255, 0.3)');
+        baseGradient.addColorStop(1, 'rgba(0, 243, 255, 0.1)');
+        ctx.fillStyle = baseGradient;
         ctx.beginPath();
         ctx.arc(base.x, base.y, 60, 0, 6.28);
         ctx.fill();
-        ctx.strokeStyle = 'var(--neon-green)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
         
-        // Полоска здоровья базы
+        // Индикатор здоровья
         const healthPercent = base.health / base.maxHealth;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(base.x - 30, base.y - 70, 60, 6);
-        ctx.fillStyle = healthPercent > 0.5 ? 'var(--neon-green)' : healthPercent > 0.25 ? 'var(--neon-gold)' : 'var(--neon-red)';
-        ctx.fillRect(base.x - 30, base.y - 70, 60 * healthPercent, 6);
+        ctx.fillStyle = healthPercent > 0.5 ? 'rgba(57, 255, 20, 0.8)' : 
+                         healthPercent > 0.25 ? 'rgba(255, 207, 0, 0.8)' : 
+                         'rgba(255, 0, 85, 0.8)';
+        ctx.beginPath();
+        ctx.arc(base.x, base.y, 15, 0, 6.28 * healthPercent);
+        ctx.lineTo(base.x, base.y);
+        ctx.fill();
     });
 
-    // 4. Турели
+    // Турели
     entities.turrets.forEach(t => {
-        ctx.save();
-        ctx.translate(t.x, t.y);
-        ctx.rotate(Date.now() * 0.001);
         ctx.fillStyle = t.type === 'bolt' ? '#39ff14' : '#ffcf00';
-        ctx.fillRect(-15, -15, 30, 30);
-        ctx.strokeStyle = t.type === 'bolt' ? '#39ff14' : '#ffcf00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-15, -15, 30, 30);
+        ctx.beginPath(); ctx.arc(t.x, t.y, 12, 0, 6.28); ctx.fill();
         
         // Индикатор заряда турели
         const ammoPercent = t.currentAmmo / (t.maxAmmo || 9);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(-20, -25, 40, 4);
-        ctx.fillStyle = ammoPercent > 0.5 ? 'var(--neon-green)' : ammoPercent > 0.25 ? 'var(--neon-gold)' : 'var(--neon-red)';
-        ctx.fillRect(-20, -25, 40 * ammoPercent, 4);
+        ctx.fillStyle = ammoPercent > 0.3 ? 'rgba(57, 255, 20, 0.8)' : 'rgba(255, 0, 85, 0.8)';
+        ctx.fillRect(t.x - 15, t.y - 20, 30 * ammoPercent, 3);
         
-        // Лазеры
-        if(t.type === 'laser' && t.activeLaser && Date.now() < t.activeLaser.time) {
-            ctx.strokeStyle = 'rgba(255, 207, 0, 0.8)';
-            ctx.lineWidth = 3;
+        // Апгрейды - визуальные индикаторы
+        if(t.ammoUpgraded) {
+            ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(t.x, t.y, 16, 0, 6.28); ctx.stroke();
+        }
+        if(t.fireRateBonus && t.fireRateBonus > 0) {
+            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(t.x, t.y, 18, 0, 6.28); ctx.stroke();
+        }
+        if(t.rangeBonus && t.rangeBonus > 0) {
+            ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(t.x, t.y, 20, 0, 6.28); ctx.stroke();
+        }
+    });
+
+    // Лазеры
+    ctx.strokeStyle = '#ffcf00';
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ffcf00';
+    entities.turrets.forEach(t => {
+        if(t.activeLaser && Date.now() < t.activeLaser.time) {
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(t.activeLaser.x - t.x, t.activeLaser.y - t.y);
+            ctx.moveTo(t.x, t.y);
+            ctx.lineTo(t.activeLaser.x, t.activeLaser.y);
             ctx.stroke();
         }
-        ctx.restore();
     });
+    ctx.shadowBlur = 0;
 
-    // 5. Башни босса
-    entities.bossTowers.forEach(tower => {
-        ctx.fillStyle = '#bc13fe';
-        ctx.fillRect(tower.x - 12, tower.y - 12, 24, 24);
-        ctx.strokeStyle = '#bc13fe';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(tower.x - 12, tower.y - 12, 24, 24);
-    });
-
-    // 6. Босс
+    // Босс
     if(entities.boss) {
-        ctx.fillStyle = 'rgba(188, 19, 254, 0.3)';
+        const bossGradient = ctx.createRadialGradient(entities.boss.x, entities.boss.y, 0, entities.boss.x, entities.boss.y, entities.boss.size);
+        bossGradient.addColorStop(0, 'rgba(255, 0, 85, 0.9)');
+        bossGradient.addColorStop(0.5, 'rgba(255, 0, 85, 0.5)');
+        bossGradient.addColorStop(1, 'rgba(255, 0, 85, 0.2)');
+        ctx.fillStyle = bossGradient;
         ctx.beginPath();
         ctx.arc(entities.boss.x, entities.boss.y, entities.boss.size, 0, 6.28);
         ctx.fill();
-        ctx.strokeStyle = 'var(--neon-purple)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
         
-        // Полоска здоровья босса
-        const healthPercent = entities.boss.health / entities.boss.maxHealth;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(entities.boss.x - 50, entities.boss.y - entities.boss.size - 20, 100, 8);
-        ctx.fillStyle = healthPercent > 0.5 ? 'var(--neon-purple)' : healthPercent > 0.25 ? 'var(--neon-gold)' : 'var(--neon-red)';
-        ctx.fillRect(entities.boss.x - 50, entities.boss.y - entities.boss.size - 20, 100 * healthPercent, 8);
+        // Индикатор здоровья босса
+        const bossHealthPercent = entities.boss.health / entities.boss.maxHealth;
+        ctx.fillStyle = 'rgba(255, 0, 85, 0.8)';
+        ctx.fillRect(entities.boss.x - 40, entities.boss.y - entities.boss.size - 20, 80 * bossHealthPercent, 5);
     }
 
-    // 7. Снаряды
-    entities.bullets.forEach(b => {
-        ctx.fillStyle = b.isBoss ? '#bc13fe' : '#39ff14';
-        ctx.beginPath(); ctx.arc(b.x, b.y, 8, 0, 6.28); ctx.fill();
+    // Турели босса
+    entities.bossTowers.forEach(tower => {
+        ctx.fillStyle = '#ff0055';
+        ctx.beginPath(); ctx.arc(tower.x, tower.y, 8, 0, 6.28); ctx.fill();
         ctx.fillStyle = 'yellow';
     });
     ctx.fillStyle = '#00f3ff'; entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x, f.y, 22, 0, 6.28); ctx.fill(); });
@@ -1705,6 +1415,270 @@ function render() {
     });
     ctx.globalAlpha = 1.0; ctx.restore();
 }
+
+/** --- ГЕНЕРАТОРЫ --- */
+function spawnEnemy() {
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    if(side===0) {x=Math.random()*WORLD_SIZE; y=-250;}
+    else if(side===1) {x=WORLD_SIZE+250; y=Math.random()*WORLD_SIZE;}
+    else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+250;}
+    else {x=-250; y=Math.random()*WORLD_SIZE;}
+    const isTri = Math.random() > 0.75;
+    entities.enemies.push({ x, y, speed: isTri ? 3.5 : 1.7, type: isTri ? 'tri' : 'box' });
+}
+
+function spawnFood() {
+    entities.food.push({ x: 500+Math.random()*(WORLD_SIZE-1000), y: 500+Math.random()*(WORLD_SIZE-1000) });
+}
+
+function spawnBoss(level) {
+    // Спавн босса (базы врага) в случайном месте на краю карты
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    if(side === 0) { x = Math.random() * WORLD_SIZE; y = 200; }
+    else if(side === 1) { x = WORLD_SIZE - 200; y = Math.random() * WORLD_SIZE; }
+    else if(side === 2) { x = Math.random() * WORLD_SIZE; y = WORLD_SIZE - 200; }
+    else { x = 200; y = Math.random() * WORLD_SIZE; }
+    
+    // Мощь и здоровье базы врага зависят от уровня
+    const baseHealth = 150 + level * 100;
+    const baseSize = 90 + level * 15;
+    
+    entities.boss = {
+        x, y,
+        health: baseHealth,
+        maxHealth: baseHealth,
+        size: baseSize,
+        level: level
+    };
+    
+    // Спавн только турелей вокруг базы врага (количество зависит от уровня)
+    entities.bossTowers = [];
+    const turretCount = 5 + Math.floor(level / 2); // Увеличиваем количество турелей
+    
+    // Турели базы врага (стреляют в змею)
+    for(let i = 0; i < turretCount; i++) {
+        const angle = (i / turretCount) * 6.28;
+        const dist = 150 + Math.random() * 50; // Случайное расстояние для разнообразия
+        entities.bossTowers.push({
+            x: x + Math.cos(angle) * dist,
+            y: y + Math.sin(angle) * dist,
+            lastShot: Date.now(), // Устанавливаем текущее время, чтобы турели не стреляли сразу
+            type: 'turret' // Только турели, без башен
+        });
+    }
+}
+
+function gameOver() {
+    started = false;
+    if(window.ammoTick) clearInterval(window.ammoTick);
+    
+    // Обнуляем счет при смерти
+    score = 0;
+    
+    document.getElementById('game-over-screen').classList.remove('hidden');
+    document.getElementById('final-stats').innerText = "Уровней пройдено: " + (curLevel - 1) + " | Собрано данных: " + Math.floor(score);
+}
+
+/** --- ДЖОЙСТИК --- */
+function initJoystick() {
+    const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
+    let active = false;
+    const handle = (e) => {
+        if(!active) return;
+        const t = e.touches ? e.touches[0] : e;
+        const r = zone.getBoundingClientRect();
+        const cX = r.left + r.width/2, cY = r.top + r.height/2;
+        let dx = t.clientX - cX, dy = t.clientY - cY;
+        const dist = Math.min(r.width/2, Math.hypot(dx, dy)), ang = Math.atan2(dy, dx);
+        stick.style.left = `calc(50% + ${Math.cos(ang)*dist}px)`;
+        stick.style.top = `calc(50% + ${Math.sin(ang)*dist}px)`;
+        input.x = Math.cos(ang); input.y = Math.sin(ang);
+    };
+    zone.addEventListener('touchstart', e => { active = true; handle(e); e.preventDefault(); }, {passive: false});
+    window.addEventListener('touchmove', e => { if(active) { handle(e); e.preventDefault(); } }, {passive: false});
+    window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
+    
+    // Обработчики для центральной кнопки паузы
+    const centerBtn = document.getElementById('pause-btn-center-inner');
+    if (centerBtn) {
+        centerBtn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
+            if (paused && started) {
+                paused = false;
+                const centerBtnContainer = document.getElementById('pause-btn-center');
+                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
+                
+                // Обновляем иконку паузы в верхнем углу
+                const pIcon = document.getElementById('pause-icon');
+                if (pIcon) pIcon.className = 'fas fa-pause';
+                
+                // Запускаем игровой цикл
+                gameId = requestAnimationFrame(gameLoop);
+            }
+        }, {passive: false});
+        
+        centerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
+            if (paused && started) {
+                paused = false;
+                const centerBtnContainer = document.getElementById('pause-btn-center');
+                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
+                
+                // Обновляем иконку паузы в верхнем углу
+                const pIcon = document.getElementById('pause-icon');
+                if (pIcon) pIcon.className = 'fas fa-pause';
+                
+        });
+    }
+}
+
+/** --- МИССИИ И УРОВНИ --- */
+const missions = [
+    // Уровень 1 - Обучение
+    [
+        { title: "Сбор данных", desc: "Соберите 10 единиц данных", target: 10, type: "collect" },
+        { title: "Зарядка ядра", desc: "Зарядите ядро до 100%", target: 100, type: "ammo" },
+        { title: "Установка турели", desc: "Постройте 1 турель", target: 1, type: "turret" },
+        { title: "Пополнение боезапаса", desc: "Зарядите турели у ядра", target: 1, type: "recharge" },
+        { title: "Уничтожение врагов", desc: "Уничтожьте 5 врагов", target: 5, type: "kill" }
+    ],
+    // Уровень 2 - Базовая защита
+    [
+        { title: "Укрепление обороны", desc: "Постройте 3 турели", target: 3, type: "turret" },
+        { title: "Сбор ресурсов", desc: "Соберите 20 данных", target: 20, type: "collect" },
+        { title: "Боевые действия", desc: "Уничтожьте 10 врагов", target: 10, type: "kill" },
+        { title: "Дронная поддержка", desc: "Создайте 1 дрона", target: 1, type: "drone" },
+        { title: "Битва за эфир", desc: "Выживите 3 минуты", target: 180, type: "survive" }
+    ],
+    // Уровень 3 - Расширение
+    [
+        { title: "Многобазовая система", desc: "Постройте дополнительную базу", target: 1, type: "base" },
+        { title: "Лазерная защита", desc: "Постройте 2 лазера", target: 2, type: "laser" },
+        { title: "Ресурсная экспедиция", desc: "Соберите 30 данных", target: 30, type: "collect" },
+        { title: "Элитный отряд", desc: "Создайте 2 дрона", target: 2, type: "drone" },
+        { title: "Босс уровня", desc: "Уничтожьте базу врага", target: 1, type: "boss" }
+    ]
+];
+
+function getCurrentRoom() {
+    if(curLevel <= missions.length && curRoomInLevel < missions[curLevel-1].length) {
+        return missions[curLevel-1][curRoomInLevel];
+    }
+    return null;
+}
+
+function updateMission() {
+    const room = getCurrentRoom();
+    if(!room) return;
+    
+    const missionBox = document.getElementById('mission-box');
+    const missionTitle = document.getElementById('mission-title');
+    const missionText = document.getElementById('mission-text');
+    
+    if(missionBox && missionTitle && missionText) {
+        missionTitle.innerText = `УРОВЕНЬ ${curLevel}`;
+        missionText.innerText = room.desc;
+        missionBox.classList.remove('hidden');
+    }
+    
+    // Проверка выполнения задания
+    switch(room.type) {
+        case 'collect':
+            if(score >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'ammo':
+            if(baseAmmo >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'turret':
+            if(entities.turrets.filter(t => t.type === 'bolt').length >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'laser':
+            if(entities.turrets.filter(t => t.type === 'laser').length >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'drone':
+            if(entities.drones.length >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'base':
+            if(entities.playerBases.length >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'kill':
+            // Счетчик убийств нужно добавить отдельно
+            break;
+        case 'survive':
+            if(totalPlayTime >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'recharge':
+            // Проверка что турели были заряжены
+            const chargedTurrets = entities.turrets.filter(t => t.currentAmmo > 8);
+            if(chargedTurrets.length >= room.target) {
+                missionProgress = 1;
+            }
+            break;
+        case 'boss':
+            if(!entities.boss) {
+                missionProgress = 1;
+            }
+            break;
+    }
+    
+    // Переход к следующему заданию
+    if(missionProgress >= 1) {
+        curRoomInLevel++;
+        missionProgress = 0;
+        
+        // Проверка перехода на следующий уровень
+        if(curRoomInLevel >= missions[curLevel-1].length) {
+            curLevel++;
+            curRoomInLevel = 0;
+            
+            // Спавн босса на некоторых уровнях
+            if(curLevel === 3) {
+                spawnBoss(1);
+            } else if(curLevel === 4) {
+                spawnBoss(2);
+            }
+            
+            // Награда за прохождение уровня
+            score += 50 * curLevel;
+            lives = Math.min(5, lives + 1);
+            
+            if(lives > 0) saveProgress();
+        }
+        
+        updateUI();
+    }
+}
+
+/** --- ГЛАВНЫЙ ИГРОВОЙ ЦИКЛ --- */
+function gameLoop() {
+    if(!started || paused) return;
+    update();
+    render();
+    gameId = requestAnimationFrame(gameLoop);
+}
+
+// Запуск инициализации джойстика
+initJoystick();
 </script>
 </body>
 </html>
