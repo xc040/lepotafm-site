@@ -8,44 +8,42 @@ const CONFIG = {
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
 let isPlaying = false; 
-window.isPaidUser = false; // Глобальная переменная для игр
+// Глобальная переменная для статуса подписки (чтобы игра знала)
+window.isPaidUser = false; 
 
 window.onload = function() {
-    if (!isApp) {
-        audio.src = CONFIG.streamUrl;
-    } else {
-        // --- ИСПРАВЛЕНИЕ: Говорим Андроиду "Я тут, дай статус!" ---
-        if(window.Android.notifyPageLoaded) {
-            window.Android.notifyPageLoaded();
-        }
-    }
+    if (!isApp) audio.src = CONFIG.streamUrl;
     initPlayer();
     initVolume();
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-// --- ФУНКЦИЯ, КОТОРУЮ ВЫЗОВЕТ ANDROID В ОТВЕТ ---
+// --- ГЛАВНАЯ ФУНКЦИЯ СВЯЗИ С АНДРОИДОМ ---
+// Android вызывает её сам, когда загрузка завершена
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
-    console.log("Sync received: Playing=" + androidIsPlaying);
+    console.log("Sync from Android: Playing=" + androidIsPlaying + ", Paid=" + androidIsPaid);
     
-    // 1. Ставим статус оплаты
+    // 1. Сохраняем статус оплаты (для игры)
     window.isPaidUser = androidIsPaid;
 
-    // 2. Обновляем визуальный плеер
+    // 2. Синхронизируем плеер (Крутилку и Иконку)
     isPlaying = androidIsPlaying;
     
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
     
     if (isPlaying) {
+        // Если Андроид сказал, что музыка играет -> Включаем анимацию и иконку Паузы
         if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing'); // Добавляем класс вращения
+        if(playerDiv) playerDiv.classList.add('playing'); // Класс для вращения
     } else {
+        // Если тишина -> Стоп анимация и иконка Плей
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
     }
 };
+// -----------------------------------------
 
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -66,6 +64,7 @@ window.loadGame = function(gamePath) {
     if(frame) {
         const buster = gamePath.includes('?') ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
+        
         const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
