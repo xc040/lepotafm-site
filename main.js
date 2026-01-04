@@ -18,33 +18,28 @@ var stats = {
     gameOnlyTime: 0,  
     hybridTime: 0,    
     currentGame: "lobby",
-    isInternalPause: false // Пауза внутри игры
+    isInternalPause: false 
 };
 
-// Счётчик секунд (тикает каждую секунду)
+// Счётчик секунд
 setInterval(function() {
-    // УСЛОВИЕ: Мы реально играем, если: 
-    // 1. Выбрана игра (не lobby)
-    // 2. Мы на вкладке "home" (где игра)
-    // 3. В самой игре не нажата пауза
     var isHomeActive = document.getElementById('home').classList.contains('active');
     var isActuallyPlaying = (stats.currentGame !== "lobby" && isHomeActive && !stats.isInternalPause);
 
     if (isActuallyPlaying) {
         if (isPlaying) {
-            stats.hybridTime++; // Радио + Игра
+            stats.hybridTime++; 
         } else {
-            stats.gameOnlyTime++; // Только игра
+            stats.gameOnlyTime++; 
         }
     } else {
-        // Если мы в меню, в настройках или игра на паузе
         if (isPlaying) {
-            stats.radioOnlyTime++; // Только радио
+            stats.radioOnlyTime++; 
         }
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд (для теста)
+// Отправка данных каждые 15 секунд
 setInterval(sendStatsToServer, 15000);
 
 function sendStatsToServer() {
@@ -68,7 +63,6 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
-// Слушаем сообщения от игр (пауза)
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -115,27 +109,29 @@ window.openTab = function(tabName, btnElement) {
     var target = document.getElementById(tabName);
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
-
-    // Если ушли с вкладки Home — игра считается неактивной (будет капать только Радио)
-    // Но название игры currentGame мы НЕ стираем, чтобы вернуться к ней позже
 };
 
 window.loadGame = function(gamePath) {
-    // 1. Сначала определяем название игры
+    // УЛУЧШЕННАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ИМЕНИ ИГРЫ
     try {
-        var name = gamePath.split('/').pop().replace('.html', '');
-        stats.currentGame = name;
-        stats.isInternalPause = false; // Новая игра — без паузы
-        if (isApp) window.Android.updateActiveGame(name);
+        var parts = gamePath.split('/');
+        var fileName = parts.pop().replace('.html', '');
+        
+        // Если файл называется "index", берем название папки выше
+        if (fileName === 'index' && parts.length > 0) {
+            stats.currentGame = parts.pop();
+        } else {
+            stats.currentGame = fileName;
+        }
+
+        stats.isInternalPause = false;
+        if (isApp) window.Android.updateActiveGame(stats.currentGame);
     } catch(e) { stats.currentGame = "unknown"; }
 
-    // 2. Загружаем игру во фрейм
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        
-        // 3. Открываем вкладку с игрой
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -148,7 +144,6 @@ function initPlayer() {
 
 function togglePlayState() {
     var slider = document.getElementById('vol-slider');
-
     if (isApp && window.Android) {
         if (isPlaying) {
             window.Android.pauseAudio();
