@@ -1,8 +1,8 @@
 const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // СЮДА ВСТАВЬ СВОЮ ССЫЛКУ ИЗ ГУГЛА:
-    statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec", 
+    // ТВОЯ ССЫЛКА НА GOOGLE SCRIPT
+    statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
 };
@@ -12,31 +12,34 @@ let audio = new Audio();
 let isPlaying = false; 
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ ---
+// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
 let stats = {
-    radioOnlyTime: 0, 
-    gameOnlyTime: 0,  
-    hybridTime: 0,    
+    radioOnlyTime: 0, // Слушает в лобби
+    gameOnlyTime: 0,  // Играет без музыки
+    hybridTime: 0,    // И играет, и слушает
     currentGame: "lobby" 
 };
 
+// Тикаем каждую секунду и копим время
 setInterval(() => {
-    if (stats.currentGame === "lobby" && isPlaying) {
-        stats.radioOnlyTime++;
-    } else if (stats.currentGame !== "lobby" && !isPlaying) {
-        stats.gameOnlyTime++;
-    } else if (stats.currentGame !== "lobby" && isPlaying) {
-        stats.hybridTime++;
+    if (stats.currentGame === "lobby") {
+        if (isPlaying) stats.radioOnlyTime++;
+    } else {
+        if (isPlaying) {
+            stats.hybridTime++;
+        } else {
+            stats.gameOnlyTime++;
+        }
     }
 }, 1000);
 
-// Отправка данных раз в минуту
+// Отправка данных в Google Таблицу раз в минуту
 setInterval(sendBeacon, 60000);
 
 function sendBeacon() {
+    // Если активности не было - не шлем пустые данные
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    // Подготовка параметров
     const params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
         game_only: stats.gameOnlyTime,
@@ -45,20 +48,20 @@ function sendBeacon() {
         user_type: window.isPaidUser ? 'paid' : 'free'
     });
 
-    // Отправка через fetch (самый надежный метод для Google)
+    // Отправка через fetch в режиме no-cors для Google Scripts
     fetch(CONFIG.statsUrl, {
         method: 'POST',
-        mode: 'no-cors', 
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
     }).then(() => {
-        // Сброс счетчиков
+        // После успешной отправки сбрасываем счетчики
         stats.radioOnlyTime = 0;
         stats.gameOnlyTime = 0;
         stats.hybridTime = 0;
-    }).catch(e => console.log("Stats error"));
+    }).catch(e => console.log("Stats update"));
 }
-// ---------------------------
+// --------------------------------
 
 window.onload = function() {
     if (!isApp) {
@@ -74,9 +77,10 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
+// СИНХРОНИЗАЦИЯ С АНДРОИДОМ
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
-    isPlaying = androidIsPlaying; 
+    isPlaying = androidIsPlaying; // Обновляем статус для МАЯКА
     
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
@@ -96,6 +100,7 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
+    // Если вернулись на главную - считаем, что мы в лобби
     if (tabName === 'home') {
         stats.currentGame = "lobby";
     }
@@ -114,7 +119,7 @@ window.loadGame = function(gamePath) {
         gameName = gamePath.split('/').pop().replace('.html', '');
     } catch(e) {}
     
-    stats.currentGame = gameName; 
+    stats.currentGame = gameName; // Записываем название игры для МАЯКА
 
     const frame = document.getElementById('game-frame');
     if(frame) {
