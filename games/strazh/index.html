@@ -200,96 +200,19 @@
         .hidden { display: none !important; }
     </style>
 </head>
-<script>
-/** --- ИНТЕГРАЦИЯ С ANDROID (ОБЯЗАТЕЛЬНО ДОБАВИТЬ) --- */
-window.updateRadioStatus = function(isPlaying) {
-    console.log("Android command received: updateRadioStatus -> " + isPlaying);
-    
-    // Обновляем глобальную переменную
-    radioPlaying = isPlaying;
-    
-    // Находим элементы интерфейса
-    const radioBtn = document.getElementById('radio-toggle');
-    const radioIcon = document.getElementById('radio-icon');
-    
-    // Применяем визуальные стили
-    if (isPlaying) {
-        if (radioBtn) radioBtn.classList.add('playing'); // Включает вращение и подсветку
-        if (radioIcon) radioIcon.className = 'fas fa-pause'; // Меняет иконку на Паузу
-    } else {
-        if (radioBtn) radioBtn.classList.remove('playing'); // Выключает вращение
-        if (radioIcon) radioIcon.className = 'fas fa-play'; // Меняет иконку на Плей
-    }
-};
-
-// Функция для получения статуса подписки от Android
-window.updateSubscriptionStatus = function(isPremium) {
-    console.log("Subscription status: " + isPremium);
-    // Сохраняем статус подписки в глобальную переменную
-    window.isPremium = isPremium;
-};
-
-// Глобальная переменная для статуса подписки
-window.isPremium = false;
-
-/** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
-const WORLD_SIZE = 5000;
-const BASE_POS = { x: 2500, y: 2500 };
-const ZOOM = 0.28;
-
-let canvas, ctx, gameId;
-let started = false, paused = false;
-let score = 0, baseAmmo = 100, lives = 3;
-let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
-let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
-let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
-let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
-let etherNoisePlaying = false;
-let gameStartTime = 0; // Время начала игры для сообщения защиты базы
-let totalPlayTime = 0; // Общее время игры без учета пауз
-let lastPauseTime = 0; // Время последней паузы
-let maxAmmoCapacity = 9; // Максимальный боезапас турелей - ИЗМЕНЕНО НА 9
-let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
-let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
-let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
-let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
-let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
-
-// РАДИО ПЛЕЕР ПЕРЕМЕННЫЕ
-let radioPlaying = false;
-let radioVolume = 0.3; // 30% громкость по умолчанию
-let radioInitialized = false;
-
-// ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
-window.startGame = startGame;
-window.toggleShop = toggleShop;
-window.togglePause = togglePause;
-window.buyUpgrade = buyUpgrade;
-window.toggleRadio = toggleRadio;
-
-/** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
-window.onload = function() {
-    canvas = document.getElementById('gameCanvas');
-    if (canvas) {
-        ctx = canvas.getContext('2d');
-        resize();
-        initJoystick();
-        window.addEventListener('resize', resize);
-        console.log("Elite System v14.6: Online");
-        
-        // Инициализация радио плеера
-        initRadio();
-        
-        // Показываем кнопку "Продолжить" если есть сохранение
-```
+<body>
 
     <canvas id="gameCanvas"></canvas>
     
+    <audio id="ether-noise" loop>
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+
     <div id="ui-layer">
-        <div class="app-controls">
-            <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
-            <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
-            <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
+            <div class="app-controls">
+                <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
+                <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
+                <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
         </div>
         
         <!-- РАДИО ПЛЕЕР -->
@@ -401,37 +324,6 @@ window.onload = function() {
     </div>
 
 <script>
-/** --- ИНТЕГРАЦИЯ С ANDROID (ОБЯЗАТЕЛЬНО ДОБАВИТЬ) --- */
-window.updateRadioStatus = function(isPlaying) {
-    console.log("Android command received: updateRadioStatus -> " + isPlaying);
-    
-    // Обновляем глобальную переменную
-    radioPlaying = isPlaying;
-    
-    // Находим элементы интерфейса
-    const radioBtn = document.getElementById('radio-toggle');
-    const radioIcon = document.getElementById('radio-icon');
-    
-    // Применяем визуальные стили
-    if (isPlaying) {
-        if (radioBtn) radioBtn.classList.add('playing'); // Включает вращение и подсветку
-        if (radioIcon) radioIcon.className = 'fas fa-pause'; // Меняет иконку на Паузу
-    } else {
-        if (radioBtn) radioBtn.classList.remove('playing'); // Выключает вращение
-        if (radioIcon) radioIcon.className = 'fas fa-play'; // Меняет иконку на Плей
-    }
-};
-
-// Функция для получения статуса подписки от Android
-window.updateSubscriptionStatus = function(isPremium) {
-    console.log("Subscription status: " + isPremium);
-    // Сохраняем статус подписки в глобальную переменную
-    window.isPremium = isPremium;
-};
-
-// Глобальная переменная для статуса подписки
-window.isPremium = false;
-
 /** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
 const WORLD_SIZE = 5000;
 const BASE_POS = { x: 2500, y: 2500 };
@@ -1341,6 +1233,28 @@ function updateUI() {
         bossBox.style.display = 'none';
     }
 }
+
+function updateEtherNoise() {
+    const etherNoise = document.getElementById('ether-noise');
+    if (!etherNoise) return;
+    
+    if (baseAmmo < 10 && started && !paused) {
+        // Включаем шум эфира при менее 10% заряда
+        if (!etherNoisePlaying) {
+            etherNoise.volume = 0.5; // 50% громкости
+            etherNoise.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+            etherNoisePlaying = true;
+        }
+    } else {
+        // Выключаем шум при достаточном заряде или паузе
+        if (etherNoisePlaying) {
+            etherNoise.pause();
+            etherNoise.currentTime = 0;
+            etherNoisePlaying = false;
+        }
+    }
+}
+
 
 
 /** --- ОБНОВЛЕНИЕ (UPDATE) --- */
