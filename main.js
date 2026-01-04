@@ -2,7 +2,7 @@ const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
     // ТВОЯ ССЫЛКА НА GOOGLE ТАБЛИЦУ
-    statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec", 
+    statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
 };
@@ -12,7 +12,7 @@ let audio = new Audio();
 let isPlaying = false; 
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ ---
+// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
 let stats = {
     radioOnlyTime: 0, 
     gameOnlyTime: 0,  
@@ -20,34 +20,40 @@ let stats = {
     currentGame: "lobby" 
 };
 
+// Счётчик секунд
 setInterval(() => {
-    if (stats.currentGame === "lobby" && isPlaying) {
-        stats.radioOnlyTime++;
-    }
-    else if (stats.currentGame !== "lobby" && !isPlaying) {
-        stats.gameOnlyTime++;
-    }
-    else if (stats.currentGame !== "lobby" && isPlaying) {
-        stats.hybridTime++;
+    if (stats.currentGame === "lobby") {
+        if (isPlaying) stats.radioOnlyTime++;
+    } else {
+        if (isPlaying) {
+            stats.hybridTime++;
+        } else {
+            stats.gameOnlyTime++;
+        }
     }
 }, 1000);
 
-// Отправка данных раз в минуту
-setInterval(sendBeacon, 60000);
+// Отправка данных каждые 15 секунд (для проверки)
+setInterval(sendBeacon, 15000);
 
 function sendBeacon() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    // Формируем данные для Google Sheets
-    const data = new FormData();
-    data.append('radio_only', stats.radioOnlyTime);
-    data.append('game_only', stats.gameOnlyTime);
-    data.append('hybrid', stats.hybridTime);
-    data.append('last_game', stats.currentGame);
-    data.append('user_type', window.isPaidUser ? 'paid' : 'free');
+    // Для Google Script надежнее всего использовать URLSearchParams
+    const params = new URLSearchParams({
+        radio_only: stats.radioOnlyTime,
+        game_only: stats.gameOnlyTime,
+        hybrid: stats.hybridTime,
+        last_game: stats.currentGame,
+        user_type: window.isPaidUser ? 'paid' : 'free'
+    });
 
-    // Отправляем (Google Script примет это как POST запрос)
-    navigator.sendBeacon(CONFIG.statsUrl, data);
+    fetch(CONFIG.statsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    });
 
     // Сброс счетчиков
     stats.radioOnlyTime = 0;
@@ -92,6 +98,7 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
+    // Если юзер сам нажал на кнопку "Главная" — возвращаем статус лобби
     if (tabName === 'home') {
         stats.currentGame = "lobby";
     }
@@ -105,19 +112,21 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
+    // 1. Сначала переключаем вкладку (это сбросит в lobby)
+    const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+    window.openTab('home', homeBtn);
+
+    // 2. А теперь записываем имя игры (это ПЕРЕКРОЕТ lobby правильным именем)
     let gameName = "unknown";
     try {
         gameName = gamePath.split('/').pop().replace('.html', '');
     } catch(e) {}
-    
     stats.currentGame = gameName; 
 
     const frame = document.getElementById('game-frame');
     if(frame) {
         const buster = gamePath.includes('?') ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-        window.openTab('home', homeBtn);
     }
 };
 
@@ -127,10 +136,7 @@ function initPlayer() {
 }
 
 function togglePlayState() {
-    const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
     const slider = document.getElementById('vol-slider');
-
     if (isApp) {
         if (isPlaying) {
             window.Android.pauseAudio();
@@ -142,20 +148,15 @@ function togglePlayState() {
         }
         return;
     }
-
     if (isPlaying) {
         audio.pause(); audio.src = ""; audio.load();
-        if(icon) icon.className = "fas fa-play";
-        if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
         audio.play().catch(e => {});
-        if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
-}
+};
 
 function initVolume() {
     const slider = document.getElementById('vol-slider');
@@ -164,7 +165,6 @@ function initVolume() {
     let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
     slider.value = finalVol;
     if (isApp) { try { window.Android.setVolume(finalVol); } catch(e){} } else { audio.volume = finalVol; }
-
     slider.addEventListener('input', (e) => {
         let vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
@@ -180,7 +180,6 @@ function updateMetadata() {
                 const song = data.now_playing.song;
                 document.getElementById('track-name').innerText = song.title;
                 document.getElementById('artist-name').innerText = song.artist || "";
-                document.getElementById('track-sep').style.display = song.artist ? "inline" : "none";
                 document.getElementById('mini-art').src = fixUrl(song.art);
             }
             if (data.song_history) renderHistory(data.song_history);
