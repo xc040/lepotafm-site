@@ -10,18 +10,9 @@ let audio = new Audio();
 let isPlaying = false; 
 // Глобальная переменная для статуса подписки (чтобы игра знала)
 window.isPaidUser = false; 
-window.isPaidUser = false; // Глобальная переменная для игр
 
 window.onload = function() {
     if (!isApp) audio.src = CONFIG.streamUrl;
-    if (!isApp) {
-        audio.src = CONFIG.streamUrl;
-    } else {
-        // --- ИСПРАВЛЕНИЕ: Говорим Андроиду "Я тут, дай статус!" ---
-        if(window.Android.notifyPageLoaded) {
-            window.Android.notifyPageLoaded();
-        }
-    }
     initPlayer();
     initVolume();
     updateMetadata();
@@ -30,27 +21,22 @@ window.onload = function() {
 
 // --- ГЛАВНАЯ ФУНКЦИЯ СВЯЗИ С АНДРОИДОМ ---
 // Android вызывает её сам, когда загрузка завершена
-// --- ФУНКЦИЯ, КОТОРУЮ ВЫЗОВЕТ ANDROID В ОТВЕТ ---
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     console.log("Sync from Android: Playing=" + androidIsPlaying + ", Paid=" + androidIsPaid);
-    console.log("Sync received: Playing=" + androidIsPlaying);
-
+    
     // 1. Сохраняем статус оплаты (для игры)
-    // 1. Ставим статус оплаты
     window.isPaidUser = androidIsPaid;
 
     // 2. Синхронизируем плеер (Крутилку и Иконку)
-    // 2. Обновляем визуальный плеер
     isPlaying = androidIsPlaying;
-
+    
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
-
+    
     if (isPlaying) {
         // Если Андроид сказал, что музыка играет -> Включаем анимацию и иконку Паузы
         if(icon) icon.className = "fas fa-pause";
         if(playerDiv) playerDiv.classList.add('playing'); // Класс для вращения
-        if(playerDiv) playerDiv.classList.add('playing'); // Добавляем класс вращения
     } else {
         // Если тишина -> Стоп анимация и иконка Плей
         if(icon) icon.className = "fas fa-play";
@@ -155,7 +141,6 @@ function updateMetadata() {
 }
 
 function renderHistory(history) {
-    con
     const container = document.getElementById('history-container');
     if (!container) return;
     let html = '';
