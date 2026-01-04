@@ -216,7 +216,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.9</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.5</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -230,7 +230,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.9</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.5</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -262,12 +262,23 @@ let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапа�
 let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
 let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
 let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
+let isPaidUser = false;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
+
+// ФУНКЦИЯ СИНХРОНИЗАЦИИ С ANDROID
+window.syncAppState = function(radioPlaying, paidStatus) {
+    console.log("Sync state received: Paid=" + paidStatus);
+    isPaidUser = paidStatus;
+    // Если пользователь бесплатный — немедленно глушим игровые звуки
+    if (!isPaidUser) {
+        const noise = document.getElementById('ether-noise');
+        if(noise) { noise.pause(); noise.currentTime = 0; }
+    };
 
 /** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
 window.onload = function() {
@@ -1035,6 +1046,9 @@ function updateUI() {
 function updateEtherNoise() {
     const etherNoise = document.getElementById('ether-noise');
     if (!etherNoise) return;
+    
+    // Если пользователь бесплатный - звук никогда не воспроизводится
+    if (!isPaidUser) return;
     
     if (baseAmmo < 10 && started && !paused) {
         // Включаем шум эфира при менее 10% заряда
