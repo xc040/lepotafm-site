@@ -9,6 +9,7 @@ const CONFIG = {
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
 let isPlaying = false; 
+window.isPaidUser = false; // Глобальная переменная для игр
 window.isPaidUser = false;
 
 // --- СИСТЕМА СТАТИСТИКИ ---
@@ -64,39 +65,41 @@ window.onload = function() {
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
     } else {
+        // --- ИСПРАВЛЕНИЕ: Говорим Андроиду "Я тут, дай статус!" ---
+        if(window.Android.notifyPageLoaded) {
         // Просим Android сообщить статус при старте
         if(window.Android && window.Android.notifyPageLoaded) {
             window.Android.notifyPageLoaded();
         }
     }
-    initPlayer();
-    initVolume();
-    updateMetadata();
+@@ -25,22 +75,19 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
+// --- ФУНКЦИЯ, КОТОРУЮ ВЫЗОВЕТ ANDROID В ОТВЕТ ---
 // СИНХРОНИЗАЦИЯ С АНДРОИДОМ
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
+    console.log("Sync received: Playing=" + androidIsPlaying);
     console.log("Sync: Playing=" + androidIsPlaying);
-    
+
+    // 1. Ставим статус оплаты
     window.isPaidUser = androidIsPaid;
+
+    // 2. Обновляем визуальный плеер
+    isPlaying = androidIsPlaying;
     isPlaying = androidIsPlaying; // Обновляем статус для статистики
-    
+
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
-    
+
     if (isPlaying) {
         if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing'); // Добавляем класс вращения
         if(playerDiv) playerDiv.classList.add('playing');
     } else {
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
-    }
-};
-
-window.openTab = function(tabName, btnElement) {
-    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+@@ -53,6 +100,11 @@ window.openTab = function(tabName, btnElement) {
     document.getElementById(tabName).classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
@@ -108,9 +111,7 @@ window.openTab = function(tabName, btnElement) {
     const gameFrame = document.getElementById('game-frame');
     if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
         if (tabName !== 'home') {
-            gameFrame.contentWindow.setGamePause(true);
-        }
-    }
+@@ -62,12 +114,22 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
@@ -127,22 +128,14 @@ window.loadGame = function(gamePath) {
         const buster = gamePath.includes('?') ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
         const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
         window.openTab('home', homeBtn); // Тут, возможно, ошибка в логике? Обычно игру открывают в табе игры.
         // Если у тебя игра открывается в табе 'games', то раскомментируй ниже:
         // window.openTab('games', null); 
     }
 };
 
-function initPlayer() {
-    const playBtn = document.getElementById('play-btn');
-    if (playBtn) playBtn.addEventListener('click', togglePlayState);
-}
-
-function togglePlayState() {
-    const icon = document.getElementById('play-icon');
-    const playerDiv = document.querySelector('.inline-player');
-    const slider = document.getElementById('vol-slider');
-
+@@ -84,6 +146,7 @@ function togglePlayState() {
     if (isApp) {
         if (isPlaying) {
             window.Android.pauseAudio();
@@ -150,13 +143,7 @@ function togglePlayState() {
             if(icon) icon.className = "fas fa-play";
             if(playerDiv) playerDiv.classList.remove('playing');
             isPlaying = false;
-        } else {
-            if (slider) window.Android.setVolume(parseFloat(slider.value));
-            window.Android.playAudio();
-            if(icon) icon.className = "fas fa-pause";
-            if(playerDiv) playerDiv.classList.add('playing');
-            isPlaying = true;
-        }
+@@ -97,6 +160,7 @@ function togglePlayState() {
         return;
     }
 
@@ -164,72 +151,3 @@ function togglePlayState() {
     if (isPlaying) {
         audio.pause(); audio.src = ""; audio.load();
         if(icon) icon.className = "fas fa-play";
-        if(playerDiv) playerDiv.classList.remove('playing');
-        isPlaying = false;
-    } else {
-        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
-        audio.play().catch(e => {});
-        if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
-        isPlaying = true;
-    }
-}
-
-function initVolume() {
-    const slider = document.getElementById('vol-slider');
-    if (!slider) return;
-    let savedVol = localStorage.getItem('savedVolume');
-    let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
-    slider.value = finalVol;
-    if (isApp) { try { window.Android.setVolume(finalVol); } catch(e){} } else { audio.volume = finalVol; }
-
-    slider.addEventListener('input', (e) => {
-        let vol = parseFloat(e.target.value);
-        localStorage.setItem('savedVolume', vol);
-        if (isApp) { try { window.Android.setVolume(vol); } catch(e) {} } else { audio.volume = vol; }
-    });
-}
-
-function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(res => res.json())
-        .then(data => {
-            if (data.now_playing && data.now_playing.song) {
-                const song = data.now_playing.song;
-                document.getElementById('track-name').innerText = song.title;
-                document.getElementById('artist-name').innerText = song.artist || "";
-                document.getElementById('track-sep').style.display = song.artist ? "inline" : "none";
-                document.getElementById('mini-art').src = fixUrl(song.art);
-            }
-            if (data.song_history) renderHistory(data.song_history);
-        }).catch(err => {});
-}
-
-function renderHistory(history) {
-    const container = document.getElementById('history-container');
-    if (!container) return;
-    let html = '';
-    history.forEach(item => {
-        const song = item.song;
-        const art = fixUrl(song.art);
-        const safeTitle = (song.title || "").replace(/'/g, "\\'");
-        const safeArtist = (song.artist || "").replace(/'/g, "\\'");
-        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
-    });
-    container.innerHTML = html;
-}
-
-function fixUrl(url) {
-    if (!url || url.includes('generic')) return CONFIG.defaultImage;
-    return url.replace('http:', 'https:');
-}
-
-window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
-window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
-window.openSku = function(title, artist, art) {
-    document.getElementById('modal-art').src = art;
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-artist').innerText = artist;
-    document.getElementById('info-modal').classList.remove('hidden');
-};
-window.closeSku = function() { document.getElementById('info-modal').classList.add('hidden'); };
