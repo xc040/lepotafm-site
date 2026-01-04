@@ -49,64 +49,70 @@
         }
         #signal-bar { width: 100%; height: 100%; background: var(--neon-blue); transition: width 0.3s; }
 
-        /* МИССИИ (УРОВЕНЬ) */
-        #mission-box {
-            position: absolute; bottom: 35px; left: 20px;
-            background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-blue);
-            padding: 8px 12px; border-radius: 12px; width: 160px; z-index: 20;
-            pointer-events: auto; border-left: 4px solid var(--neon-purple);
+        /* ЗАДАНИЯ */
+        #mission-box { 
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%); 
+            background: rgba(5, 5, 20, 0.9); border: 1px solid var(--neon-purple); 
+            border-radius: 10px; padding: 8px 15px; pointer-events: auto; font-size: 11px; 
+            text-align: center; min-width: 200px; z-index: 15;
         }
-        #mission-title { font-size: 8px; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 2px; }
-        #mission-text { font-size: 10px; font-weight: bold; color: #fff; line-height: 1.2; }
+        #mission-text { color: var(--neon-gold); font-weight: bold; margin-bottom: 4px; }
+        #mission-desc { color: #aaa; font-size: 10px; }
 
-        /* ДЖОЙСТИК СПРАВА */
+        /* ДЖОЙСТИК */
         #joystick-zone { 
-            position: absolute; bottom: 40px; right: 30px; width: 110px; height: 110px; 
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 243, 255, 0.2); 
-            border-radius: 50%; pointer-events: auto; 
+            position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; 
+            background: rgba(15, 15, 30, 0.8); border: 2px solid var(--neon-blue); 
+            border-radius: 50%; pointer-events: auto; z-index: 15;
         }
         #joystick-stick { 
-            position: absolute; top: 50%; left: 50%; width: 45px; height: 45px; 
+            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; 
             background: var(--neon-blue); border-radius: 50%; transform: translate(-50%, -50%); 
-            box-shadow: 0 0 15px var(--neon-blue);
+            transition: none; pointer-events: none;
+        }
+        #pause-btn-center { 
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+            width: 60px; height: 60px; background: rgba(15, 15, 30, 0.9); 
+            border: 2px solid var(--neon-purple); border-radius: 50%; 
+            display: none; align-items: center; justify-content: center; 
+            pointer-events: auto; z-index: 16;
+        }
+        #pause-btn-center-inner { 
+            width: 40px; height: 40px; background: var(--neon-purple); 
+            border-radius: 50%; display: flex; align-items: center; 
+            justify-content: center; color: white; font-size: 18px; cursor: pointer;
         }
 
         /* МАГАЗИН */
-        .modal { 
+        #shop-modal { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 1000; display: flex; 
-            align-items: center; justify-content: center; pointer-events: auto; 
+            background: rgba(0, 0, 0, 0.8); display: none; align-items: center; 
+            justify-content: center; z-index: 50; pointer-events: auto;
         }
-        .shop-content { 
-            width: 92%; max-width: 380px; background: #0a0a1a; 
-            border: 2px solid var(--neon-purple); padding: 20px; border-radius: 20px; overflow-y: auto; max-height: 85vh;
+        #shop-content { 
+            background: rgba(5, 5, 20, 0.95); border: 2px solid var(--neon-purple); 
+            border-radius: 15px; padding: 20px; max-width: 320px; width: 90%; max-height: 80vh; 
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
-        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .shop-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--neon-purple);
+        }
+        .shop-title { color: var(--neon-purple); font-size: 16px; font-weight: bold; }
+        .shop-close { 
+            width: 30px; height: 30px; background: none; border: 1px solid var(--neon-red); 
+            color: var(--neon-red); border-radius: 50%; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .shop-section { margin-bottom: 15px; }
         .shop-item { 
-            background: rgba(255,255,255,0.05); border: 1px solid #333; 
-            padding: 12px; border-radius: 12px; text-align: center; cursor: pointer; 
-            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--neon-blue); 
+            border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; 
+            display: flex; align-items: center; gap: 10px; transition: all 0.2s;
         }
-        .shop-item:hover {
-            transform: scale(1.05);
-            background: rgba(255,255,255,0.1);
-            border-color: var(--neon-blue);
-        }
-        .shop-item:active {
-            transform: scale(1.15);
-            background: rgba(0, 243, 255, 0.2);
-            border-color: var(--neon-green);
-        }
-        .shop-item.purchased {
-            animation: purchasePulse 0.6s ease-out;
-        }
-        @keyframes purchasePulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); background: rgba(57, 255, 20, 0.3); border-color: var(--neon-green); }
-            100% { transform: scale(1); }
-        }
-        .shop-item i { color: var(--neon-blue); font-size: 22px; margin-bottom: 5px; display: block; }
-        .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
+        .shop-item:hover { background: rgba(57, 255, 20, 0.1); border-color: var(--neon-green); }
+        .shop-item i { font-size: 16px; color: var(--neon-blue); width: 20px; text-align: center; }
+        .shop-item b { flex: 1; font-size: 12px; color: white; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
 
         /* ЭКРАНЫ */
@@ -129,140 +135,148 @@
     
     <!-- Аудио элементы -->
     <audio id="ether-noise" loop>
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
     </audio>
 
+    <!-- Интерфейсные слои -->
     <div id="ui-layer">
+        <!-- Контролы приложения -->
         <div class="app-controls">
-            <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
-            <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
-            <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
+            <button class="control-btn" id="shop-btn" onclick="window.toggleShop(true)">
+                <i class="fas fa-shopping-cart"></i>
+            </button>
+            <button class="control-btn" id="pause-btn" onclick="window.togglePause()">
+                <i class="fas fa-pause" id="pause-icon"></i>
+            </button>
         </div>
 
-        <div id="top-left" class="stat-box">
-            <div>ЭФИР</div>
+        <!-- Статистика -->
+        <div class="stat-box" id="top-left">
+            <div>ЭНЕРГИЯ: <span id="signal-val">100%</span></div>
             <div class="progress-container"><div id="signal-bar"></div></div>
+            <div>ВРЕМЯ: <span id="play-time">00:00</span></div>
         </div>
-        
-        <div id="boss-info" class="stat-box" style="left:50%;top:70px;transform:translateX(-50%);min-width:120px;text-align:center;">
-  <div>БОСС <span id="boss-strength" style="color:var(--neon-purple);font-weight:bold;"></span></div>
-  <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
-</div>
-<div id="top-right" class="stat-box">
-            <div>ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
-            <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
+        <div class="stat-box" id="top-right">
+            <div>КРЕДИТЫ: <span id="score-val">0</span></div>
+            <div>ЖИЗНИ: <span id="lives-val">3</span></div>
         </div>
-
-        <div id="mission-box" class="hidden">
-            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
-            <div id="mission-text">Загрузка протоколов...</div>
+        <div class="stat-box hidden" id="boss-info">
+            <div style="color:var(--neon-purple); font-weight:bold;">БОСС</div>
+            <div id="boss-strength">Lv.1</div>
+            <div id="boss-hp">HP: 100/100</div>
         </div>
 
+        <!-- Задания -->
+        <div id="mission-box">
+            <div>УРОВЕНЬ <span id="m-id">1</span></div>
+            <div id="mission-text">Защищай базу</div>
+            <div id="mission-desc">Собирай данные и уничтожай врагов</div>
+        </div>
+
+        <!-- Джойстик -->
         <div id="joystick-zone">
             <div id="joystick-stick"></div>
-            <!-- Кнопка плей над стиком -->
-            <div id="pause-btn-center" style="display:none;position: absolute;top: -70px;left: 50%;transform: translateX(-50%);z-index:1000;pointer-events: auto;">
-                <button class="control-btn" id="pause-btn-center-inner" style="background:rgba(255,255,255,0.15);border:2px solid var(--neon-red);font-size:24px;box-shadow:0 0 20px var(--neon-red);width:60px;height:60px;">
-                    <i id="pause-center-icon" class="fas fa-play" style="color: var(--neon-red);"></i>
-                </button>
+        </div>
+        <div id="pause-btn-center">
+            <div id="pause-btn-center-inner">
+                <i class="fas fa-play" id="pause-center-icon"></i>
             </div>
         </div>
-        
-    </div>
 
-    <!-- МАГАЗИН -->
-    <div id="shop-modal" class="modal hidden">
-        <div class="shop-content">
-            <h2 style="color: var(--neon-purple); text-align:center; font-size: 18px; margin:0;">МОДЕРНИЗАЦИЯ</h2>
-            <p style="font-size:11px; color:#aaa; margin: 10px 0;">Турели тратят заряд. Вернись к Ядру, чтобы отдать массу хвоста и зарядить пушки.</p>
-            <div style="text-align:center; margin-bottom:10px; font-size:12px; color:var(--neon-gold)">БАЛАНС: <span id="shop-credits">0</span> CR</div>
-            <div style="text-align:center; margin-bottom:10px; font-size:11px; color:#aaa;">ВРЕМЯ ИГРЫ: <span id="play-time">00:00</span></div>
-            <button class="btn-start" style="width:100%; font-size:14px; margin-bottom:15px;" onclick="window.toggleShop(false)">В БОЙ</button>
-            <div class="shop-grid">
-                <div class="shop-item" onclick="window.buyUpgrade('turret', 120)">
-                    <i class="fas fa-crosshairs"></i><b>Пушка</b><span>120 CR</span>
+        <!-- Магазин -->
+        <div id="shop-modal" class="hidden">
+            <div id="shop-content">
+                <div class="shop-header">
+                    <div class="shop-title">МАГАЗИН <span id="shop-credits">0 CR</span></div>
+                    <button class="shop-close" onclick="window.toggleShop(false)">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('laser', 300)">
-                    <i class="fas fa-bolt"></i><b>Лазер</b><span>300 CR</span>
+                <div class="shop-section">
+                    <div class="shop-item" onclick="window.buyUpgrade('turret', 100)">
+                        <i class="fas fa-crosshairs"></i><b>ПУШКА</b><span>100 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('laser', 200)">
+                        <i class="fas fa-bolt"></i><b>ЛАЗЕР</b><span>200 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('drone', 300)">
+                        <i class="fas fa-satellite-dish"></i><b>ДРОН</b><span>300 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('base', 500)">
+                        <i class="fas fa-home"></i><b>БАЗА</b><span>500 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('fix', 150)">
+                        <i class="fas fa-heart"></i><b>РЕМОНТ</b><span>150 CR</span>
+                    </div>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('drone', 200)">
-                    <i class="fas fa-robot"></i><b>Дрон</b><span>200 CR</span>
+                <div class="shop-section">
+                    <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 40)">
+                        <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>40 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 60)">
+                        <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>60 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 80)">
+                        <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>80 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 120)">
+                        <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>120 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
+                        <i class="fas fa-radar"></i><b>Дальность ПУШКИ +20%</b><span>60 CR</span>
+                    </div>
+                    <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
+                        <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +20%</b><span>90 CR</span>
+                    </div>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fix', 250)">
-                    <i class="fas fa-tools"></i><b>Ремонт</b><span>250 CR</span>
+                <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
+                    <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.4</h3>
+                    <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
+                        <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
+                        <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
+                        <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
+                    </p>
                 </div>
-                <div class="shop-item" onclick="window.buyUpgrade('base', 1000)">
-                    <i class="fas fa-building"></i><b>База</b><span>1000 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-bolt', 80)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ПУШКИ +20%</b><span>80 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('ammo-laser', 120)">
-                    <i class="fas fa-battery-full"></i><b>Боезапас ЛАЗЕРА +20%</b><span>120 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-bolt', 100)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ПУШКИ +33%</b><span>100 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('fireRate-laser', 150)">
-                    <i class="fas fa-tachometer-alt"></i><b>Скорость ЛАЗЕРА +33%</b><span>150 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-bolt', 60)">
-                    <i class="fas fa-radar"></i><b>Дальность ПУШКИ +20%</b><span>60 CR</span>
-                </div>
-                <div class="shop-item" onclick="window.buyUpgrade('range-laser', 90)">
-                    <i class="fas fa-radar"></i><b>Дальность ЛАЗЕРА +20%</b><span>90 CR</span>
-                </div>
-            </div>
-            <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.4</h3>
-                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
-                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
-                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
-                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
-                </p>
             </div>
         </div>
-    </div>
 
-    <div id="start-screen" class="overlay">
-        <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
-        <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
-        <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.4</div>
-    </div>
+        <div id="start-screen" class="overlay">
+            <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
+            <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
+            <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
+            <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.4</div>
+        </div>
 
-    <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: var(--neon-red);">СВЯЗЬ ПОТЕРЯНА</h1>
-        <div id="final-stats" style="margin-bottom:20px; color:#888;"></div>
-        <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
+        <div id="game-over-screen" class="overlay hidden">
+            <h1 style="color: var(--neon-red);">СВЯЗЬ ПОТЕРЯНА</h1>
+            <div id="final-stats" style="margin-bottom:20px; color:#888;"></div>
+            <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
+        </div>
     </div>
 
 <script>
 /** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
-const WORLD_SIZE = 5000;
-const BASE_POS = { x: 2500, y: 2500 };
-const ZOOM = 0.28;
-
-let canvas, ctx, gameId;
-let started = false, paused = false;
-let score = 0, baseAmmo = 100, lives = 3;
-let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
-let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
-let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
-let curLevel = 1, curRoomInLevel = 0, missionProgress = 0, frameCount = 0, shieldActive = false;
-let etherNoisePlaying = false;
-let gameStartTime = 0; // Время начала игры для сообщения защиты базы
-let totalPlayTime = 0; // Общее время игры без учета пауз
-let lastPauseTime = 0; // Время последней паузы
-let maxAmmoCapacity = 9; // Максимальный боезапас турелей - ИЗМЕНЕНО НА 9
-let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
-let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
-let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
-let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
-let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
+const WORLD_SIZE = 5000, ZOOM = 1.5, BASE_POS = {x: 2500, y: 2500};
+let canvas, ctx, started = false, paused = false, gameId = 0, frameCount = 0;
+let camera = {x: 0, y: 0}, input = {x: 0, y: 0};
+let score = 0, baseAmmo = 100, lives = 3, curLevel = 1, curRoomInLevel = 0, missionProgress = 0;
+let totalPlayTime = 0, gameStartTime = 0, shieldActive = false, etherNoisePlaying = false;
+let snake = {x: 2500, y: 2500, angle: 0, speed: 5.5, size: 25, length: 25, segments: []};
+let entities = {
+    food: [], enemies: [], particles: [], bullets: [], loot: [], turrets: [], drones: [], 
+    playerBases: [], boss: null, bossTowers: []
+};
 
 // ПЕРЕМЕННАЯ ДЛЯ ПРОВЕРКИ ПЛАТНОГО ПОЛЬЗОВАТЕЛЯ (УПРАВЛЯЕТСЯ ВНЕШНИМ ПРИЛОЖЕНИЕМ)
 window.isPaidUser = false; // По умолчанию - бесплатный пользователь
+
+// Глобальные переменные для апгрейдов
+let maxAmmoCapacity = 1;
+let ammoUpgradeLevel = 0;
+let boltAmmoUpgradeLevel = 0;
+let laserAmmoUpgradeLevel = 0;
+let fireRateUpgradeLevel = 0;
+let rangeUpgradeLevel = 0;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
@@ -293,7 +307,7 @@ function resize() {
     if (!canvas) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-}
+};
 
 /** --- УПРАВЛЕНИЕ ОКНАМИ --- */
 function toggleShop(show) {
@@ -314,7 +328,7 @@ function toggleShop(show) {
         if (centerIcon) centerIcon.className = 'fas fa-play';
     }
     updateUI();
-}
+};
 
 function togglePause() {
     if(!started) return;
@@ -594,9 +608,6 @@ function startGame(newGame = true) {
 
 // Запуск инициализации джойстика
 initJoystick();
-</script>
-</body>
-</html>
 
 /** --- СИСТЕМА УРОВНЕЙ (УРОВЕНЬ = СЦЕНАРИЙ ЗАДАНИЙ + БОСС) --- */
 // Каждый уровень состоит из нескольких заданий, последнее - босс
@@ -1234,7 +1245,7 @@ function update() {
         );
         
         if(nearbyTurrets.length > 0 || nearbyDrones.length > 0) {
-            // Уменьшаем хвост змея для пополнения турелей и дронов
+            // Уменьшаем хвост змеи для пополнения турелей и дронов
             snake.length -= 0.5;
             while(snake.segments.length > snake.length) snake.segments.pop();
             
@@ -1400,11 +1411,11 @@ function update() {
         // Урон врагам от змеи (головой)
         if(Math.hypot(en.x - snake.x, en.y - snake.y) < 40) {
             if(en.type === 'box') {
-                // Квадраты (Осколки) - голова змея получает +2 к длине
+                // Квадраты (Осколки) - голова змеи получает +2 к длине
                 snake.length += 2;
                 missionProgress++; // Убийство врага головой засчитывается в миссию
             } else {
-                // Треугольники (Векторы) - голова змея получает +1 к длине
+                // Треугольники (Векторы) - голова змеи получает +1 к длине
                 snake.length += 1;
             }
             createParticles(en.x, en.y, en.type === 'tri' ? 'yellow' : 'red', 8);
@@ -1694,3 +1705,6 @@ function render() {
     });
     ctx.globalAlpha = 1.0; ctx.restore();
 }
+</script>
+</body>
+</html>
