@@ -109,6 +109,82 @@
         .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
 
+        .radio-player {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--neon-blue);
+            border-radius: 15px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 0 20px rgba(0, 204, 255, 0.3);
+        }
+        .radio-title {
+            color: var(--neon-blue);
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .radio-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .radio-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 204, 255, 0.1);
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .radio-btn:hover {
+            transform: scale(1.1);
+        }
+        .radio-btn:active {
+            transform: scale(0.95);
+        }
+        .radio-btn.playing {
+            background: rgba(57, 255, 20, 0.2);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            animation: radioPulse 2s infinite;
+        }
+        @keyframes radioPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .radio-btn.playing i {
+            animation: albumSpin 3s linear infinite;
+        }
+        @keyframes albumSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .radio-volume {
+            width: 60px;
+            height: 4px;
+            background: #111;
+            border-radius: 2px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        .radio-volume-bar {
+            height: 100%;
+            background: var(--neon-blue);
+            transition: width 0.2s;
+        }
+
         /* ЭКРАНЫ */
         .overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
@@ -142,6 +218,19 @@
         <div id="top-left" class="stat-box">
             <div>ЭФИР</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
+        </div>
+        
+        <!-- РАДИО ПЛЕЕР -->
+        <div class="radio-player">
+            <div class="radio-title">LEPOTA FM</div>
+            <div class="radio-controls">
+                <button class="radio-btn" id="radio-toggle" onclick="window.toggleRadio()">
+                    <i class="fas fa-play" id="radio-icon"></i>
+                </button>
+                <div class="radio-volume">
+                    <div class="radio-volume-bar" id="radio-volume-bar" style="width: 30%"></div>
+                </div>
+            </div>
         </div>
         
         <div id="boss-info" class="stat-box" style="left:50%;top:70px;transform:translateX(-50%);min-width:120px;text-align:center;">
@@ -262,23 +351,14 @@ let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапа�
 let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
 let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
 let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
-let isPaidUser = false;
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
-
-// ФУНКЦИЯ СИНХРОНИЗАЦИИ С ANDROID
-window.syncAppState = function(radioPlaying, paidStatus) {
-    console.log("Sync state received: Paid=" + paidStatus);
-    isPaidUser = paidStatus;
-    // Если пользователь бесплатный — немедленно глушим игровые звуки
-    if (!isPaidUser) {
-        const noise = document.getElementById('ether-noise');
-        if(noise) { noise.pause(); noise.currentTime = 0; }
-    };
+window.toggleRadio = toggleRadio;
+window.syncAppState = syncAppState; // Функция для синхронизации с Android
 
 /** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
 window.onload = function() {
@@ -1046,9 +1126,6 @@ function updateUI() {
 function updateEtherNoise() {
     const etherNoise = document.getElementById('ether-noise');
     if (!etherNoise) return;
-    
-    // Если пользователь бесплатный - звук никогда не воспроизводится
-    if (!isPaidUser) return;
     
     if (baseAmmo < 10 && started && !paused) {
         // Включаем шум эфира при менее 10% заряда
@@ -1940,8 +2017,64 @@ function initJoystick() {
     }
 }
 
+// РАДИО ПЛЕЕР ПЕРЕМЕННЫЕ
+let radioPlaying = false;
+let radioVolume = 0.3; // 30% громкость по умолчанию
+let radioInitialized = false;
+let isPaidUser = false; // Платный пользователь для звуков игры
+
+// РАДИО ПЛЕЕР ФУНКЦИИ
+function toggleRadio() {
+    if (typeof Android !== 'undefined' && Android.playAudio && Android.pauseAudio) {
+        radioPlaying = !radioPlaying;
+        const radioBtn = document.getElementById('radio-toggle');
+        const radioIcon = document.getElementById('radio-icon');
+        const volumeBar = document.getElementById('radio-volume-bar');
+        
+        if (radioPlaying) {
+            Android.playAudio();
+            if (radioBtn) radioBtn.classList.add('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-pause';
+            if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
+        } else {
+            Android.pauseAudio();
+            if (radioBtn) radioBtn.classList.remove('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-play';
+        }
+    }
+}
+
+// Функция для синхронизации с Android
+function syncAppState(isRadioPlaying, isUserPaid) {
+    radioPlaying = isRadioPlaying;
+    isPaidUser = isUserPaid;
+    
+    const radioBtn = document.getElementById('radio-toggle');
+    const radioIcon = document.getElementById('radio-icon');
+    const etherNoise = document.getElementById('ether-noise');
+    
+    // Обновляем UI радио
+    if (radioPlaying) {
+        if (radioBtn) radioBtn.classList.add('playing');
+        if (radioIcon) radioIcon.className = 'fas fa-pause';
+    } else {
+        if (radioBtn) radioBtn.classList.remove('playing');
+        if (radioIcon) radioIcon.className = 'fas fa-play';
+    }
+    
+    // Управляем игровыми звуками только для платных пользователей
+    if (etherNoise) {
+        if (isPaidUser && started && !paused) {
+            if (!etherNoisePlaying) {
+                etherNoise.play();
+                etherNoisePlaying = true;
+            }
+        } else {
+            etherNoise.pause();
+            etherNoisePlaying = false;
+        }
+    }
+}
+
 // Запуск инициализации джойстика
 initJoystick();
-</script>
-</body>
-</html>
