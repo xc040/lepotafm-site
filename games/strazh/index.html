@@ -198,68 +198,12 @@
             border-radius: 30px; cursor: pointer; box-shadow: 0 0 20px var(--neon-green);
         }
         .hidden { display: none !important; }
-
-        /* МАЯЧОК ПОДПИСКИ */
-        .subscription-badge {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.3s;
-            pointer-events: auto;
-            cursor: pointer;
-        }
-        .subscription-badge.free {
-            background: rgba(255, 85, 85, 0.2);
-            border: 1px solid var(--neon-red);
-            color: var(--neon-red);
-        }
-        .subscription-badge.premium {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid var(--neon-gold);
-            color: var(--neon-gold);
-            animation: premiumGlow 2s infinite;
-        }
-        @keyframes premiumGlow {
-            0%, 100% { box-shadow: 0 0 5px var(--neon-gold); }
-            50% { box-shadow: 0 0 15px var(--neon-gold); }
-        }
-        .subscription-warning {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 5px;
-            padding: 6px 10px;
-            background: rgba(255, 85, 85, 0.9);
-            border: 1px solid var(--neon-red);
-            border-radius: 8px;
-            font-size: 9px;
-            color: white;
-            white-space: nowrap;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s;
-            pointer-events: none;
-            z-index: 1000;
-        }
-        .subscription-warning.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
     </style>
 </head>
 <body>
 
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Аудио элементы -->
     <audio id="ether-noise" loop>
         <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
     </audio>
@@ -269,19 +213,6 @@
             <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
             <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
             <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
-            
-            <!-- МАЯЧОК ПОДПИСКИ -->
-            <div id="subscription-badge" class="subscription-badge free">
-                <i class="fas fa-crown"></i> FREE
-            </div>
-            <div id="subscription-warning" class="subscription-warning">
-                🔒 Звук игры только для Premium подписчиков
-            </div>
-        </div>
-
-        <div id="top-left" class="stat-box">
-            <div>ЭФИР</div>
-            <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
         <!-- РАДИО ПЛЕЕР -->
@@ -369,7 +300,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v4.0</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.5</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -383,7 +314,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v4.0</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.5</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -393,6 +324,33 @@
     </div>
 
 <script>
+/** --- ИНТЕГРАЦИЯ С ANDROID (ОБЯЗАТЕЛЬНО ДОБАВИТЬ) --- */
+window.updateRadioStatus = function(isPlaying) {
+    console.log("Android command received: updateRadioStatus -> " + isPlaying);
+    
+    // Обновляем глобальную переменную
+    radioPlaying = isPlaying;
+    
+    // Находим элементы интерфейса
+    const radioBtn = document.getElementById('radio-toggle');
+    const radioIcon = document.getElementById('radio-icon');
+    
+    // Применяем визуальные стили
+    if (isPlaying) {
+        if (radioBtn) radioBtn.classList.add('playing'); // Включает вращение и подсветку
+        if (radioIcon) radioIcon.className = 'fas fa-pause'; // Меняет иконку на Паузу
+    } else {
+        if (radioBtn) radioBtn.classList.remove('playing'); // Выключает вращение
+        if (radioIcon) radioIcon.className = 'fas fa-play'; // Меняет иконку на Плей
+    }
+};
+
+// Функция для получения статуса подписки от Android
+window.updateSubscriptionStatus = function(isPremium) {
+    console.log("Subscription status: " + isPremium);
+    // Тут можно скрывать/показывать рекламу или открывать доп. функции
+};
+
 /** --- ГЛОБАЛЬНЫЕ ДАННЫЕ --- */
 const WORLD_SIZE = 5000;
 const BASE_POS = { x: 2500, y: 2500 };
@@ -420,14 +378,11 @@ let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
 let radioPlaying = false;
 let radioVolume = 0.3; // 30% громкость по умолчанию
 let radioInitialized = false;
-let radioStatsInterval = null; // Интервал для проверки статистики
-let lastStatsSent = 0; // Время последней отправки статистики
-let audioDisabled = false; // Флаг отключения аудио в браузере
 
-// ПОДПИСКА ПЕРЕМЕННЫЕ
-let isPremiumSubscriber = false; // Статус подписки
-let subscriptionChecked = false; // Проверена ли подписка
-let gameAudioEnabled = false; // Включен ли звук игры
+// ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
+window.startGame = startGame;
+window.toggleShop = toggleShop;
+window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
 window.toggleRadio = toggleRadio;
 
@@ -443,9 +398,6 @@ window.onload = function() {
         
         // Инициализация радио плеера
         initRadio();
-        
-        // Проверка подписки от APK
-        checkSubscriptionFromAPK();
         
         // Показываем кнопку "Продолжить" если есть сохранение
         const saved = localStorage.getItem('strazhEfira_progress');
@@ -561,15 +513,6 @@ function toggleRadio() {
 }
 
 function initRadio() {
-    // ОТКЛЮЧАЕМ ЗВУК В БРАУЗЕРЕ
-    disableBrowserAudio();
-    
-    // Проверяем доступность Android интерфейса
-    if (typeof Android !== 'undefined' && Android.isAudioDisabled && Android.isAudioDisabled()) {
-        audioDisabled = true;
-        console.log('Browser audio disabled by Android app');
-    }
-    
     // Восстанавливаем сохраненные настройки
     const savedPlaying = localStorage.getItem('radio_playing');
     const savedVolume = localStorage.getItem('radio_volume');
@@ -604,25 +547,15 @@ function initRadio() {
             if (radioBtn) radioBtn.classList.remove('playing');
             if (radioIcon) radioIcon.className = 'fas fa-play';
         } else {
-            // Если нет сохраненного состояния - проверяем состояние APK
-            if (typeof Android !== 'undefined' && Android.isRadioPlaying) {
-                const isPlaying = Android.isRadioPlaying();
-                if (isPlaying) {
-                    radioPlaying = true;
-                    const radioBtn = document.getElementById('radio-toggle');
-                    const radioIcon = document.getElementById('radio-icon');
-                    if (radioBtn) radioBtn.classList.add('playing');
-                    if (radioIcon) radioIcon.className = 'fas fa-pause';
-                    localStorage.setItem('radio_playing', 'true');
-                    localStorage.setItem('radio_volume', radioVolume.toString());
-                } else {
-                    radioPlaying = false;
-                    const radioBtn = document.getElementById('radio-toggle');
-                    const radioIcon = document.getElementById('radio-icon');
-                    if (radioBtn) radioBtn.classList.remove('playing');
-                    if (radioIcon) radioIcon.className = 'fas fa-play';
-                }
-            }
+            // Если нет сохраненного состояния - значит радио играет по умолчанию от APK
+            radioPlaying = true;
+            const radioBtn = document.getElementById('radio-toggle');
+            const radioIcon = document.getElementById('radio-icon');
+            if (radioBtn) radioBtn.classList.add('playing');
+            if (radioIcon) radioIcon.className = 'fas fa-pause';
+            // Сохраняем состояние для будущих запусков
+            localStorage.setItem('radio_playing', 'true');
+            localStorage.setItem('radio_volume', radioVolume.toString());
         }
     } else {
         // Если Android интерфейс недоступен, показываем неактивное состояние
@@ -637,188 +570,6 @@ function initRadio() {
     }
     
     radioInitialized = true;
-    
-    // Запускаем проверку радио статистики
-    startRadioStats();
-}
-
-// ФУНКЦИЯ ОБНОВЛЕНИЯ СТАТУСА ПОДПИСКИ ИЗ APK
-window.updateSubscriptionStatus = function(isPremium) {
-    isPremiumSubscriber = isPremium;
-    subscriptionChecked = true;
-    
-    // Обновляем маячок подписки
-    const badge = document.getElementById('subscription-badge');
-    const warning = document.getElementById('subscription-warning');
-    
-    if (badge && warning) {
-        if (isPremium) {
-            badge.className = 'subscription-badge premium';
-            badge.innerHTML = '<i class="fas fa-crown"></i> PREMIUM';
-            warning.classList.remove('show');
-            gameAudioEnabled = true;
-        } else {
-            badge.className = 'subscription-badge free';
-            badge.innerHTML = '<i class="fas fa-crown"></i> FREE';
-            // Показываем предупреждение на 5 секунд
-            warning.classList.add('show');
-            setTimeout(() => {
-                warning.classList.remove('show');
-            }, 5000);
-            gameAudioEnabled = false;
-        }
-    }
-    
-    // Управляем звуком игры в зависимости от подписки
-    manageGameAudio();
-    
-    console.log('Subscription status updated: ' + isPremium);
-};
-
-// УПРАВЛЕНИЕ ЗВУКОМ ИГРЫ
-function manageGameAudio() {
-    if (!subscriptionChecked) return;
-    
-    const etherNoise = document.getElementById('ether-noise');
-    
-    if (gameAudioEnabled && etherNoise && !etherNoisePlaying) {
-        // Включаем звук игры для подписчиков
-        etherNoise.volume = 0.1; // Низкая громкость
-        etherNoise.play().catch(e => console.log('Audio play failed:', e));
-        etherNoisePlaying = true;
-        console.log('Game audio enabled for premium subscriber');
-    } else if (!gameAudioEnabled && etherNoise && etherNoisePlaying) {
-        // Отключаем звук игры для не-подписчиков
-        etherNoise.pause();
-        etherNoisePlaying = false;
-        console.log('Game audio disabled for free user');
-    }
-}
-
-// ПРОВЕРКА ПОДПИСКИ ПРИ ЗАПУСКЕ
-function checkSubscriptionFromAPK() {
-    if (typeof Android !== 'undefined' && Android.isPremiumSubscriber) {
-        const isPremium = Android.isPremiumSubscriber();
-        updateSubscriptionStatus(isPremium);
-    } else {
-        // Заглушка - если нет APK, считаем что не подписчик
-        updateSubscriptionStatus(false);
-    }
-}
-
-// ФУНКЦИЯ ОБНОВЛЕНИЯ СОСТОЯНИЯ РАДИО ИЗ APK
-window.updateRadioStatus = function(isPlaying) {
-    if (audioDisabled && typeof Android !== 'undefined') {
-        radioPlaying = isPlaying;
-        const radioBtn = document.getElementById('radio-toggle');
-        const radioIcon = document.getElementById('radio-icon');
-        
-        if (isPlaying) {
-            if (radioBtn) radioBtn.classList.add('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-pause';
-        } else {
-            if (radioBtn) radioBtn.classList.remove('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-play';
-        }
-        
-        console.log('Radio status updated from APK: ' + isPlaying);
-    }
-};
-
-// ФУНКЦИЯ ОТКЛЮЧЕНИЯ ЗВУКА В БРАУЗЕРЕ
-function disableBrowserAudio() {
-    // Отключаем все аудио элементы
-    const audioElements = document.getElementsByTagName('audio');
-    for (let i = 0; i < audioElements.length; i++) {
-        audioElements[i].pause();
-        audioElements[i].muted = true;
-        audioElements[i].volume = 0;
-    }
-    
-    // Отключаем все видео элементы
-    const videoElements = document.getElementsByTagName('video');
-    for (let i = 0; i < videoElements.length; i++) {
-        videoElements[i].pause();
-        videoElements[i].muted = true;
-        videoElements[i].volume = 0;
-    }
-    
-    // Блокируем создание новых аудио элементов
-    const originalCreateElement = document.createElement;
-    document.createElement = function(tagName) {
-        const element = originalCreateElement.call(this, tagName);
-        if (tagName.toLowerCase() === 'audio' || tagName.toLowerCase() === 'video') {
-            element.muted = true;
-            element.volume = 0;
-            element.addEventListener('play', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.pause();
-            });
-        }
-        return element;
-    };
-    
-    // Блокируем Web Audio API
-    if (typeof AudioContext !== 'undefined') {
-        window.AudioContext = function() {
-            throw new Error('AudioContext disabled by Android app');
-        };
-        window.webkitAudioContext = window.AudioContext;
-    }
-    
-    console.log('Browser audio disabled');
-}
-
-// РАДИО СТАТИСТИКА
-function startRadioStats() {
-    // Проверяем состояние радио каждые 5 секунд
-    if (radioStatsInterval) clearInterval(radioStatsInterval);
-    
-    radioStatsInterval = setInterval(() => {
-        checkRadioStatus();
-    }, 5000);
-    
-    // Первичная проверка сразу
-    setTimeout(checkRadioStatus, 1000);
-}
-
-function checkRadioStatus() {
-    if (typeof Android !== 'undefined' && Android.isRadioPlaying) {
-        const isPlaying = Android.isRadioPlaying();
-        
-        // Если радио играет в APK но UI не обновлен
-        if (isPlaying && !radioPlaying) {
-            radioPlaying = true;
-            const radioBtn = document.getElementById('radio-toggle');
-            const radioIcon = document.getElementById('radio-icon');
-            if (radioBtn) radioBtn.classList.add('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-pause';
-            
-            console.log('Радио обнаружено как играющее - обновлен UI');
-        }
-        
-        // Отправляем статистику если радио играет
-        if (isPlaying) {
-            const now = Date.now();
-            // Отправляем статистику каждые 30 секунд
-            if (now - lastStatsSent > 30000) {
-                sendRadioStats();
-                lastStatsSent = now;
-            }
-        }
-    }
-}
-
-function sendRadioStats() {
-    if (typeof Android !== 'undefined' && Android.sendRadioStats) {
-        try {
-            Android.sendRadioStats();
-            console.log('Радио статистика отправлена на сервер');
-        } catch (error) {
-            console.error('Ошибка отправки радио статистики:', error);
-        }
-    }
 }
 
 /** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
