@@ -1,6 +1,7 @@
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
+    // ТВОЯ ССЫЛКА НА ГУГЛ ТАБЛИЦУ
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -17,29 +18,28 @@ var stats = {
     gameOnlyTime: 0,  
     hybridTime: 0,    
     currentGame: "lobby",
-    isGameActive: false,    // Видит ли юзер вкладку с игрой
-    isInternalPause: false  // Нажата ли пауза ВНУТРИ игры
+    isInternalPause: false // Пауза внутри игры
 };
 
-// Счётчик секунд
+// Счётчик секунд (для браузера)
 setInterval(function() {
-    // Юзер играет, ТОЛЬКО если он на вкладке игры И игра НЕ на паузе внутри
-    var isUserActuallyPlaying = (stats.currentGame !== "lobby" && stats.isGameActive && !stats.isInternalPause);
+    // Условие: Считаем игру активной, только если мы в ней и нет внутренней паузы
+    var isUserPlaying = (stats.currentGame !== "lobby" && !stats.isInternalPause);
 
-    if (!isUserActuallyPlaying) {
-        // Если юзер в меню, или на другой вкладке, или игра ВНУТРИ на паузе
+    if (!isUserPlaying) {
+        // Если в меню или игра на паузе — всё время в Радио
         if (isPlaying) stats.radioOnlyTime++;
     } else {
-        // Юзер реально играет прямо сейчас
+        // Если реально играет
         if (isPlaying) {
-            stats.hybridTime++; // Радио + Игра
+            stats.hybridTime++;
         } else {
-            stats.gameOnlyTime++; // Только игра (тишина)
+            stats.gameOnlyTime++;
         }
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд
+// Отправка данных каждые 15 секунд (для проверки)
 setInterval(sendStatsToServer, 15000);
 
 function sendStatsToServer() {
@@ -63,18 +63,12 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
-// МОСТИК ДЛЯ ИГР: Слушаем сообщения от игр внутри фрейма
-window.addEventListener('message', function(event) {
-    // Если игра прислала { "type": "gameStatus", "paused": true }
-    if (event.data && event.data.type === 'gameStatus') {
-        stats.isInternalPause = event.data.paused;
+// Слушаем паузу из игр (внутри iframe)
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'gameStatus') {
+        stats.isInternalPause = e.data.paused;
     }
 });
-
-// Дополнительная функция: можно вызвать из игры как parent.setGamePauseStatus(true)
-window.setGamePauseStatus = function(isPaused) {
-    stats.isInternalPause = isPaused;
-};
 // ---------------------------------
 
 window.onload = function() {
@@ -108,29 +102,43 @@ function updateUI() {
 }
 
 window.openTab = function(tabName, btnElement) {
-    // ... твой старый код переключения вкладок ...
-    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabName).classList.add('active');
+    var panes = document.querySelectorAll('.tab-pane');
+    var btns = document.querySelectorAll('.tab-btn');
+    for(var i=0; i<panes.length; i++) panes[i].classList.remove('active');
+    for(var j=0; j<btns.length; j++) btns[j].classList.remove('active');
 
-    // СООБЩАЕМ В АПК:
+    var target = document.getElementById(tabName);
+    if(target) target.classList.add('active');
+    if(btnElement) btnElement.classList.add('active');
+
+    // Если ушли с вкладки Home — ставим лобби для маяка
     if (tabName !== 'home') {
+        stats.currentGame = "lobby";
+        stats.isInternalPause = false;
         if (isApp) window.Android.updateActiveGame("lobby");
     }
 };
 
 window.loadGame = function(gamePath) {
-    var gameName = "unknown";
+    // 1. Сначала активируем вкладку
+    window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
+
+    // 2. Записываем название игры
     try {
-        gameName = gamePath.split('/').pop().replace('.html', '');
-    } catch(e) {}
+        var name = gamePath.split('/').pop().replace('.html', '');
+        stats.currentGame = name;
+        stats.isInternalPause = false;
+        // Сообщаем в АПК (Java) имя игры
+        if (isApp) window.Android.updateActiveGame(name);
+    } catch(e) {
+        stats.currentGame = "unknown";
+    }
 
-    // СООБЩАЕМ В АПК НАЗВАНИЕ ИГРЫ:
-    if (isApp) window.Android.updateActiveGame(gameName);
-
+    // 3. Загружаем саму игру
     var frame = document.getElementById('game-frame');
     if(frame) {
-        frame.src = gamePath + "?v=" + Date.now();
-        window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
+        var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
+        frame.src = gamePath + buster + "v=" + Date.now();
     }
 };
 
@@ -141,17 +149,24 @@ function initPlayer() {
 
 function togglePlayState() {
     var slider = document.getElementById('vol-slider');
+
     if (isApp && window.Android) {
-        if (isPlaying) { window.Android.pauseAudio(); isPlaying = false; }
-        else { 
+        if (isPlaying) {
+            window.Android.pauseAudio();
+            isPlaying = false;
+        } else {
             if (slider) window.Android.setVolume(parseFloat(slider.value));
-            window.Android.playAudio(); isPlaying = true; 
+            window.Android.playAudio();
+            isPlaying = true;
         }
     } else {
-        if (isPlaying) { audio.pause(); audio.src = ""; isPlaying = false; }
-        else { 
-            audio.src = CONFIG.streamUrl + "?nc=" + Date.now(); 
-            audio.play().catch(function(e){}); isPlaying = true; 
+        if (isPlaying) {
+            audio.pause(); audio.src = ""; audio.load();
+            isPlaying = false;
+        } else {
+            audio.src = CONFIG.streamUrl + "?nc=" + Date.now();
+            audio.play().catch(function(e) {});
+            isPlaying = true;
         }
     }
     updateUI();
@@ -163,6 +178,7 @@ function initVolume() {
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
     if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
+
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
@@ -187,4 +203,3 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
-
