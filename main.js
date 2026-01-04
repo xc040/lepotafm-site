@@ -108,43 +108,29 @@ function updateUI() {
 }
 
 window.openTab = function(tabName, btnElement) {
-    var panes = document.querySelectorAll('.tab-pane');
-    var btns = document.querySelectorAll('.tab-btn');
-    for(var i=0; i<panes.length; i++) panes[i].classList.remove('active');
-    for(var j=0; j<btns.length; j++) btns[j].classList.remove('active');
+    // ... твой старый код переключения вкладок ...
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
 
-    var target = document.getElementById(tabName);
-    if(target) target.classList.add('active');
-    if(btnElement) btnElement.classList.add('active');
-
-    if (tabName === 'home') {
-        var frame = document.getElementById('game-frame');
-        if (frame && frame.src && !frame.src.includes('about:blank')) {
-            stats.isGameActive = true;
-        } else {
-            stats.isGameActive = false;
-            stats.currentGame = "lobby";
-        }
-    } else {
-        stats.isGameActive = false; // Ушли с экрана игры — считаем паузой
+    // СООБЩАЕМ В АПК:
+    if (tabName !== 'home') {
+        if (isApp) window.Android.updateActiveGame("lobby");
     }
 };
 
 window.loadGame = function(gamePath) {
+    var gameName = "unknown";
     try {
-        var name = gamePath.split('/').pop().replace('.html', '');
-        stats.currentGame = name;
-    } catch(e) { stats.currentGame = "unknown"; }
+        gameName = gamePath.split('/').pop().replace('.html', '');
+    } catch(e) {}
 
-    stats.isGameActive = true;
-    stats.isInternalPause = false; // Новая игра всегда активна
+    // СООБЩАЕМ В АПК НАЗВАНИЕ ИГРЫ:
+    if (isApp) window.Android.updateActiveGame(gameName);
 
     var frame = document.getElementById('game-frame');
     if(frame) {
-        var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
-        frame.src = gamePath + buster + "v=" + Date.now();
-        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-        window.openTab('home', homeBtn);
+        frame.src = gamePath + "?v=" + Date.now();
+        window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
     }
 };
 
@@ -201,3 +187,4 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+
