@@ -1,7 +1,7 @@
-// Используем var вместо const для совместимости и защиты от ошибок переобъявления
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
+    // ТВОЯ ССЫЛКА НА GOOGLE ТАБЛИЦУ
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -12,76 +12,67 @@ var audio = new Audio();
 var isPlaying = false; 
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ (БЕЗОПАСНАЯ) ---
+// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
 var stats = {
-    radioOnlyTime: 0, 
-    gameOnlyTime: 0,  
-    hybridTime: 0,    
+    radioOnly: 0, 
+    gameOnly: 0,  
+    hybrid: 0,    
     currentGame: "lobby" 
 };
 
+// Считаем время каждую секунду
 setInterval(function() {
-    try {
-        if (stats.currentGame === "lobby") {
-            if (isPlaying) stats.radioOnlyTime++;
+    if (stats.currentGame === "lobby") {
+        if (isPlaying) stats.radioOnly++;
+    } else {
+        if (isPlaying) {
+            stats.hybrid++;
         } else {
-            if (isPlaying) {
-                stats.hybridTime++;
-            } else {
-                stats.gameOnlyTime++;
-            }
+            stats.gameOnly++;
         }
-    } catch(e) {}
+    }
 }, 1000);
 
-setInterval(sendBeacon, 60000);
+// ОТПРАВКА ДАННЫХ (Сейчас каждые 10 секунд для теста)
+setInterval(sendStatsToServer, 10000); 
 
-function sendBeacon() {
-    if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
+function sendStatsToServer() {
+    // Если активности нет - не шлем ничего
+    if (stats.radioOnly === 0 && stats.gameOnly === 0 && stats.hybrid === 0) return;
 
-    try {
-        // Формируем строку вручную для максимальной совместимости
-        var urlParams = "radio_only=" + stats.radioOnlyTime +
-                        "&game_only=" + stats.gameOnlyTime +
-                        "&hybrid=" + stats.hybridTime +
-                        "&last_game=" + encodeURIComponent(stats.currentGame) +
-                        "&user_type=" + (window.isPaidUser ? 'paid' : 'free');
+    var query = "radio_only=" + stats.radioOnly +
+                "&game_only=" + stats.gameOnly +
+                "&hybrid=" + stats.hybrid +
+                "&last_game=" + encodeURIComponent(stats.currentGame) +
+                "&user_type=" + (window.isPaidUser ? 'paid' : 'free');
 
-        fetch(CONFIG.statsUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: urlParams
-        });
+    fetch(CONFIG.statsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: query
+    });
 
-        // Сброс счетчиков
-        stats.radioOnlyTime = 0;
-        stats.gameOnlyTime = 0;
-        stats.hybridTime = 0;
-    } catch(e) {
-        console.log("Stats failed");
-    }
+    // Сбрасываем счетчики
+    stats.radioOnly = 0; stats.gameOnly = 0; stats.hybrid = 0;
 }
-// ---------------------------------------
+// ---------------------------
 
 window.onload = function() {
-    try {
-        if (!isApp) {
-            audio.src = CONFIG.streamUrl;
-        } else {
-            if(window.Android && window.Android.notifyPageLoaded) {
-                window.Android.notifyPageLoaded();
-            }
+    if (!isApp) {
+        audio.src = CONFIG.streamUrl;
+    } else {
+        if(window.Android && window.Android.notifyPageLoaded) {
+            window.Android.notifyPageLoaded();
         }
-        initPlayer();
-        initVolume();
-        updateMetadata();
-        setInterval(updateMetadata, CONFIG.refreshTime);
-    } catch(e) {
-        console.error("Critical Load Error: ", e);
     }
+    initPlayer();
+    initVolume();
+    updateMetadata();
+    setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
+// СИНХРОНИЗАЦИЯ С АНДРОИДОМ
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
     isPlaying = androidIsPlaying; 
@@ -101,7 +92,6 @@ window.syncAppState = function(androidIsPlaying, androidIsPaid) {
 window.openTab = function(tabName, btnElement) {
     var panes = document.querySelectorAll('.tab-pane');
     var btns = document.querySelectorAll('.tab-btn');
-    
     for(var i=0; i<panes.length; i++) panes[i].classList.remove('active');
     for(var j=0; j<btns.length; j++) btns[j].classList.remove('active');
     
@@ -109,6 +99,7 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if (btnElement) btnElement.classList.add('active');
 
+    // Если вернулись на главную - Маячок пишет "lobby"
     if (tabName === 'home') {
         stats.currentGame = "lobby";
     }
@@ -122,13 +113,13 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
-    var gameName = "unknown";
+    // Маячок запоминает название игры
     try {
-        gameName = gamePath.split('/').pop().replace('.html', '');
-    } catch(e) {}
+        stats.currentGame = gamePath.split('/').pop().replace('.html', '');
+    } catch(e) {
+        stats.currentGame = "unknown";
+    }
     
-    stats.currentGame = gameName; 
-
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
@@ -144,8 +135,6 @@ function initPlayer() {
 }
 
 function togglePlayState() {
-    var icon = document.getElementById('play-icon');
-    var playerDiv = document.querySelector('.inline-player');
     var slider = document.getElementById('vol-slider');
 
     if (isApp) {
@@ -162,40 +151,28 @@ function togglePlayState() {
 
     if (isPlaying) {
         audio.pause(); audio.src = ""; audio.load();
-        if(icon) icon.className = "fas fa-play";
-        if(playerDiv) playerDiv.classList.remove('playing');
         isPlaying = false;
     } else {
         audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
         audio.play().catch(function(e) {});
-        if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing');
         isPlaying = true;
     }
+    // Обновляем визуал (для браузера)
+    syncAppState(isPlaying, window.isPaidUser);
 }
 
 function initVolume() {
     var slider = document.getElementById('vol-slider');
     if (!slider) return;
-    
     var savedVol = localStorage.getItem('savedVolume');
     var finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
     slider.value = finalVol;
-    
-    if (isApp) { 
-        try { if(window.Android) window.Android.setVolume(finalVol); } catch(e){} 
-    } else { 
-        audio.volume = finalVol; 
-    }
+    if (isApp) { try { if(window.Android) window.Android.setVolume(finalVol); } catch(e){} } else { audio.volume = finalVol; }
 
     slider.addEventListener('input', function(e) {
         var vol = parseFloat(e.target.value);
         localStorage.setItem('savedVolume', vol);
-        if (isApp) { 
-            try { if(window.Android) window.Android.setVolume(vol); } catch(e) {} 
-        } else { 
-            audio.volume = vol; 
-        }
+        if (isApp) { try { if(window.Android) window.Android.setVolume(vol); } catch(e) {} } else { audio.volume = vol; }
     });
 }
 
@@ -205,15 +182,9 @@ function updateMetadata() {
         .then(function(data) {
             if (data.now_playing && data.now_playing.song) {
                 var song = data.now_playing.song;
-                var trackEl = document.getElementById('track-name');
-                var artistEl = document.getElementById('artist-name');
-                var sepEl = document.getElementById('track-sep');
-                var artEl = document.getElementById('mini-art');
-                
-                if(trackEl) trackEl.innerText = song.title;
-                if(artistEl) artistEl.innerText = song.artist || "";
-                if(sepEl) sepEl.style.display = song.artist ? "inline" : "none";
-                if(artEl) artEl.src = fixUrl(song.art);
+                if(document.getElementById('track-name')) document.getElementById('track-name').innerText = song.title;
+                if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
+                if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
             }
             if (data.song_history) renderHistory(data.song_history);
         }).catch(function(err) {});
@@ -241,17 +212,5 @@ function fixUrl(url) {
 window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
 window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
 window.openSku = function(title, artist, art) {
-    var mArt = document.getElementById('modal-art');
-    var mTitle = document.getElementById('modal-title');
-    var mArtist = document.getElementById('modal-artist');
-    var modal = document.getElementById('info-modal');
-    
-    if(mArt) mArt.src = art;
-    if(mTitle) mTitle.innerText = title;
-    if(mArtist) mArtist.innerText = artist;
-    if(modal) modal.classList.remove('hidden');
-};
-window.closeSku = function() { 
-    var modal = document.getElementById('info-modal');
-    if(modal) modal.classList.add('hidden'); 
-};
+    if(document.getElementById('modal-art')) document.getElementById('modal-art').src = art;
+    if(document.get
