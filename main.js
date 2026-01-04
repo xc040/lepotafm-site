@@ -8,42 +8,44 @@ const CONFIG = {
 const isApp = (typeof window.Android !== "undefined");
 let audio = new Audio(); 
 let isPlaying = false; 
-// Глобальная переменная для статуса подписки (чтобы игра знала)
-window.isPaidUser = false; 
+window.isPaidUser = false; // Глобальная переменная для игр
 
 window.onload = function() {
-    if (!isApp) audio.src = CONFIG.streamUrl;
+    if (!isApp) {
+        audio.src = CONFIG.streamUrl;
+    } else {
+        // --- ИСПРАВЛЕНИЕ: Говорим Андроиду "Я тут, дай статус!" ---
+        if(window.Android.notifyPageLoaded) {
+            window.Android.notifyPageLoaded();
+        }
+    }
     initPlayer();
     initVolume();
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-// --- ГЛАВНАЯ ФУНКЦИЯ СВЯЗИ С АНДРОИДОМ ---
-// Android вызывает её сам, когда загрузка завершена
+// --- ФУНКЦИЯ, КОТОРУЮ ВЫЗОВЕТ ANDROID В ОТВЕТ ---
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
-    console.log("Sync from Android: Playing=" + androidIsPlaying + ", Paid=" + androidIsPaid);
+    console.log("Sync received: Playing=" + androidIsPlaying);
     
-    // 1. Сохраняем статус оплаты (для игры)
+    // 1. Ставим статус оплаты
     window.isPaidUser = androidIsPaid;
 
-    // 2. Синхронизируем плеер (Крутилку и Иконку)
+    // 2. Обновляем визуальный плеер
     isPlaying = androidIsPlaying;
     
     const icon = document.getElementById('play-icon');
     const playerDiv = document.querySelector('.inline-player');
     
     if (isPlaying) {
-        // Если Андроид сказал, что музыка играет -> Включаем анимацию и иконку Паузы
         if(icon) icon.className = "fas fa-pause";
-        if(playerDiv) playerDiv.classList.add('playing'); // Класс для вращения
+        if(playerDiv) playerDiv.classList.add('playing'); // Добавляем класс вращения
     } else {
-        // Если тишина -> Стоп анимация и иконка Плей
         if(icon) icon.className = "fas fa-play";
         if(playerDiv) playerDiv.classList.remove('playing');
     }
 };
-// -----------------------------------------
 
 window.openTab = function(tabName, btnElement) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
@@ -64,7 +66,6 @@ window.loadGame = function(gamePath) {
     if(frame) {
         const buster = gamePath.includes('?') ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        
         const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -141,4 +142,30 @@ function updateMetadata() {
 }
 
 function renderHistory(history) {
-    con
+    const container = document.getElementById('history-container');
+    if (!container) return;
+    let html = '';
+    history.forEach(item => {
+        const song = item.song;
+        const art = fixUrl(song.art);
+        const safeTitle = (song.title || "").replace(/'/g, "\\'");
+        const safeArtist = (song.artist || "").replace(/'/g, "\\'");
+        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
+    });
+    container.innerHTML = html;
+}
+
+function fixUrl(url) {
+    if (!url || url.includes('generic')) return CONFIG.defaultImage;
+    return url.replace('http:', 'https:');
+}
+
+window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
+window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
+window.openSku = function(title, artist, art) {
+    document.getElementById('modal-art').src = art;
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-artist').innerText = artist;
+    document.getElementById('info-modal').classList.remove('hidden');
+};
+window.closeSku = function() { document.getElementById('info-modal').classList.add('hidden'); };
