@@ -1,260 +1,171 @@
-package com.lepotafm.radio; // ⚠️ ПРОВЕРЬ ИМЯ ПАКЕТА
+const CONFIG = {
+    streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
+    apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
+    defaultImage: "logo.jpg", 
+    refreshTime: 8000 
+};
 
-import android.content.Context;
-import android.graphics.Color;
-import android.media.AudioFocusRequest;
-import android.media.AudioManager;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.PowerManager;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import androidx.activity.OnBackPressedCallback;
-import androidx.appcompat.app.AppCompatActivity;
+const isApp = (typeof window.Android !== "undefined");
+let audio = new Audio(); 
+let isPlaying = false; 
+window.isPaidUser = false; // Глобальная переменная для игр
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.audio.AudioAttributes;
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultAllocator;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
+window.onload = function() {
+    if (!isApp) {
+        audio.src = CONFIG.streamUrl;
+    } else {
+        // --- ИСПРАВЛЕНИЕ: Говорим Андроиду "Я тут, дай статус!" ---
+        if(window.Android.notifyPageLoaded) {
+            window.Android.notifyPageLoaded();
+        }
+    }
+    initPlayer();
+    initVolume();
+    updateMetadata();
+    setInterval(updateMetadata, CONFIG.refreshTime);
+};
 
-public class MainActivity extends AppCompatActivity {
-
-    // --- НАСТРОЙКИ ---
-    private String siteUrl = "https://xc040.github.io/lepotafm-site/?app=true";
-    private String streamUrl = "https://lepotafm.ru/listen/lepotafm/radio.mp3";
-    private boolean isPaidUser = true;
-
-    private WebView myWebView;
-    private ExoPlayer player;
-    private PowerManager.WakeLock wakeLock;
-    private float currentVolume = 1.0f;
+// --- ФУНКЦИЯ, КОТОРУЮ ВЫЗОВЕТ ANDROID В ОТВЕТ ---
+window.syncAppState = function(androidIsPlaying, androidIsPaid) {
+    console.log("Sync received: Playing=" + androidIsPlaying);
     
-    // Переменные для контроля фокуса
-    private boolean isActivityVisible = true;
-    private AudioManager audioManager;
-    private AudioManager.OnAudioFocusChangeListener focusChangeListener;
+    // 1. Ставим статус оплаты
+    window.isPaidUser = androidIsPaid;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    // 2. Обновляем визуальный плеер
+    isPlaying = androidIsPlaying;
+    
+    const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
+    
+    if (isPlaying) {
+        if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing'); // Добавляем класс вращения
+    } else {
+        if(icon) icon.className = "fas fa-play";
+        if(playerDiv) playerDiv.classList.remove('playing');
+    }
+};
 
-        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        if (powerManager != null) {
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LepotaFM:RadioWakeLock");
-            wakeLock.acquire();
+window.openTab = function(tabName, btnElement) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    if (btnElement) btnElement.classList.add('active');
+
+    const gameFrame = document.getElementById('game-frame');
+    if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
+        if (tabName !== 'home') {
+            gameFrame.contentWindow.setGamePause(true);
         }
-
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        
-        // 1. Настраиваем "Наглый" фокус
-        setupAudioFocus();
-
-        // 2. Запускаем плеер
-        setupNativePlayer();
-
-        // 3. Запускаем игру
-        setupWebView();
     }
+};
 
-    private void setupAudioFocus() {
-        focusChangeListener = focusChange -> {
-            // Если фокус потерян (игра запустилась или звонок)
-            if (focusChange == AudioManager.AUDIOFOCUS_LOSS || 
-                focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT ||
-                focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-                
-                // ГЛАВНЫЙ ХАК:
-                if (isActivityVisible) {
-                    // Если мы ВНУТРИ приложения (играем), а звук пытается пропасть:
-                    // МЫ ЕГО ВОЗВРАЩАЕМ! Игнорируем требование системы заткнуться.
-                    if (player != null && !player.isPlaying()) {
-                        player.setPlayWhenReady(true);
-                    }
-                } else {
-                    // Если мы СВЕРНУЛИ приложение (YouTube, Звонок):
-                    // Честно ставим паузу.
-                    if (player != null && player.isPlaying()) {
-                        player.setPlayWhenReady(false);
-                    }
-                }
-            } 
-            // Если фокус вернулся (закончили звонок)
-            else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-                if (player != null && !player.isPlaying()) {
-                    player.setPlayWhenReady(true);
-                }
-            }
-        };
+window.loadGame = function(gamePath) {
+    const frame = document.getElementById('game-frame');
+    if(frame) {
+        const buster = gamePath.includes('?') ? '&' : '?';
+        frame.src = gamePath + buster + "v=" + Date.now();
+        const homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
     }
+};
 
-    private void requestAudioFocus() {
-        // Запрашиваем право на звук
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            AudioFocusRequest request = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                    .setOnAudioFocusChangeListener(focusChangeListener)
-                    .build();
-            audioManager.requestAudioFocus(request);
+function initPlayer() {
+    const playBtn = document.getElementById('play-btn');
+    if (playBtn) playBtn.addEventListener('click', togglePlayState);
+}
+
+function togglePlayState() {
+    const icon = document.getElementById('play-icon');
+    const playerDiv = document.querySelector('.inline-player');
+    const slider = document.getElementById('vol-slider');
+
+    if (isApp) {
+        if (isPlaying) {
+            window.Android.pauseAudio();
+            if(icon) icon.className = "fas fa-play";
+            if(playerDiv) playerDiv.classList.remove('playing');
+            isPlaying = false;
         } else {
-            audioManager.requestAudioFocus(focusChangeListener, 
-                    AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+            if (slider) window.Android.setVolume(parseFloat(slider.value));
+            window.Android.playAudio();
+            if(icon) icon.className = "fas fa-pause";
+            if(playerDiv) playerDiv.classList.add('playing');
+            isPlaying = true;
         }
+        return;
     }
 
-    private void setupNativePlayer() {
-        DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
-                .setAllocator(new DefaultAllocator(true, 16))
-                .setBufferDurationsMs(10000, 50000, 500, 2000)
-                .build();
-
-        DefaultHttpDataSource.Factory httpDataSourceFactory = new DefaultHttpDataSource.Factory()
-                .setAllowCrossProtocolRedirects(true)
-                .setUserAgent("LepotaFM-App");
-
-        player = new ExoPlayer.Builder(this)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(httpDataSourceFactory))
-                .setLoadControl(loadControl)
-                .build();
-
-        // --- НАСТРОЙКИ АТРИБУТОВ ЗВУКА ---
-        // Используем USAGE_GAME, чтобы система охотнее смешивала звуки, а не глушила их
-        AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                .setUsage(C.USAGE_GAME) 
-                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                .build();
-        
-        // ВТОРОЙ ПАРАМЕТР FALSE ВАЖЕН:
-        // Это говорит плееру: "Не ставь паузу сам, если система просит. Я сам решу в focusChangeListener".
-        player.setAudioAttributes(audioAttributes, false); 
-
-        player.setWakeMode(C.WAKE_MODE_NETWORK);
-
-        MediaItem mediaItem = MediaItem.fromUri(streamUrl);
-        player.setMediaItem(mediaItem);
-        player.setVolume(currentVolume);
-        player.prepare();
-        
-        requestAudioFocus(); // Забираем фокус при старте
-        player.setPlayWhenReady(true); 
-
-        player.addListener(new Player.Listener() {
-            @Override
-            public void onPlayerError(PlaybackException error) {
-                player.setPlayWhenReady(false);
-                new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    if (player != null) {
-                        player.setMediaItem(mediaItem);
-                        player.prepare();
-                        player.setPlayWhenReady(true);
-                    }
-                }, 3000);
-            }
-        });
-    }
-
-    private void setupWebView() {
-        myWebView = findViewById(R.id.myWebView);
-        myWebView.setBackgroundColor(Color.BLACK);
-
-        WebSettings webSettings = myWebView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setMediaPlaybackRequiresUserGesture(false);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
-
-        myWebView.addJavascriptInterface(new WebAppInterface(this), "Android");
-        
-        myWebView.setWebViewClient(new WebViewClient()); // Убрали лишнее
-        
-        myWebView.loadUrl(siteUrl);
-    }
-
-    // Эта функция отправляет статус в JS
-    private void syncToWeb() {
-        new Handler(Looper.getMainLooper()).post(() -> {
-            if (myWebView != null && player != null) {
-                boolean isPlaying = player.getPlayWhenReady();
-                String jsCommand = "if(window.syncAppState) { window.syncAppState(" + isPlaying + ", " + isPaidUser + "); }";
-                myWebView.evaluateJavascript(jsCommand, null);
-            }
-        });
-    }
-
-    // --- СЛЕДИМ, ГДЕ ПОЛЬЗОВАТЕЛЬ ---
-    @Override
-    protected void onStart() {
-        super.onStart();
-        isActivityVisible = true; // Мы в приложении
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                if (myWebView.canGoBack()) myWebView.goBack();
-                else moveTaskToBack(true);
-            }
-        });
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        isActivityVisible = false; // Свернули или ушли
-    }
-
-    public class WebAppInterface {
-        Context mContext;
-        WebAppInterface(Context c) { mContext = c; }
-
-        @JavascriptInterface
-        public void notifyPageLoaded() {
-            syncToWeb();
-        }
-
-        @JavascriptInterface
-        public void playAudio() {
-            new Handler(Looper.getMainLooper()).post(() -> {
-                if (player != null) {
-                    requestAudioFocus(); // Если нажали плей, снова требуем фокус
-                    player.setPlayWhenReady(true);
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void pauseAudio() {
-            new Handler(Looper.getMainLooper()).post(() -> {
-                if (player != null) player.setPlayWhenReady(false);
-            });
-        }
-
-        @JavascriptInterface
-        public void setVolume(float vol) {
-            new Handler(Looper.getMainLooper()).post(() -> {
-                if (player != null) {
-                    currentVolume = vol;
-                    player.setVolume(vol);
-                }
-            });
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
-        if (player != null) { player.release(); player = null; }
-        if (audioManager != null && focusChangeListener != null) {
-            audioManager.abandonAudioFocus(focusChangeListener);
-        }
+    if (isPlaying) {
+        audio.pause(); audio.src = ""; audio.load();
+        if(icon) icon.className = "fas fa-play";
+        if(playerDiv) playerDiv.classList.remove('playing');
+        isPlaying = false;
+    } else {
+        audio.src = CONFIG.streamUrl + "?nocache=" + Date.now();
+        audio.play().catch(e => {});
+        if(icon) icon.className = "fas fa-pause";
+        if(playerDiv) playerDiv.classList.add('playing');
+        isPlaying = true;
     }
 }
+
+function initVolume() {
+    const slider = document.getElementById('vol-slider');
+    if (!slider) return;
+    let savedVol = localStorage.getItem('savedVolume');
+    let finalVol = savedVol !== null ? parseFloat(savedVol) : 1.0;
+    slider.value = finalVol;
+    if (isApp) { try { window.Android.setVolume(finalVol); } catch(e){} } else { audio.volume = finalVol; }
+
+    slider.addEventListener('input', (e) => {
+        let vol = parseFloat(e.target.value);
+        localStorage.setItem('savedVolume', vol);
+        if (isApp) { try { window.Android.setVolume(vol); } catch(e) {} } else { audio.volume = vol; }
+    });
+}
+
+function updateMetadata() {
+    fetch(CONFIG.apiUrl + "?t=" + Date.now())
+        .then(res => res.json())
+        .then(data => {
+            if (data.now_playing && data.now_playing.song) {
+                const song = data.now_playing.song;
+                document.getElementById('track-name').innerText = song.title;
+                document.getElementById('artist-name').innerText = song.artist || "";
+                document.getElementById('track-sep').style.display = song.artist ? "inline" : "none";
+                document.getElementById('mini-art').src = fixUrl(song.art);
+            }
+            if (data.song_history) renderHistory(data.song_history);
+        }).catch(err => {});
+}
+
+function renderHistory(history) {
+    const container = document.getElementById('history-container');
+    if (!container) return;
+    let html = '';
+    history.forEach(item => {
+        const song = item.song;
+        const art = fixUrl(song.art);
+        const safeTitle = (song.title || "").replace(/'/g, "\\'");
+        const safeArtist = (song.artist || "").replace(/'/g, "\\'");
+        html += `<div class="history-item"><img src="${art}" class="hist-img" onerror="this.src='${CONFIG.defaultImage}'"><div class="hist-info"><span class="hist-title">${song.title}</span><span class="hist-artist">${song.artist}</span></div><button class="sku-btn" onclick="openSku('${safeTitle}', '${safeArtist}', '${art}')"><i class="fas fa-info"></i></button></div>`;
+    });
+    container.innerHTML = html;
+}
+
+function fixUrl(url) {
+    if (!url || url.includes('generic')) return CONFIG.defaultImage;
+    return url.replace('http:', 'https:');
+}
+
+window.playRadioForce = function() { if (!isPlaying) togglePlayState(); };
+window.stopRadioForce = function() { if (isPlaying) togglePlayState(); };
+window.openSku = function(title, artist, art) {
+    document.getElementById('modal-art').src = art;
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-artist').innerText = artist;
+    document.getElementById('info-modal').classList.remove('hidden');
+};
+window.closeSku = function() { document.getElementById('info-modal').classList.add('hidden'); };
