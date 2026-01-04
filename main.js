@@ -21,25 +21,30 @@ var stats = {
     isInternalPause: false // Пауза внутри игры
 };
 
-// Счётчик секунд (для браузера)
+// Счётчик секунд (тикает каждую секунду)
 setInterval(function() {
-    // Условие: Считаем игру активной, только если мы в ней и нет внутренней паузы
-    var isUserPlaying = (stats.currentGame !== "lobby" && !stats.isInternalPause);
+    // УСЛОВИЕ: Мы реально играем, если: 
+    // 1. Выбрана игра (не lobby)
+    // 2. Мы на вкладке "home" (где игра)
+    // 3. В самой игре не нажата пауза
+    var isHomeActive = document.getElementById('home').classList.contains('active');
+    var isActuallyPlaying = (stats.currentGame !== "lobby" && isHomeActive && !stats.isInternalPause);
 
-    if (!isUserPlaying) {
-        // Если в меню или игра на паузе — всё время в Радио
-        if (isPlaying) stats.radioOnlyTime++;
-    } else {
-        // Если реально играет
+    if (isActuallyPlaying) {
         if (isPlaying) {
-            stats.hybridTime++;
+            stats.hybridTime++; // Радио + Игра
         } else {
-            stats.gameOnlyTime++;
+            stats.gameOnlyTime++; // Только игра
+        }
+    } else {
+        // Если мы в меню, в настройках или игра на паузе
+        if (isPlaying) {
+            stats.radioOnlyTime++; // Только радио
         }
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд (для проверки)
+// Отправка данных каждые 15 секунд (для теста)
 setInterval(sendStatsToServer, 15000);
 
 function sendStatsToServer() {
@@ -63,7 +68,7 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
-// Слушаем паузу из игр (внутри iframe)
+// Слушаем сообщения от игр (пауза)
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -111,34 +116,28 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
 
-    // Если ушли с вкладки Home — ставим лобби для маяка
-    if (tabName !== 'home') {
-        stats.currentGame = "lobby";
-        stats.isInternalPause = false;
-        if (isApp) window.Android.updateActiveGame("lobby");
-    }
+    // Если ушли с вкладки Home — игра считается неактивной (будет капать только Радио)
+    // Но название игры currentGame мы НЕ стираем, чтобы вернуться к ней позже
 };
 
 window.loadGame = function(gamePath) {
-    // 1. Сначала активируем вкладку
-    window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
-
-    // 2. Записываем название игры
+    // 1. Сначала определяем название игры
     try {
         var name = gamePath.split('/').pop().replace('.html', '');
         stats.currentGame = name;
-        stats.isInternalPause = false;
-        // Сообщаем в АПК (Java) имя игры
+        stats.isInternalPause = false; // Новая игра — без паузы
         if (isApp) window.Android.updateActiveGame(name);
-    } catch(e) {
-        stats.currentGame = "unknown";
-    }
+    } catch(e) { stats.currentGame = "unknown"; }
 
-    // 3. Загружаем саму игру
+    // 2. Загружаем игру во фрейм
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
+        
+        // 3. Открываем вкладку с игрой
+        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
     }
 };
 
