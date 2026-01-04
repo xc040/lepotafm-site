@@ -1,7 +1,6 @@
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // ТВОЯ ССЫЛКА НА ГУГЛ ТАБЛИЦУ
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -17,23 +16,30 @@ var stats = {
     radioOnlyTime: 0, 
     gameOnlyTime: 0,  
     hybridTime: 0,    
-    currentGame: "lobby" 
+    currentGame: "lobby",
+    isGameActive: false,    // Видит ли юзер вкладку с игрой
+    isInternalPause: false  // Нажата ли пауза ВНУТРИ игры
 };
 
-// Счётчик секунд (тикает всегда)
+// Счётчик секунд
 setInterval(function() {
-    if (stats.currentGame === "lobby") {
+    // Юзер играет, ТОЛЬКО если он на вкладке игры И игра НЕ на паузе внутри
+    var isUserActuallyPlaying = (stats.currentGame !== "lobby" && stats.isGameActive && !stats.isInternalPause);
+
+    if (!isUserActuallyPlaying) {
+        // Если юзер в меню, или на другой вкладке, или игра ВНУТРИ на паузе
         if (isPlaying) stats.radioOnlyTime++;
     } else {
+        // Юзер реально играет прямо сейчас
         if (isPlaying) {
-            stats.hybridTime++;
+            stats.hybridTime++; // Радио + Игра
         } else {
-            stats.gameOnlyTime++;
+            stats.gameOnlyTime++; // Только игра (тишина)
         }
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд для проверки
+// Отправка данных каждые 15 секунд
 setInterval(sendStatsToServer, 15000);
 
 function sendStatsToServer() {
@@ -54,9 +60,21 @@ function sendStatsToServer() {
         body: params.toString()
     });
 
-    // Сброс после отправки
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
+
+// МОСТИК ДЛЯ ИГР: Слушаем сообщения от игр внутри фрейма
+window.addEventListener('message', function(event) {
+    // Если игра прислала { "type": "gameStatus", "paused": true }
+    if (event.data && event.data.type === 'gameStatus') {
+        stats.isInternalPause = event.data.paused;
+    }
+});
+
+// Дополнительная функция: можно вызвать из игры как parent.setGamePauseStatus(true)
+window.setGamePauseStatus = function(isPaused) {
+    stats.isInternalPause = isPaused;
+};
 // ---------------------------------
 
 window.onload = function() {
@@ -73,7 +91,6 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-// Вызывается из Android
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
     isPlaying = androidIsPlaying; 
@@ -100,35 +117,34 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
 
-    // Если перешли на любую вкладку, кроме главной — считаем это выходом из игры в лобби
-    if (tabName !== 'home') {
-        stats.currentGame = "lobby";
+    if (tabName === 'home') {
         var frame = document.getElementById('game-frame');
-        if(frame) frame.src = "about:blank";
+        if (frame && frame.src && !frame.src.includes('about:blank')) {
+            stats.isGameActive = true;
+        } else {
+            stats.isGameActive = false;
+            stats.currentGame = "lobby";
+        }
+    } else {
+        stats.isGameActive = false; // Ушли с экрана игры — считаем паузой
     }
 };
 
 window.loadGame = function(gamePath) {
-    // 1. Сначала активируем вкладку, где будет игра (home)
-    var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-    
-    // Очищаем старые классы активных вкладок
-    document.querySelectorAll('.tab-pane').forEach(function(el){ el.classList.remove('active'); });
-    document.getElementById('home').classList.add('active');
-
-    // 2. Записываем название игры
     try {
         var name = gamePath.split('/').pop().replace('.html', '');
         stats.currentGame = name;
-    } catch(e) {
-        stats.currentGame = "unknown";
-    }
+    } catch(e) { stats.currentGame = "unknown"; }
 
-    // 3. Загружаем саму игру в фрейм
+    stats.isGameActive = true;
+    stats.isInternalPause = false; // Новая игра всегда активна
+
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
+        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
     }
 };
 
@@ -139,28 +155,20 @@ function initPlayer() {
 
 function togglePlayState() {
     var slider = document.getElementById('vol-slider');
-
     if (isApp && window.Android) {
-        if (isPlaying) {
-            window.Android.pauseAudio();
-            isPlaying = false;
-        } else {
+        if (isPlaying) { window.Android.pauseAudio(); isPlaying = false; }
+        else { 
             if (slider) window.Android.setVolume(parseFloat(slider.value));
-            window.Android.playAudio();
-            isPlaying = true;
+            window.Android.playAudio(); isPlaying = true; 
         }
     } else {
-        // Логика для браузера
-        if (isPlaying) {
-            audio.pause(); audio.src = ""; audio.load();
-            isPlaying = false;
-        } else {
-            audio.src = CONFIG.streamUrl + "?nc=" + Date.now();
-            audio.play().catch(function(e) {});
-            isPlaying = true;
+        if (isPlaying) { audio.pause(); audio.src = ""; isPlaying = false; }
+        else { 
+            audio.src = CONFIG.streamUrl + "?nc=" + Date.now(); 
+            audio.play().catch(function(e){}); isPlaying = true; 
         }
     }
-    updateUI(); // Обновляем кнопки и запускаем счётчик статистики
+    updateUI();
 }
 
 function initVolume() {
@@ -169,7 +177,6 @@ function initVolume() {
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
     if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
-
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
