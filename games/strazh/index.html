@@ -109,83 +109,6 @@
         .shop-item b { font-size: 11px; color: var(--neon-green); display: block; }
         .shop-item span { display: block; font-size: 10px; color: var(--neon-blue); font-weight: bold; margin-top: 4px; }
 
-        /* РАДИО ПЛЕЕР */
-        .radio-player {
-            position: absolute;
-            top: 70px;
-            left: 15px;
-            background: rgba(5, 5, 20, 0.9);
-            border: 1px solid var(--neon-purple);
-            border-radius: 10px;
-            padding: 8px 12px;
-            pointer-events: auto;
-            font-size: 11px;
-            min-width: 140px;
-            z-index: 15;
-        }
-        .radio-title {
-            color: var(--neon-gold);
-            font-size: 10px;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        .radio-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-        .radio-btn {
-            width: 30px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--neon-blue);
-            border-radius: 50%;
-            color: var(--neon-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 12px;
-        }
-        .radio-btn:hover {
-            transform: scale(1.1);
-        }
-        .radio-btn:active {
-            transform: scale(0.95);
-        }
-        .radio-btn.playing {
-            background: rgba(57, 255, 20, 0.2);
-            border-color: var(--neon-green);
-            color: var(--neon-green);
-            animation: radioPulse 2s infinite;
-        }
-        @keyframes radioPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        .radio-btn.playing i {
-            animation: albumSpin 3s linear infinite;
-        }
-        @keyframes albumSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .radio-volume {
-            width: 60px;
-            height: 4px;
-            background: #111;
-            border-radius: 2px;
-            overflow: hidden;
-            border: 1px solid #333;
-        }
-        .radio-volume-bar {
-            height: 100%;
-            background: var(--neon-blue);
-            transition: width 0.2s;
-        }
-
         /* ЭКРАНЫ */
         .overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
@@ -211,12 +134,7 @@
 
     <div id="ui-layer">
         <div class="app-controls">
-        
-        <!-- Аудио элементы -->
-        <audio id="ether-noise" loop>
-            <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
-        </audio>
-        <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
+            <button class="control-btn" onclick="window.toggleShop(true)"><i class="fas fa-shopping-cart"></i></button>
             <div style="color: var(--neon-blue); font-weight: bold; font-size: 14px; letter-spacing: 2px;">СТРАЖ ЭФИРА</div>
             <button class="control-btn" onclick="window.togglePause()"><i class="fas fa-pause" id="pause-icon"></i></button>
         </div>
@@ -226,24 +144,11 @@
             <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
-        <!-- РАДИО ПЛЕЕР -->
-        <div class="radio-player">
-            <div class="radio-title">LEPOTA FM</div>
-            <div class="radio-controls">
-                <button class="radio-btn" id="radio-toggle" onclick="window.toggleRadio()">
-                    <i class="fas fa-play" id="radio-icon"></i>
-                </button>
-                <div class="radio-volume">
-                    <div class="radio-volume-bar" id="radio-volume-bar" style="width: 30%"></div>
-                </div>
-            </div>
-        </div>
-        
         <div id="boss-info" class="stat-box" style="left:50%;top:70px;transform:translateX(-50%);min-width:120px;text-align:center;">
   <div>БОСС <span id="boss-strength" style="color:var(--neon-purple);font-weight:bold;"></span></div>
   <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
 </div>
-        <div id="top-right" class="stat-box">
+<div id="top-right" class="stat-box">
             <div>ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
             <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
         </div>
@@ -311,7 +216,7 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v3.1</h3>
+                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.9</h3>
                 <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
                     <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
                     <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
@@ -325,7 +230,7 @@
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 30px;">СТРАЖ ЭФИРА</h1>
         <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px;">НОВАЯ ИГРА</button>
         <button class="btn-start" onclick="window.startGame(false)" id="continue-btn" style="display:none;">ПРОДОЛЖИТЬ</button>
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.1</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.9</div>
     </div>
 
     <div id="game-over-screen" class="overlay hidden">
@@ -358,17 +263,11 @@ let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапа
 let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
 let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
 
-// РАДИО ПЛЕЕР ПЕРЕМЕННЫЕ
-let radioPlaying = false;
-let radioVolume = 0.3; // 30% громкость по умолчанию
-let radioInitialized = false;
-
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
-window.toggleRadio = toggleRadio;
 
 /** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
 window.onload = function() {
@@ -379,9 +278,6 @@ window.onload = function() {
         initJoystick();
         window.addEventListener('resize', resize);
         console.log("Elite System v14.6: Online");
-        
-        // Инициализация радио плеера
-        initRadio();
         
         // Показываем кнопку "Продолжить" если есть сохранение
         const saved = localStorage.getItem('strazhEfira_progress');
@@ -445,115 +341,6 @@ function togglePause() {
     } else { 
         cancelAnimationFrame(gameId); 
     }
-}
-
-/** --- РАДИО ПЛЕЕР --- */
-function toggleRadio() {
-    // Проверяем доступность Android интерфейса
-    if (typeof Android !== 'undefined' && Android.playAudio && Android.pauseAudio && Android.setVolume) {
-        radioPlaying = !radioPlaying;
-        const radioBtn = document.getElementById('radio-toggle');
-        const radioIcon = document.getElementById('radio-icon');
-        const volumeBar = document.getElementById('radio-volume-bar');
-        
-        if (radioPlaying) {
-            // Включаем радио
-            Android.playAudio();
-            Android.setVolume(radioVolume);
-            
-            // Обновляем UI
-            if (radioBtn) radioBtn.classList.add('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-pause';
-            if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
-            
-            // Сохраняем состояние
-            localStorage.setItem('radio_playing', 'true');
-            localStorage.setItem('radio_volume', radioVolume.toString());
-        } else {
-            // Выключаем радио
-            Android.pauseAudio();
-            
-            // Обновляем UI
-            if (radioBtn) radioBtn.classList.remove('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-play';
-            
-            // Сохраняем состояние
-            localStorage.setItem('radio_playing', 'false');
-        }
-    } else {
-        // Если Android интерфейс недоступен, показываем сообщение
-        console.log('Радио плеер доступен только в Android приложении');
-        // Можно добавить визуальное уведомление для игрока
-        const radioBtn = document.getElementById('radio-toggle');
-        if (radioBtn) {
-            radioBtn.style.background = 'rgba(255, 0, 85, 0.2)';
-            radioBtn.style.borderColor = 'var(--neon-red)';
-            setTimeout(() => {
-                radioBtn.style.background = '';
-                radioBtn.style.borderColor = '';
-            }, 2000);
-        }
-    }
-}
-
-function initRadio() {
-    // Восстанавливаем сохраненные настройки
-    const savedPlaying = localStorage.getItem('radio_playing');
-    const savedVolume = localStorage.getItem('radio_volume');
-    
-    // Проверяем доступность Android интерфейса
-    if (typeof Android !== 'undefined' && Android.playAudio && Android.pauseAudio && Android.setVolume) {
-        if (savedVolume) {
-            radioVolume = parseFloat(savedVolume);
-            Android.setVolume(radioVolume);
-        } else {
-            // Если громкость не сохранена, устанавливаем 30%
-            radioVolume = 0.3;
-            Android.setVolume(radioVolume);
-        }
-        
-        const volumeBar = document.getElementById('radio-volume-bar');
-        if (volumeBar) volumeBar.style.width = (radioVolume * 100) + '%';
-        
-        // Если было сохранено состояние воспроизведения, восстанавливаем его
-        if (savedPlaying === 'true') {
-            radioPlaying = true;
-            const radioBtn = document.getElementById('radio-toggle');
-            const radioIcon = document.getElementById('radio-icon');
-            if (radioBtn) radioBtn.classList.add('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-pause';
-        } else if (savedPlaying === 'false') {
-            // Если явно сохранено что выключено
-            radioPlaying = false;
-            Android.pauseAudio();
-            const radioBtn = document.getElementById('radio-toggle');
-            const radioIcon = document.getElementById('radio-icon');
-            if (radioBtn) radioBtn.classList.remove('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-play';
-        } else {
-            // Если нет сохраненного состояния - значит радио играет по умолчанию от APK
-            radioPlaying = true;
-            const radioBtn = document.getElementById('radio-toggle');
-            const radioIcon = document.getElementById('radio-icon');
-            if (radioBtn) radioBtn.classList.add('playing');
-            if (radioIcon) radioIcon.className = 'fas fa-pause';
-            // Сохраняем состояние для будущих запусков
-            localStorage.setItem('radio_playing', 'true');
-            localStorage.setItem('radio_volume', radioVolume.toString());
-        }
-    } else {
-        // Если Android интерфейс недоступен, показываем неактивное состояние
-        radioPlaying = false;
-        const radioBtn = document.getElementById('radio-toggle');
-        const radioIcon = document.getElementById('radio-icon');
-        if (radioBtn) {
-            radioBtn.classList.remove('playing');
-            radioBtn.style.opacity = '0.5';
-        }
-        if (radioIcon) radioIcon.className = 'fas fa-play';
-    }
-    
-    radioInitialized = true;
 }
 
 /** --- СОХРАНЕНИЕ И ЗАГРУЗКА --- */
