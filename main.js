@@ -17,23 +17,24 @@ var stats = {
     gameOnlyTime: 0,  
     hybridTime: 0,    
     currentGame: "lobby",
-    isGameActive: false // Активна ли игра (видит ли её юзер)
+    isGameActive: false,    // Видит ли юзер вкладку с игрой
+    isInternalPause: false  // Нажата ли пауза ВНУТРИ игры
 };
 
 // Счётчик секунд
 setInterval(function() {
-    // ЛОГИКА: Если мы в лобби ИЛИ юзер ушел с вкладки игры (игра на паузе)
-    var isThinkingLobby = (stats.currentGame === "lobby" || stats.isGameActive === false);
+    // Юзер играет, ТОЛЬКО если он на вкладке игры И игра НЕ на паузе внутри
+    var isUserActuallyPlaying = (stats.currentGame !== "lobby" && stats.isGameActive && !stats.isInternalPause);
 
-    if (isThinkingLobby) {
-        // Если радио играет, пока юзер в меню или на другой вкладке
+    if (!isUserActuallyPlaying) {
+        // Если юзер в меню, или на другой вкладке, или игра ВНУТРИ на паузе
         if (isPlaying) stats.radioOnlyTime++;
     } else {
-        // Если юзер ПРЯМО СЕЙЧАС смотрит на игру
+        // Юзер реально играет прямо сейчас
         if (isPlaying) {
-            stats.hybridTime++; // И играет, и слушает
+            stats.hybridTime++; // Радио + Игра
         } else {
-            stats.gameOnlyTime++; // Только играет в тишине
+            stats.gameOnlyTime++; // Только игра (тишина)
         }
     }
 }, 1000);
@@ -61,6 +62,19 @@ function sendStatsToServer() {
 
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
+
+// МОСТИК ДЛЯ ИГР: Слушаем сообщения от игр внутри фрейма
+window.addEventListener('message', function(event) {
+    // Если игра прислала { "type": "gameStatus", "paused": true }
+    if (event.data && event.data.type === 'gameStatus') {
+        stats.isInternalPause = event.data.paused;
+    }
+});
+
+// Дополнительная функция: можно вызвать из игры как parent.setGamePauseStatus(true)
+window.setGamePauseStatus = function(isPaused) {
+    stats.isInternalPause = isPaused;
+};
 // ---------------------------------
 
 window.onload = function() {
@@ -103,10 +117,8 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
 
-    // ЛОГИКА ЭКРАНОВ:
     if (tabName === 'home') {
         var frame = document.getElementById('game-frame');
-        // Если во фрейме есть игра — она становится активной
         if (frame && frame.src && !frame.src.includes('about:blank')) {
             stats.isGameActive = true;
         } else {
@@ -114,29 +126,23 @@ window.openTab = function(tabName, btnElement) {
             stats.currentGame = "lobby";
         }
     } else {
-        // Юзер ушел на вкладку История/Настройки — игра "на паузе" для статистики
-        stats.isGameActive = false;
+        stats.isGameActive = false; // Ушли с экрана игры — считаем паузой
     }
 };
 
 window.loadGame = function(gamePath) {
-    // 1. Определяем имя игры
     try {
         var name = gamePath.split('/').pop().replace('.html', '');
         stats.currentGame = name;
     } catch(e) { stats.currentGame = "unknown"; }
 
-    // 2. Ставим статус "Активна"
     stats.isGameActive = true;
+    stats.isInternalPause = false; // Новая игра всегда активна
 
-    // 3. Загружаем игру
     var frame = document.getElementById('game-frame');
     if(frame) {
-        // Добавляем v=время против кэша (черного экрана)
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        
-        // Переходим на вкладку Home, где физически находится игра
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -149,24 +155,17 @@ function initPlayer() {
 
 function togglePlayState() {
     var slider = document.getElementById('vol-slider');
-
     if (isApp && window.Android) {
-        if (isPlaying) {
-            window.Android.pauseAudio();
-            isPlaying = false;
-        } else {
+        if (isPlaying) { window.Android.pauseAudio(); isPlaying = false; }
+        else { 
             if (slider) window.Android.setVolume(parseFloat(slider.value));
-            window.Android.playAudio();
-            isPlaying = true;
+            window.Android.playAudio(); isPlaying = true; 
         }
     } else {
-        if (isPlaying) {
-            audio.pause(); audio.src = ""; audio.load();
-            isPlaying = false;
-        } else {
-            audio.src = CONFIG.streamUrl + "?nc=" + Date.now();
-            audio.play().catch(function(e) {});
-            isPlaying = true;
+        if (isPlaying) { audio.pause(); audio.src = ""; isPlaying = false; }
+        else { 
+            audio.src = CONFIG.streamUrl + "?nc=" + Date.now(); 
+            audio.play().catch(function(e){}); isPlaying = true; 
         }
     }
     updateUI();
@@ -178,7 +177,6 @@ function initVolume() {
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
     if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
-
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
