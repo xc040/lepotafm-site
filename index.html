@@ -1,7 +1,7 @@
 const CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // ТВОЯ ССЫЛКА НА GOOGLE ТАБЛИЦУ
+    // СЮДА ВСТАВЬ СВОЮ ССЫЛКУ ИЗ ГУГЛА:
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec", 
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -23,11 +23,9 @@ let stats = {
 setInterval(() => {
     if (stats.currentGame === "lobby" && isPlaying) {
         stats.radioOnlyTime++;
-    }
-    else if (stats.currentGame !== "lobby" && !isPlaying) {
+    } else if (stats.currentGame !== "lobby" && !isPlaying) {
         stats.gameOnlyTime++;
-    }
-    else if (stats.currentGame !== "lobby" && isPlaying) {
+    } else if (stats.currentGame !== "lobby" && isPlaying) {
         stats.hybridTime++;
     }
 }, 1000);
@@ -38,21 +36,27 @@ setInterval(sendBeacon, 60000);
 function sendBeacon() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    // Формируем данные для Google Sheets
-    const data = new FormData();
-    data.append('radio_only', stats.radioOnlyTime);
-    data.append('game_only', stats.gameOnlyTime);
-    data.append('hybrid', stats.hybridTime);
-    data.append('last_game', stats.currentGame);
-    data.append('user_type', window.isPaidUser ? 'paid' : 'free');
+    // Подготовка параметров
+    const params = new URLSearchParams({
+        radio_only: stats.radioOnlyTime,
+        game_only: stats.gameOnlyTime,
+        hybrid: stats.hybridTime,
+        last_game: stats.currentGame,
+        user_type: window.isPaidUser ? 'paid' : 'free'
+    });
 
-    // Отправляем (Google Script примет это как POST запрос)
-    navigator.sendBeacon(CONFIG.statsUrl, data);
-
-    // Сброс счетчиков
-    stats.radioOnlyTime = 0;
-    stats.gameOnlyTime = 0;
-    stats.hybridTime = 0;
+    // Отправка через fetch (самый надежный метод для Google)
+    fetch(CONFIG.statsUrl, {
+        method: 'POST',
+        mode: 'no-cors', 
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    }).then(() => {
+        // Сброс счетчиков
+        stats.radioOnlyTime = 0;
+        stats.gameOnlyTime = 0;
+        stats.hybridTime = 0;
+    }).catch(e => console.log("Stats error"));
 }
 // ---------------------------
 
