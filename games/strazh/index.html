@@ -1,141 +1,125 @@
+// 1. НАСТРОЙКИ
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // ТВОЯ ССЫЛКА НА ГУГЛ ТАБЛИЦУ
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
-    defaultImage: "logo.jpg", 
-    refreshTime: 8000 
+    defaultImage: "logo.jpg",
+    refreshTime: 8000
 };
 
+// 2. ПЕРЕМЕННЫЕ СОСТОЯНИЯ
 var isApp = (typeof window.Android !== "undefined");
-var audio = new Audio(); 
-var isPlaying = false; 
+var audio = new Audio();
+var isPlaying = false;
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
+// 3. ПЕРЕМЕННЫЕ МАЯЧКА
 var stats = {
-    radioOnlyTime: 0, 
-    gameOnlyTime: 0,  
-    hybridTime: 0,    
-    currentGame: "lobby",
-    isGameActive: false // Новая переменная: активна ли игра сейчас
+    radioOnly: 0,
+    gameOnly: 0,
+    hybrid: 0,
+    currentGame: "lobby", // Название игры (например: snake, tetris)
+    isGameActive: false   // Видит ли юзер игру прямо сейчас
 };
 
-// Счётчик секунд (тикает каждую секунду)
+// 4. СЧЕТЧИК СЕКУНД (тикает раз в секунду)
 setInterval(function() {
-    // ЛОГИКА: Если мы в лобби ИЛИ игра на паузе
-    var isUserInLobby = (stats.currentGame === "lobby" || !stats.isGameActive);
-
-    if (isUserInLobby) {
-        // Если радио поет в лобби или при паузе игры
-        if (isPlaying) stats.radioOnlyTime++;
-    } else {
-        // Если игра активна (не на паузе)
+    // Если игры нет (лобби) ИЛИ она скрыта (юзер в другой вкладке)
+    if (stats.currentGame === "lobby" || stats.isGameActive === false) {
         if (isPlaying) {
-            stats.hybridTime++; // И играет, и слушает
+            stats.radioOnly++;
+        }
+    } 
+    // Если юзер ПРЯМО СЕЙЧАС в игре
+    else {
+        if (isPlaying) {
+            stats.hybrid++;     // Слушает музыку и играет
         } else {
-            stats.gameOnlyTime++; // Только играет (без радио)
+            stats.gameOnly++;   // Просто играет в тишине
         }
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд для теста
-setInterval(sendStatsToServer, 15000);
+// 5. ОТПРАВКА В ТАБЛИЦУ (каждые 15 секунд для теста)
+setInterval(sendBeacon, 15000);
 
-function sendStatsToServer() {
-    if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
+function sendBeacon() {
+    if (stats.radioOnly === 0 && stats.gameOnly === 0 && stats.hybrid === 0) return;
 
-    var params = new URLSearchParams({
-        radio_only: stats.radioOnlyTime,
-        game_only: stats.gameOnlyTime,
-        hybrid: stats.hybridTime,
-        last_game: stats.currentGame,
-        user_type: (window.isPaidUser ? 'paid' : 'free')
-    });
+    var query = "radio_only=" + stats.radioOnly +
+                "&game_only=" + stats.gameOnly +
+                "&hybrid=" + stats.hybrid +
+                "&last_game=" + encodeURIComponent(stats.currentGame) +
+                "&user_type=" + (window.isPaidUser ? "paid" : "free");
 
     fetch(CONFIG.statsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString()
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: query
     });
 
-    // Сброс счетчиков
-    stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
+    // Очистка счетчиков
+    stats.radioOnly = 0; stats.gameOnly = 0; stats.hybrid = 0;
 }
-// ---------------------------------
 
-window.onload = function() {
-    if (!isApp) {
-        audio.src = CONFIG.streamUrl;
-    } else {
-        if(window.Android && window.Android.notifyPageLoaded) {
-            window.Android.notifyPageLoaded();
-        }
-    }
-    initPlayer();
-    initVolume();
-    updateMetadata();
-    setInterval(updateMetadata, CONFIG.refreshTime);
-};
-
-window.syncAppState = function(androidIsPlaying, androidIsPaid) {
-    window.isPaidUser = androidIsPaid;
-    isPlaying = androidIsPlaying; 
+// 6. УПРАВЛЕНИЕ ВКЛАДКАМИ (Табами)
+window.openTab = function(tabName, btn) {
+    // Скрываем все вкладки
+    var panes = document.querySelectorAll('.tab-pane');
+    for (var i = 0; i < panes.length; i++) { panes[i].classList.remove('active'); }
     
-    var icon = document.getElementById('play-icon');
-    var playerDiv = document.querySelector('.inline-player');
-    if (icon) icon.className = isPlaying ? "fas fa-pause" : "fas fa-play";
-    if (playerDiv) isPlaying ? playerDiv.classList.add('playing') : playerDiv.classList.remove('playing');
-};
+    // Убираем подсветку кнопок
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var j = 0; j < btns.length; j++) { btns[j].classList.remove('active'); }
 
-window.openTab = function(tabName, btnElement) {
-    document.querySelectorAll('.tab-pane').forEach(function(el) { el.classList.remove('active'); });
-    document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
-    
+    // Показываем нужную
     var target = document.getElementById(tabName);
-    if(target) target.classList.add('active');
-    if (btnElement) btnElement.classList.add('active');
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
 
-    var gameFrame = document.getElementById('game-frame');
-    
-    // Если перешли на вкладку 'home' (где игра) - активируем маяк для игры
-    if (tabName === 'home' && stats.currentGame !== "lobby") {
-        stats.isGameActive = true;
-    } else {
-        // Если ушли на любую другую вкладку (настройки, история) - ставим игру на паузу
-        stats.isGameActive = false;
-        if (gameFrame && gameFrame.contentWindow && typeof gameFrame.contentWindow.setGamePause === 'function') {
-            gameFrame.contentWindow.setGamePause(true);
+    // ЛОГИКА МАЯЧКА:
+    // Если перешли в 'home', значит видим игру
+    if (tabName === 'home') {
+        var frame = document.getElementById('game-frame');
+        // Если во фрейме реально что-то есть (не пусто), считаем игру активной
+        if (frame && frame.src && !frame.src.includes('about:blank')) {
+            stats.isGameActive = true;
+        } else {
+            stats.isGameActive = false;
+            stats.currentGame = "lobby";
         }
-    }
-
-    // Если нажали именно кнопку "Главная" при пустом фрейме - это лобби
-    if (tabName === 'home' && (!gameFrame || gameFrame.src.includes('about:blank'))) {
-        stats.currentGame = "lobby";
+    } else {
+        // Если ушли в настройки, историю и т.д. - игра на паузе
+        stats.isGameActive = false;
     }
 };
 
+// 7. ЗАГРУЗКА ИГРЫ
 window.loadGame = function(gamePath) {
-    // 1. Устанавливаем название игры
+    // Вычисляем имя игры из пути (из games/snake.html получим snake)
     try {
-        stats.currentGame = gamePath.split('/').pop().replace('.html', '');
-    } catch(e) { stats.currentGame = "unknown"; }
+        var parts = gamePath.split('/');
+        var fileName = parts[parts.length - 1];
+        stats.currentGame = fileName.replace('.html', '');
+    } catch(e) {
+        stats.currentGame = "unknown";
+    }
 
-    // 2. Активируем статус игры
     stats.isGameActive = true;
 
-    // 3. Загружаем фрейм
     var frame = document.getElementById('game-frame');
-    if(frame) {
-        var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
-        frame.src = gamePath + buster + "v=" + Date.now();
+    if (frame) {
+        // Добавляем v=время, чтобы не было кэша и черного экрана
+        var sep = gamePath.indexOf('?') !== -1 ? '&' : '?';
+        frame.src = gamePath + sep + "v=" + Date.now();
         
-        // Переключаемся на вкладку игры
+        // Переходим на главную вкладку, где живет фрейм
         window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
     }
 };
 
+// 8. ПЛЕЕР И ГРОМКОСТЬ
 function initPlayer() {
     var playBtn = document.getElementById('play-btn');
     if (playBtn) playBtn.addEventListener('click', togglePlayState);
@@ -151,40 +135,56 @@ function togglePlayState() {
         }
     } else {
         if (isPlaying) { audio.pause(); audio.src = ""; isPlaying = false; }
-        else { audio.src = CONFIG.streamUrl + "?nc=" + Date.now(); audio.play().catch(function(e){}); isPlaying = true; }
+        else { 
+            audio.src = CONFIG.streamUrl + "?n=" + Date.now(); 
+            audio.play().catch(function(){}); 
+            isPlaying = true; 
+        }
     }
     // Обновляем иконки
-    var icon = document.getElementById('play-icon');
-    if (icon) icon.className = isPlaying ? "fas fa-pause" : "fas fa-play";
-};
+    window.syncAppState(isPlaying, window.isPaidUser);
+}
 
 function initVolume() {
-    var slider = document.getElementById('vol-slider');
-    if (!slider) return;
-    var savedVol = localStorage.getItem('savedVolume') || 1.0;
-    slider.value = savedVol;
-    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
-    slider.addEventListener('input', function(e) {
+    var s = document.getElementById('vol-slider');
+    if (!s) return;
+    var v = localStorage.getItem('savedVolume') || 1.0;
+    s.value = v;
+    if (isApp && window.Android) window.Android.setVolume(parseFloat(v)); else audio.volume = v;
+    s.oninput = function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
         if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); else audio.volume = vol;
-    });
+    };
 }
+
+// 9. СИНХРОНИЗАЦИЯ (для Android)
+window.syncAppState = function(p, paid) {
+    isPlaying = p;
+    window.isPaidUser = paid;
+    var icon = document.getElementById('play-icon');
+    var playerDiv = document.querySelector('.inline-player');
+    if (icon) icon.className = isPlaying ? "fas fa-pause" : "fas fa-play";
+    if (playerDiv) isPlaying ? playerDiv.classList.add('playing') : playerDiv.classList.remove('playing');
+};
+
+// 10. ЗАГРУЗКА СТРАНИЦЫ
+window.onload = function() {
+    if (!isApp) { audio.src = CONFIG.streamUrl; }
+    else { if(window.Android && window.Android.notifyPageLoaded) window.Android.notifyPageLoaded(); }
+    initPlayer();
+    initVolume();
+    updateMetadata();
+    setInterval(updateMetadata, CONFIG.refreshTime);
+};
 
 function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            if (data.now_playing && data.now_playing.song) {
-                var song = data.now_playing.song;
-                if(document.getElementById('track-name')) document.getElementById('track-name').innerText = song.title;
-                if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
-                if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
-            }
-        }).catch(function(err) {});
-}
-
-function fixUrl(url) {
-    if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
-    return url.replace('http:', 'https:');
+    fetch(CONFIG.apiUrl + "?t=" + Date.now()).then(function(r){return r.json()}).then(function(d){
+        if (d.now_playing && d.now_playing.song) {
+            var s = d.now_playing.song;
+            if(document.getElementById('track-name')) document.getElementById('track-name').innerText = s.title;
+            if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = s.artist;
+            if(document.getElementById('mini-art')) document.getElementById('mini-art').src = s.art.replace('http:','https:');
+        }
+    }).catch(function(){});
 }
