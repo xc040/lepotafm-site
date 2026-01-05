@@ -21,49 +21,31 @@ var stats = {
     isInternalPause: false 
 };
 
-// === СИСТЕМА ОБНАРУЖЕНИЯ ПАУЗЫ ПО НЕАКТИВНОСТИ ===
-var lastUserActivityTime = Date.now(); // Время последнего тача/клика
-
-// Сбрасываем таймер при любом взаимодействии
-document.addEventListener('touchstart', function() {
-    lastUserActivityTime = Date.now();
-}, { passive: true });
-
-document.addEventListener('click', function() {
-    lastUserActivityTime = Date.now();
-});
-
-// Порог неактивности — 30 секунд (можно изменить на 20 или 40)
-var INACTIVITY_THRESHOLD = 30000; // в миллисекундах
-// ============================================
-
 // Счётчик секунд
 setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    // Проверяем, был ли пользователь активен недавно
-    var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
-
-    // Активная игровая сессия только если:
-    // 1. Открыта вкладка Home
-    // 2. Загружена игра
-    // 3. Пользователь был активен недавно (тачал/кликал)
+    // Активная игровая сессия — ТОЛЬКО когда:
+    // 1. Открыта вкладка Home (игра на экране)
+    // 2. Загружена конкретная игра
+    // 3. Игра не на внутренней паузе (сообщает через postMessage)
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby") && 
-                              isUserActive;
+                              !stats.isInternalPause;
 
     if (isActiveGameSession) {
         if (isPlaying) {
-            stats.hybridTime++;
+            stats.hybridTime++;       // Гибрид: игра активно + радио играет
         } else {
-            stats.gameOnlyTime++;
+            stats.gameOnlyTime++;     // Только игра (радио выключено)
         }
     } else {
-        // Всё остальное — только радио (включая паузу в игре, меню, бездействие)
+        // Всё остальное (лобби, другие вкладки, пауза в игре, просто радио)
         if (isPlaying) {
             stats.radioOnlyTime++;
         }
+        // Если радио выключено и не в активной игре — ничего не начисляем
     }
 }, 1000);
 
@@ -115,43 +97,47 @@ window.onload = function() {
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
 
-    // === АВТООПРЕДЕЛЕНИЕ ИГРЫ ПРИ ЗАПУСКЕ В APK ===
+    // Автоопределение игры при запуске в APK
     if (isApp) {
         setTimeout(function() {
             var frame = document.getElementById('game-frame');
             if (frame && frame.src && frame.src !== '' && frame.src !== 'about:blank') {
-                // Извлекаем путь из src iframe и определяем имя игры
-                var gameSrc = frame.src.split('?')[0]; // убираем параметры
-                try {
-                    var parts = gameSrc.split('/').filter(function(p) { return p.length > 0; });
-                    var fileName = parts[parts.length - 1].replace('.html', '');
-                    
-                    if (fileName === 'index' && parts.length > 1) {
-                        stats.currentGame = parts[parts.length - 2];
-                    } else if (fileName !== '' && fileName !== 'about:blank') {
-                        stats.currentGame = fileName;
-                    }
-
-                    // Убедимся, что вкладка Home активна
-                    var homePane = document.getElementById('home');
-                    if (homePane && !homePane.classList.contains('active')) {
-                        // Принудительно активируем вкладку Home
-                        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-                        if (homeBtn) window.openTab('home', homeBtn);
-                    }
-
-                    // Сообщаем нативной части (Android)
-                    if (window.Android && window.Android.updateActiveGame) {
-                        window.Android.updateActiveGame(stats.currentGame);
-                    }
-                } catch(e) {
-                    console.log('Не удалось определить игру при запуске');
-                }
+                determineAndNotifyGame(frame.src);
+                forceHomeTabIfNeeded();
             }
-        }, 2000); // задержка 2 секунды — чтобы iframe успел загрузиться
+        }, 2000);
     }
-    // ===========================================
 };
+
+function determineAndNotifyGame(gamePath) {
+    try {
+        var cleanPath = gamePath.split('?')[0];
+        var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
+        var fileName = parts[parts.length - 1].replace('.html', '');
+        
+        var gameName = (fileName === 'index' && parts.length > 1) 
+            ? parts[parts.length - 2] 
+            : fileName;
+
+        if (gameName && gameName !== '' && gameName !== 'about:blank') {
+            stats.currentGame = gameName;
+            stats.isInternalPause = false;
+            if (window.Android && window.Android.updateActiveGame) {
+                window.Android.updateActiveGame(stats.currentGame);
+            }
+        }
+    } catch(e) {
+        console.log('Не удалось определить игру при запуске');
+    }
+}
+
+function forceHomeTabIfNeeded() {
+    var homePane = document.getElementById('home');
+    if (homePane && !homePane.classList.contains('active')) {
+        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        if (homeBtn) window.openTab('home', homeBtn);
+    }
+}
 
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
@@ -179,14 +165,15 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем Android, какая вкладка активна
+    // Сообщаем APK о текущей вкладке
     if (isApp && window.Android && window.Android.updateActiveTab) {
         window.Android.updateActiveTab(tabName);
     }
 
-    // Сброс игры при уходе с Home
+    // Сброс игры при уходе с home
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
+        stats.isInternalPause = false;
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
@@ -194,11 +181,10 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
-    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
+    // Определение имени игры
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
-        
         var fileName = parts[parts.length - 1].replace('.html', '');
         
         if (fileName === 'index' && parts.length > 1) {
@@ -220,7 +206,7 @@ window.loadGame = function(gamePath) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
         
-        // Переходим на вкладку с игрой
+        // Переходим на вкладку home
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -260,17 +246,19 @@ function initVolume() {
     if (!slider) return;
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
-    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
+    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); 
+    else audio.volume = savedVol;
 
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
-        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); else audio.volume = vol;
+        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); 
+        else audio.volume = vol;
     });
 }
 
 function updateMetadata() {
-    fetch(CONFIG.apiUrl + "?t=" + Date.now())
+    fetch(CONFIG.statsUrl + "?t=" + Date.now())
         .then(function(res) { return res.json(); })
         .then(function(data) {
             if (data.now_playing && data.now_playing.song) {
@@ -286,6 +274,3 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
-
-
-
