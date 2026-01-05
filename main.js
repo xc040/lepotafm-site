@@ -258,7 +258,7 @@ function initVolume() {
 }
 
 function updateMetadata() {
-    fetch(CONFIG.statsUrl + "?t=" + Date.now())
+    fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(function(res) { return res.json(); })
         .then(function(data) {
             if (data.now_playing && data.now_playing.song) {
