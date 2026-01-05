@@ -12,6 +12,10 @@ var audio = new Audio();
 var isPlaying = false; 
 window.isPaidUser = false;
 
+// --- КЭШИРОВАНИЕ ЭЛЕМЕНТОВ И СОСТОЯНИЙ ---
+var cachedHomePane = null; // Кэш для вкладки Home
+var lastSongTitle = "";    // Для оптимизации обновления метаданных
+
 // --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
 var stats = {
     radioOnlyTime: 0, 
@@ -22,9 +26,8 @@ var stats = {
 };
 
 // === СИСТЕМА ОБНАРУЖЕНИЯ ПАУЗЫ ПО НЕАКТИВНОСТИ ===
-var lastUserActivityTime = Date.now(); // Время последнего тача/клика
+var lastUserActivityTime = Date.now(); 
 
-// Сбрасываем таймер при любом взаимодействии
 document.addEventListener('touchstart', function() {
     lastUserActivityTime = Date.now();
 }, { passive: true });
@@ -33,22 +36,16 @@ document.addEventListener('click', function() {
     lastUserActivityTime = Date.now();
 });
 
-// Порог неактивности — 30 секунд (можно изменить на 20 или 40)
-var INACTIVITY_THRESHOLD = 30000; // в миллисекундах
+var INACTIVITY_THRESHOLD = 30000; 
 // ============================================
 
 // Счётчик секунд
 setInterval(function() {
-    var homePane = document.getElementById('home');
-    var isHomeActive = homePane ? homePane.classList.contains('active') : false;
+    // ИСПОЛЬЗУЕМ КЭШ ВМЕСТО getElementById
+    var isHomeActive = cachedHomePane ? cachedHomePane.classList.contains('active') : false;
     
-    // Проверяем, был ли пользователь активен недавно
     var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
 
-    // Активная игровая сессия только если:
-    // 1. Открыта вкладка Home
-    // 2. Загружена игра
-    // 3. Пользователь был активен недавно (тачал/кликал)
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby") && 
                               isUserActive;
@@ -60,7 +57,6 @@ setInterval(function() {
             stats.gameOnlyTime++;
         }
     } else {
-        // Всё остальное — только радио (включая паузу в игре, меню, бездействие)
         if (isPlaying) {
             stats.radioOnlyTime++;
         }
@@ -73,7 +69,7 @@ setInterval(sendStatsToServer, 15000);
 function sendStatsToServer() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); // YYYYMMDD
+    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); 
     
     var params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
@@ -94,7 +90,6 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
-// Слушаем паузу из игр
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -103,11 +98,13 @@ window.addEventListener('message', function(e) {
 // ---------------------------------
 
 window.onload = function() {
-    // === ИСПРАВЛЕНИЕ: УБИРАЕМ ГОЛУБОЕ ВЫДЕЛЕНИЕ (CSS INJECTION) ===
+    // 1. УБИРАЕМ ГОЛУБОЕ ВЫДЕЛЕНИЕ
     var style = document.createElement('style');
     style.innerHTML = "* { -webkit-tap-highlight-color: transparent; } button:focus, .tab-btn:focus, #play-btn:focus { outline: none; }";
     document.head.appendChild(style);
-    // ==============================================================
+
+    // 2. ЗАПОЛНЯЕМ КЭШ
+    cachedHomePane = document.getElementById('home');
 
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
@@ -118,7 +115,7 @@ window.onload = function() {
     }
     initPlayer();
     initVolume();
-    updateMetadata();
+    updateMetadata(); // Первый запуск
     setInterval(updateMetadata, CONFIG.refreshTime);
 
     // === АВТООПРЕДЕЛЕНИЕ ИГРЫ ПРИ ЗАПУСКЕ В APK ===
@@ -126,8 +123,7 @@ window.onload = function() {
         setTimeout(function() {
             var frame = document.getElementById('game-frame');
             if (frame && frame.src && frame.src !== '' && frame.src !== 'about:blank') {
-                // Извлекаем путь из src iframe и определяем имя игры
-                var gameSrc = frame.src.split('?')[0]; // убираем параметры
+                var gameSrc = frame.src.split('?')[0]; 
                 try {
                     var parts = gameSrc.split('/').filter(function(p) { return p.length > 0; });
                     var fileName = parts[parts.length - 1].replace('.html', '');
@@ -138,15 +134,11 @@ window.onload = function() {
                         stats.currentGame = fileName;
                     }
 
-                    // Убедимся, что вкладка Home активна
-                    var homePane = document.getElementById('home');
-                    if (homePane && !homePane.classList.contains('active')) {
-                        // Принудительно активируем вкладку Home
+                    if (cachedHomePane && !cachedHomePane.classList.contains('active')) {
                         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
                         if (homeBtn) window.openTab('home', homeBtn);
                     }
 
-                    // Сообщаем нативной части (Android) ИМЕННО ЭТУ ИГРУ
                     if (window.Android && window.Android.updateActiveGame) {
                         window.Android.updateActiveGame(stats.currentGame);
                     }
@@ -154,7 +146,7 @@ window.onload = function() {
                     console.log('Не удалось определить игру при запуске');
                 }
             }
-        }, 2000); // задержка 2 секунды — чтобы iframe успел загрузиться
+        }, 2000); 
     }
     // ===========================================
 };
@@ -185,12 +177,10 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем Android, какая вкладка активна
     if (isApp && window.Android && window.Android.updateActiveTab) {
         window.Android.updateActiveTab(tabName);
     }
 
-    // Сброс игры при уходе с Home
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
         if (isApp && window.Android && window.Android.updateActiveGame) {
@@ -200,11 +190,9 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
-    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
-        
         var fileName = parts[parts.length - 1].replace('.html', '');
         
         if (fileName === 'index' && parts.length > 1) {
@@ -225,8 +213,6 @@ window.loadGame = function(gamePath) {
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        
-        // Переходим на вкладку с игрой
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -265,19 +251,17 @@ function initVolume() {
     var slider = document.getElementById('vol-slider');
     if (!slider) return;
 
-    // ИСПРАВЛЕНИЕ: Логика "Первый запуск 30%, далее по памяти"
     var savedVol = localStorage.getItem('savedVolume');
     var finalVol;
     
     if (savedVol === null) {
-        finalVol = 0.3; // Нет сохраненного -> 30%
+        finalVol = 0.3; 
     } else {
-        finalVol = parseFloat(savedVol); // Есть сохраненное -> берем его
+        finalVol = parseFloat(savedVol); 
     }
     
     slider.value = finalVol;
 
-    // Применяем громкость сразу
     if (isApp && window.Android) {
         window.Android.setVolume(finalVol); 
     } else {
@@ -296,13 +280,44 @@ function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(function(res) { return res.json(); })
         .then(function(data) {
+            // ОПТИМИЗАЦИЯ: Если песня та же, не перерисовываем DOM
             if (data.now_playing && data.now_playing.song) {
                 var song = data.now_playing.song;
-                if(document.getElementById('track-name')) document.getElementById('track-name').innerText = song.title;
-                if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
-                if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
+                
+                if (song.title !== lastSongTitle) {
+                    lastSongTitle = song.title; // Обновляем кэш заголовка
+
+                    if(document.getElementById('track-name')) document.getElementById('track-name').innerText = song.title;
+                    if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
+                    if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
+                }
             }
+            // ВОССТАНОВЛЕНА ИСТОРИЯ ПЕСЕН
+            if (data.song_history) renderHistory(data.song_history);
         }).catch(function(err) {});
+}
+
+// ФУНКЦИЯ ОТРИСОВКИ ИСТОРИИ
+function renderHistory(history) {
+    var container = document.getElementById('history-container');
+    if (!container) return;
+    
+    var html = '';
+    // Берем последние 5 песен
+    history.slice(0, 5).forEach(function(item) {
+        var song = item.song;
+        var art = fixUrl(song.art);
+        html += '<div class="history-item">' +
+                '<img src="' + art + '" class="hist-img">' +
+                '<div class="hist-info">' +
+                '<div class="hist-title">' + song.title + '</div>' +
+                '<div class="hist-artist">' + (song.artist || "") + '</div>' +
+                '</div></div>';
+    });
+    // Обновляем HTML только если он изменился (простая оптимизация)
+    if (container.innerHTML !== html) {
+        container.innerHTML = html;
+    }
 }
 
 function fixUrl(url) {
