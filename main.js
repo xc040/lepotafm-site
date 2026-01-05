@@ -103,6 +103,12 @@ window.addEventListener('message', function(e) {
 // ---------------------------------
 
 window.onload = function() {
+    // === ИСПРАВЛЕНИЕ: УБИРАЕМ ГОЛУБОЕ ВЫДЕЛЕНИЕ (CSS INJECTION) ===
+    var style = document.createElement('style');
+    style.innerHTML = "* { -webkit-tap-highlight-color: transparent; } button:focus, .tab-btn:focus, #play-btn:focus { outline: none; }";
+    document.head.appendChild(style);
+    // ==============================================================
+
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
     } else {
