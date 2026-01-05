@@ -12,7 +12,7 @@ var audio = new Audio();
 var isPlaying = false; 
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ (МАЯК) — ТОЛЬКО ДЛЯ ВКЛАДКИ HOME (ИГРА) ---
+// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
 var stats = {
     radioOnlyTime: 0, 
     gameOnlyTime: 0,  
@@ -21,29 +21,31 @@ var stats = {
     isInternalPause: false 
 };
 
-// Счётчик секунд — РАБОТАЕТ ТОЛЬКО на вкладке home (игра)
+// Счётчик секунд — считает ТОЛЬКО на вкладке home
 setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    // Считаем статистику ТОЛЬКО когда мы на вкладке home (игра)
     if (isHomeActive) {
         // Активная игровая сессия — ТОЛЬКО когда:
         // 1. Загружена конкретная игра
-        // 2. Игра не на внутренней паузе (сообщает через postMessage)
+        // 2. Игра не на внутренней паузе
         var isActiveGameSession = (stats.currentGame !== "lobby") && !stats.isInternalPause;
 
         if (isActiveGameSession) {
             if (isPlaying) {
-                stats.hybridTime++;       // Гибрид: игра активно + радио играет
+                stats.hybridTime++;
             } else {
-                stats.gameOnlyTime++;     // Только игра (радио выключено)
+                stats.gameOnlyTime++;
             }
-        } else if (isPlaying) {
-            stats.radioOnlyTime++;      // Лобби на home + радио
+        } else {
+            // Лобби или просто home + радио
+            if (isPlaying) {
+                stats.radioOnlyTime++;
+            }
         }
     }
-    // На других вкладках — НИЧЕГО не считаем (это делает APK)
+    // На других вкладках — ничего не считаем (это делает APK)
 }, 1000);
 
 // Отправка данных каждые 15 секунд
@@ -68,7 +70,7 @@ function sendStatsToServer() {
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
-    }).catch(function(err) {}); // Оптимизация: не ломаем приложение при ошибке
+    });
 
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
@@ -121,11 +123,6 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем APK о смене вкладки
-    if (isApp && window.Android && window.Android.updateActiveTab) {
-        window.Android.updateActiveTab(tabName);
-    }
-    
     // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
@@ -133,14 +130,25 @@ window.openTab = function(tabName, btnElement) {
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
+        // Добавлено: сообщаем APK о смене вкладки
+        if (isApp && window.Android && window.Android.updateActiveTab) {
+            window.Android.updateActiveTab(tabName);
+        }
+    } else {
+        // Если вернулись на home — тоже сообщаем
+        if (isApp && window.Android && window.Android.updateActiveTab) {
+            window.Android.updateActiveTab(tabName);
+        }
     }
     // ==========================================
 };
 
 window.loadGame = function(gamePath) {
+    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
+        
         var fileName = parts[parts.length - 1].replace('.html', '');
         
         if (fileName === 'index' && parts.length > 1) {
@@ -161,6 +169,7 @@ window.loadGame = function(gamePath) {
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
+        
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -200,14 +209,12 @@ function initVolume() {
     if (!slider) return;
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
-    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); 
-    else audio.volume = savedVol;
+    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
 
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
-        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); 
-        else audio.volume = vol;
+        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); else audio.volume = vol;
     });
 }
 
