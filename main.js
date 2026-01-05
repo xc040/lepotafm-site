@@ -21,27 +21,50 @@ var stats = {
     isInternalPause: false 
 };
 
-// Счётчик секунд — считает ТОЛЬКО на вкладке home
+// === СИСТЕМА ОБНАРУЖЕНИЯ ПАУЗЫ ПО НЕАКТИВНОСТИ ===
+var lastUserActivityTime = Date.now(); // Время последнего тача/клика
+
+// Сбрасываем таймер при любом взаимодействии
+document.addEventListener('touchstart', function() {
+    lastUserActivityTime = Date.now();
+}, { passive: true });
+
+document.addEventListener('click', function() {
+    lastUserActivityTime = Date.now();
+});
+
+// Порог неактивности — 30 секунд (можно изменить на 20 или 40)
+var INACTIVITY_THRESHOLD = 30000; // в миллисекундах
+// ============================================
+
+// Счётчик секунд
 setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    if (isHomeActive) {
-        var isActiveGameSession = (stats.currentGame !== "lobby") && !stats.isInternalPause;
+    // Проверяем, был ли пользователь активен недавно
+    var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
 
-        if (isActiveGameSession) {
-            if (isPlaying) {
-                stats.hybridTime++;
-            } else {
-                stats.gameOnlyTime++;
-            }
+    // Активная игровая сессия только если:
+    // 1. Открыта вкладка Home
+    // 2. Загружена игра
+    // 3. Пользователь был активен недавно (тачал/кликал)
+    var isActiveGameSession = isHomeActive && 
+                              (stats.currentGame !== "lobby") && 
+                              isUserActive;
+
+    if (isActiveGameSession) {
+        if (isPlaying) {
+            stats.hybridTime++;
         } else {
-            if (isPlaying) {
-                stats.radioOnlyTime++;
-            }
+            stats.gameOnlyTime++;
+        }
+    } else {
+        // Всё остальное — только радио (включая паузу в игре, меню, бездействие)
+        if (isPlaying) {
+            stats.radioOnlyTime++;
         }
     }
-    // На других вкладках — ничего не считаем, это делает APK
 }, 1000);
 
 // Отправка данных каждые 15 секунд
@@ -50,7 +73,7 @@ setInterval(sendStatsToServer, 15000);
 function sendStatsToServer() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); 
+    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); // YYYYMMDD
     
     var params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
@@ -91,6 +114,43 @@ window.onload = function() {
     initVolume();
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
+
+    // === АВТООПРЕДЕЛЕНИЕ ИГРЫ ПРИ ЗАПУСКЕ В APK ===
+    if (isApp) {
+        setTimeout(function() {
+            var frame = document.getElementById('game-frame');
+            if (frame && frame.src && frame.src !== '' && frame.src !== 'about:blank') {
+                // Извлекаем путь из src iframe и определяем имя игры
+                var gameSrc = frame.src.split('?')[0]; // убираем параметры
+                try {
+                    var parts = gameSrc.split('/').filter(function(p) { return p.length > 0; });
+                    var fileName = parts[parts.length - 1].replace('.html', '');
+                    
+                    if (fileName === 'index' && parts.length > 1) {
+                        stats.currentGame = parts[parts.length - 2];
+                    } else if (fileName !== '' && fileName !== 'about:blank') {
+                        stats.currentGame = fileName;
+                    }
+
+                    // Убедимся, что вкладка Home активна
+                    var homePane = document.getElementById('home');
+                    if (homePane && !homePane.classList.contains('active')) {
+                        // Принудительно активируем вкладку Home
+                        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+                        if (homeBtn) window.openTab('home', homeBtn);
+                    }
+
+                    // Сообщаем нативной части (Android)
+                    if (window.Android && window.Android.updateActiveGame) {
+                        window.Android.updateActiveGame(stats.currentGame);
+                    }
+                } catch(e) {
+                    console.log('Не удалось определить игру при запуске');
+                }
+            }
+        }, 2000); // задержка 2 секунды — чтобы iframe успел загрузиться
+    }
+    // ===========================================
 };
 
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
@@ -119,23 +179,22 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем APK о текущей вкладке при любом переключении
+    // Сообщаем Android, какая вкладка активна
     if (isApp && window.Android && window.Android.updateActiveTab) {
         window.Android.updateActiveTab(tabName);
     }
 
-    // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
+    // Сброс игры при уходе с Home
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
-        stats.isInternalPause = false; 
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
     }
-    // ==========================================
 };
 
 window.loadGame = function(gamePath) {
+    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
@@ -161,6 +220,7 @@ window.loadGame = function(gamePath) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
         
+        // Переходим на вкладку с игрой
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
@@ -226,3 +286,5 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+
+
