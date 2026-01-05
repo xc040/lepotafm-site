@@ -285,3 +285,6 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+if (isApp && window.Android && window.Android.updateActiveTab) {
+    window.Android.updateActiveTab(tabName);
+}
