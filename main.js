@@ -43,12 +43,13 @@ setInterval(function() {
     // ИСПОЛЬЗУЕМ КЭШ ВМЕСТО getElementById
     var isHomeActive = cachedHomePane ? cachedHomePane.classList.contains('active') : false;
     
-    var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
-
-    // Логика: Активная сессия = Вкладка Home + Не лобби + Игрок активен + Нет паузы в игре
+    // ИСПРАВЛЕНИЕ: Мы убрали зависимость от isUserActive в условии ниже.
+    // Причина: клики внутри iframe (игры) не обновляют lastUserActivityTime основного окна,
+    // из-за чего статистика сбрасывалась на "Radio Only" через 30 секунд.
+    
+    // Логика: Активная сессия = Вкладка Home + Не лобби + Нет паузы в игре
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby") && 
-                              isUserActive && 
                               !stats.isInternalPause;
 
     // ОТПРАВЛЯЕМ СТАТУС В JAVA (Android)
