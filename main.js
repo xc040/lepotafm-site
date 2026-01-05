@@ -1,7 +1,7 @@
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // СЮДА ВСТАВИТЬ НОВУЮ ССЫЛКУ ИЗ ГУГЛ ДЕПЛОЯ
+    // ТВОЯ ССЫЛКА НА ГУГЛ ТАБЛИЦУ
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -21,33 +21,51 @@ var stats = {
     isInternalPause: false 
 };
 
+// Счётчик секунд — ИСПРАВЛЕННАЯ ВЕРСИЯ
 setInterval(function() {
-    var homePane = document.getElementById('home');
-    var isHomeActive = homePane ? homePane.classList.contains('active') : false;
-    var isActuallyPlaying = (stats.currentGame !== "lobby" && isHomeActive && !stats.isInternalPause);
+    // Условие: мы в игре, если выбрана игра и она не на внутренней паузе
+    // Вкладка Home больше НЕ нужна для определения активности игры
+    var isInGameSession = (stats.currentGame !== "lobby" && !stats.isInternalPause);
 
-    if (isActuallyPlaying) {
-        if (isPlaying) stats.hybridTime++; else stats.gameOnlyTime++; 
+    if (isInGameSession) {
+        if (isPlaying) {
+            stats.hybridTime++;      // Игра + радио
+        } else {
+            stats.gameOnlyTime++;    // Только игра (музыка выключена)
+        }
     } else {
-        if (isPlaying) stats.radioOnlyTime++; 
+        if (isPlaying) {
+            stats.radioOnlyTime++;   // Только радио (лобби или не в игре)
+        }
+        // Если ничего не играет и не в игре — ничего не начисляем (правильно)
     }
 }, 1000);
 
+// Отправка данных каждые 15 секунд
 setInterval(sendStatsToServer, 15000);
 
 function sendStatsToServer() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
+
     var params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
         game_only: stats.gameOnlyTime,
         hybrid: stats.hybridTime,
         last_game: stats.currentGame,
-        user_type: "paid"
+        user_type: (window.isPaidUser ? 'paid' : 'free')
     });
-    fetch(CONFIG.statsUrl, { method: 'POST', mode: 'no-cors', body: params.toString() });
+
+    fetch(CONFIG.statsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+    });
+
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
+// Слушаем паузу из игр
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -56,15 +74,6 @@ window.addEventListener('message', function(e) {
 // ---------------------------------
 
 window.onload = function() {
-    var frame = document.getElementById('game-frame');
-    if (frame && frame.src && !frame.src.includes('about:blank')) {
-        try {
-            var parts = frame.src.split('?')[0].split('/').filter(function(p){return p.length > 0;});
-            var file = parts.pop().replace('.html', '');
-            stats.currentGame = (file === 'index' && parts.length > 0) ? parts.pop() : file;
-        } catch(e) { stats.currentGame = "startup_game"; }
-    }
-
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
     } else {
@@ -78,9 +87,9 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
-window.syncAppState = function(playing, paid) {
-    window.isPaidUser = paid;
-    isPlaying = playing; 
+window.syncAppState = function(androidIsPlaying, androidIsPaid) {
+    window.isPaidUser = androidIsPaid;
+    isPlaying = androidIsPlaying; 
     updateUI();
 };
 
@@ -103,24 +112,43 @@ window.openTab = function(tabName, btnElement) {
     var target = document.getElementById(tabName);
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
+    
+    // Если перешли на любую вкладку кроме Home — считаем, что мы не в игре
+    // Но название игры не стираем, чтобы при возврате оно подхватилось
 };
 
 window.loadGame = function(gamePath) {
+    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
-        var clean = gamePath.split('?')[0];
-        var parts = clean.split('/').filter(function(p){return p.length > 0;});
-        var file = parts[parts.length - 1].replace('.html', '');
-        stats.currentGame = (file === 'index' && parts.length > 1) ? parts[parts.length - 2] : file;
+        // Убираем параметры после вопроса (?) и разделяем по слешу
+        var cleanPath = gamePath.split('?')[0];
+        var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
+        
+        var fileName = parts[parts.length - 1].replace('.html', '');
+        
+        // Если файл называется "index", берем имя папки, в которой он лежит
+        if (fileName === 'index' && parts.length > 1) {
+            stats.currentGame = parts[parts.length - 2];
+        } else {
+            stats.currentGame = fileName;
+        }
+
         stats.isInternalPause = false;
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame(stats.currentGame);
         }
-    } catch(e) { stats.currentGame = "unknown"; }
+    } catch(e) { 
+        stats.currentGame = "unknown_game"; 
+    }
 
     var frame = document.getElementById('game-frame');
     if(frame) {
-        frame.src = gamePath + (gamePath.indexOf('?') !== -1 ? '&' : '?') + "v=" + Date.now();
-        window.openTab('home', document.querySelector('.tab-btn[onclick*="home"]'));
+        var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
+        frame.src = gamePath + buster + "v=" + Date.now();
+        
+        // Переходим на вкладку с игрой
+        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+        window.openTab('home', homeBtn);
     }
 };
 
@@ -130,13 +158,27 @@ function initPlayer() {
 }
 
 function togglePlayState() {
+    var slider = document.getElementById('vol-slider');
     if (isApp && window.Android) {
-        if (isPlaying) window.Android.pauseAudio(); else window.Android.playAudio();
+        if (isPlaying) {
+            window.Android.pauseAudio();
+            isPlaying = false;
+        } else {
+            if (slider) window.Android.setVolume(parseFloat(slider.value));
+            window.Android.playAudio();
+            isPlaying = true;
+        }
     } else {
-        if (isPlaying) { audio.pause(); audio.src = ""; }
-        else { audio.src = CONFIG.streamUrl + "?nc=" + Date.now(); audio.play().catch(function(){}); }
+        if (isPlaying) {
+            audio.pause(); audio.src = ""; audio.load();
+            isPlaying = false;
+        } else {
+            audio.src = CONFIG.streamUrl + "?nc=" + Date.now();
+            audio.play().catch(function(e) {});
+            isPlaying = true;
+        }
     }
-    window.syncAppState(!isPlaying, true);
+    updateUI();
 }
 
 function initVolume() {
@@ -145,6 +187,7 @@ function initVolume() {
     var savedVol = localStorage.getItem('savedVolume') || 1.0;
     slider.value = savedVol;
     if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
+
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
@@ -162,20 +205,7 @@ function updateMetadata() {
                 if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
                 if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
             }
-            if (data.song_history) renderHistory(data.song_history);
-        }).catch(function(){});
-}
-
-function renderHistory(history) {
-    var container = document.getElementById('history-container');
-    if (!container) return;
-    var html = '';
-    history.forEach(function(item) {
-        var song = item.song;
-        var art = fixUrl(song.art);
-        html += '<div class="history-item"><img src="' + art + '" class="hist-img" onerror="this.src=\'' + CONFIG.defaultImage + '\'"><div class="hist-info"><span class="hist-title">' + song.title + '</span><span class="hist-artist">' + song.artist + '</span></div></div>';
-    });
-    container.innerHTML = html;
+        }).catch(function(err) {});
 }
 
 function fixUrl(url) {
