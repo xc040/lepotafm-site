@@ -1,7 +1,7 @@
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
-    // ТВОЯ ССЫЛКА НА ГУГЛ ТАБЛИЦУ
+    // Ссылка остается в конфиге, но здесь больше не используется (используется в Java)
     statsUrl: "https://script.google.com/macros/s/AKfycbyQsnyXLmGXTNDtL9CLAV6KC80dKm9aIdICEtpY5nqMmldh1gydaPjSc6bozIX8meNWAA/exec",
     defaultImage: "logo.jpg", 
     refreshTime: 8000 
@@ -16,11 +16,9 @@ window.isPaidUser = false;
 var cachedHomePane = null; // Кэш для вкладки Home
 var lastSongTitle = "";    // Для оптимизации обновления метаданных
 
-// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
+// --- СТАТУС (ПЕРЕМЕННЫЕ) ---
 var stats = {
-    radioOnlyTime: 0, 
-    gameOnlyTime: 0,  
-    hybridTime: 0,    
+    // Счетчики удалены, так как теперь считает Java
     currentGame: "lobby",
     isInternalPause: false 
 };
@@ -39,56 +37,30 @@ document.addEventListener('click', function() {
 var INACTIVITY_THRESHOLD = 30000; 
 // ============================================
 
-// Счётчик секунд
+// СИСТЕМНЫЙ ТАЙМЕР (1 СЕКУНДА)
+// Теперь он не считает время, а сообщает статус в Android
 setInterval(function() {
     // ИСПОЛЬЗУЕМ КЭШ ВМЕСТО getElementById
     var isHomeActive = cachedHomePane ? cachedHomePane.classList.contains('active') : false;
     
     var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
 
+    // Логика: Активная сессия = Вкладка Home + Не лобби + Игрок активен + Нет паузы в игре
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby") && 
-                              isUserActive;
+                              isUserActive && 
+                              !stats.isInternalPause;
 
-    if (isActiveGameSession) {
-        if (isPlaying) {
-            stats.hybridTime++;
-        } else {
-            stats.gameOnlyTime++;
-        }
-    } else {
-        if (isPlaying) {
-            stats.radioOnlyTime++;
-        }
+    // ОТПРАВЛЯЕМ СТАТУС В JAVA (Android)
+    // Java сама решит, что с этим делать (считать гибрид или радио)
+    if (isApp && window.Android && window.Android.reportGameState) {
+        window.Android.reportGameState(isActiveGameSession, stats.currentGame);
     }
 }, 1000);
 
-// Отправка данных каждые 15 секунд
-setInterval(sendStatsToServer, 15000);
-
-function sendStatsToServer() {
-    if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
-
-    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); 
-    
-    var params = new URLSearchParams({
-        radio_only: stats.radioOnlyTime,
-        game_only: stats.gameOnlyTime,
-        hybrid: stats.hybridTime,
-        last_game: stats.currentGame,
-        user_type: (window.isPaidUser ? 'paid' : 'free'),
-        date_num: dateNum
-    });
-
-    fetch(CONFIG.statsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: params.toString()
-    });
-
-    stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
-}
+// ИНТЕРВАЛ ОТПРАВКИ (sendStatsToServer) УДАЛЕН.
+// ФУНКЦИЯ sendStatsToServer УДАЛЕНА.
+// Теперь отправкой занимается только Java.
 
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
@@ -139,6 +111,7 @@ window.onload = function() {
                         if (homeBtn) window.openTab('home', homeBtn);
                     }
 
+                    // При старте тоже сообщаем статус
                     if (window.Android && window.Android.updateActiveGame) {
                         window.Android.updateActiveGame(stats.currentGame);
                     }
