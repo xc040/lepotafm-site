@@ -21,35 +21,49 @@ var stats = {
     isInternalPause: false 
 };
 
+// === СИСТЕМА ОБНАРУЖЕНИЯ ПАУЗЫ ПО НЕАКТИВНОСТИ ===
+var lastUserActivityTime = Date.now(); // Время последнего тача/клика
+
+// Сбрасываем таймер при любом взаимодействии
+document.addEventListener('touchstart', function() {
+    lastUserActivityTime = Date.now();
+}, { passive: true });
+
+document.addEventListener('click', function() {
+    lastUserActivityTime = Date.now();
+});
+
+// Порог неактивности — 30 секунд (можно изменить на 20 или 40)
+var INACTIVITY_THRESHOLD = 30000; // в миллисекундах
+// ============================================
+
 // Счётчик секунд
 setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    // Активная игровая сессия — ТОЛЬКО когда:
-    // 1. Открыта вкладка Home (игра на экране)
-    // 2. Загружена конкретная игра
-    // 3. Игра не на внутренней паузе (сообщает через postMessage)
+    // Проверяем, был ли пользователь активен недавно
+    var isUserActive = (Date.now() - lastUserActivityTime < INACTIVITY_THRESHOLD);
+
+    // Активная игровая сессия только если:
+    // 1. Открыта вкладка Home
+    // 2. Загружена игра
+    // 3. Пользователь был активен недавно (тачал/кликал)
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby") && 
-                              !stats.isInternalPause;
+                              isUserActive;
 
     if (isActiveGameSession) {
         if (isPlaying) {
-            stats.hybridTime++;       // Гибрид: игра активно на экране + радио играет
+            stats.hybridTime++;
         } else {
-            stats.gameOnlyTime++;     // Только игра (на экране, но радио выключено)
+            stats.gameOnlyTime++;
         }
     } else {
-        // Всё остальное — включая:
-        // - Лобби
-        // - Другие вкладки (даже если игра загружена)
-        // - Игра на паузе
-        // - Просто прослушивание радио
+        // Всё остальное — только радио (включая паузу в игре, меню, бездействие)
         if (isPlaying) {
-            stats.radioOnlyTime++;    // Только радио
+            stats.radioOnlyTime++;
         }
-        // Если музыка выключена и не в активной игре — ничего не начисляем
     }
 }, 1000);
 
@@ -100,6 +114,43 @@ window.onload = function() {
     initVolume();
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
+
+    // === АВТООПРЕДЕЛЕНИЕ ИГРЫ ПРИ ЗАПУСКЕ В APK ===
+    if (isApp) {
+        setTimeout(function() {
+            var frame = document.getElementById('game-frame');
+            if (frame && frame.src && frame.src !== '' && frame.src !== 'about:blank') {
+                // Извлекаем путь из src iframe и определяем имя игры
+                var gameSrc = frame.src.split('?')[0]; // убираем параметры
+                try {
+                    var parts = gameSrc.split('/').filter(function(p) { return p.length > 0; });
+                    var fileName = parts[parts.length - 1].replace('.html', '');
+                    
+                    if (fileName === 'index' && parts.length > 1) {
+                        stats.currentGame = parts[parts.length - 2];
+                    } else if (fileName !== '' && fileName !== 'about:blank') {
+                        stats.currentGame = fileName;
+                    }
+
+                    // Убедимся, что вкладка Home активна
+                    var homePane = document.getElementById('home');
+                    if (homePane && !homePane.classList.contains('active')) {
+                        // Принудительно активируем вкладку Home
+                        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+                        if (homeBtn) window.openTab('home', homeBtn);
+                    }
+
+                    // Сообщаем нативной части (Android)
+                    if (window.Android && window.Android.updateActiveGame) {
+                        window.Android.updateActiveGame(stats.currentGame);
+                    }
+                } catch(e) {
+                    console.log('Не удалось определить игру при запуске');
+                }
+            }
+        }, 2000); // задержка 2 секунды — чтобы iframe успел загрузиться
+    }
+    // ===========================================
 };
 
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
@@ -128,11 +179,12 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
-    // Если переключаемся НЕ на 'home' — сбрасываем в лобби
+    // === УЛУЧШЕННЫЙ СБРОС ПРИ ПЕРЕКЛЮЧЕНИИ ВКЛАДОК ===
     if (tabName !== 'home') {
+        // Игрок ушёл с вкладки с игрой → считаем, что игра неактивна
         stats.currentGame = "lobby";
-        stats.isInternalPause = false; // чтобы не висела пауза
+        stats.isInternalPause = true;  // Принудительно ставим паузу (на всякий случай)
+        
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
