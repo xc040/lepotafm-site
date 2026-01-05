@@ -179,16 +179,14 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем нативной части (Android), какая вкладка активна
+    // Сообщаем Android, какая вкладка активна
     if (isApp && window.Android && window.Android.updateActiveTab) {
         window.Android.updateActiveTab(tabName);
     }
-    
-    // Сброс игры при уходе с вкладки Home
+
+    // Сброс игры при уходе с Home
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
-        stats.isInternalPause = true;
-        
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
@@ -288,5 +286,6 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+
 
 
