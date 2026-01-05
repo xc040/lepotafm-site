@@ -12,7 +12,7 @@ var audio = new Audio();
 var isPlaying = false; 
 window.isPaidUser = false;
 
-// --- СИСТЕМА СТАТИСТИКИ (МАЯК) ---
+// --- СИСТЕМА СТАТИСТИКИ (МАЯК) — ТОЛЬКО ДЛЯ ВКЛАДКИ HOME (ИГРА) ---
 var stats = {
     radioOnlyTime: 0, 
     gameOnlyTime: 0,  
@@ -21,32 +21,29 @@ var stats = {
     isInternalPause: false 
 };
 
-// Счётчик секунд
+// Счётчик секунд — РАБОТАЕТ ТОЛЬКО на вкладке home (игра)
 setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    // Активная игровая сессия — ТОЛЬКО когда:
-    // 1. Открыта вкладка Home (игра на экране)
-    // 2. Загружена конкретная игра
-    // 3. Игра не на внутренней паузе (сообщает через postMessage)
-    var isActiveGameSession = isHomeActive && 
-                              (stats.currentGame !== "lobby") && 
-                              !stats.isInternalPause;
+    // Считаем статистику ТОЛЬКО когда мы на вкладке home (игра)
+    if (isHomeActive) {
+        // Активная игровая сессия — ТОЛЬКО когда:
+        // 1. Загружена конкретная игра
+        // 2. Игра не на внутренней паузе (сообщает через postMessage)
+        var isActiveGameSession = (stats.currentGame !== "lobby") && !stats.isInternalPause;
 
-    if (isActiveGameSession) {
-        if (isPlaying) {
-            stats.hybridTime++;       // Гибрид: игра активно + радио играет
-        } else {
-            stats.gameOnlyTime++;     // Только игра (радио выключено)
+        if (isActiveGameSession) {
+            if (isPlaying) {
+                stats.hybridTime++;       // Гибрид: игра активно + радио играет
+            } else {
+                stats.gameOnlyTime++;     // Только игра (радио выключено)
+            }
+        } else if (isPlaying) {
+            stats.radioOnlyTime++;      // Лобби на home + радио
         }
-    } else {
-        // Всё остальное (лобби, другие вкладки, пауза в игре, просто радио)
-        if (isPlaying) {
-            stats.radioOnlyTime++;
-        }
-        // Если радио выключено и не в активной игре — ничего не начисляем
     }
+    // На других вкладках — НИЧЕГО не считаем (это делает APK)
 }, 1000);
 
 // Отправка данных каждые 15 секунд
@@ -71,7 +68,7 @@ function sendStatsToServer() {
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: params.toString()
-    });
+    }).catch(function(err) {}); // Оптимизация: не ломаем приложение при ошибке
 
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
@@ -96,48 +93,7 @@ window.onload = function() {
     initVolume();
     updateMetadata();
     setInterval(updateMetadata, CONFIG.refreshTime);
-
-    // Автоопределение игры при запуске в APK
-    if (isApp) {
-        setTimeout(function() {
-            var frame = document.getElementById('game-frame');
-            if (frame && frame.src && frame.src !== '' && frame.src !== 'about:blank') {
-                determineAndNotifyGame(frame.src);
-                forceHomeTabIfNeeded();
-            }
-        }, 2000);
-    }
 };
-
-function determineAndNotifyGame(gamePath) {
-    try {
-        var cleanPath = gamePath.split('?')[0];
-        var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
-        var fileName = parts[parts.length - 1].replace('.html', '');
-        
-        var gameName = (fileName === 'index' && parts.length > 1) 
-            ? parts[parts.length - 2] 
-            : fileName;
-
-        if (gameName && gameName !== '' && gameName !== 'about:blank') {
-            stats.currentGame = gameName;
-            stats.isInternalPause = false;
-            if (window.Android && window.Android.updateActiveGame) {
-                window.Android.updateActiveGame(stats.currentGame);
-            }
-        }
-    } catch(e) {
-        console.log('Не удалось определить игру при запуске');
-    }
-}
-
-function forceHomeTabIfNeeded() {
-    var homePane = document.getElementById('home');
-    if (homePane && !homePane.classList.contains('active')) {
-        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-        if (homeBtn) window.openTab('home', homeBtn);
-    }
-}
 
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
@@ -165,12 +121,12 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Сообщаем APK о текущей вкладке
+    // Сообщаем APK о смене вкладки
     if (isApp && window.Android && window.Android.updateActiveTab) {
         window.Android.updateActiveTab(tabName);
     }
-
-    // Сброс игры при уходе с home
+    
+    // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
         stats.isInternalPause = false;
@@ -178,10 +134,10 @@ window.openTab = function(tabName, btnElement) {
             window.Android.updateActiveGame("lobby");
         }
     }
+    // ==========================================
 };
 
 window.loadGame = function(gamePath) {
-    // Определение имени игры
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
@@ -205,8 +161,6 @@ window.loadGame = function(gamePath) {
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        
-        // Переходим на вкладку home
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
