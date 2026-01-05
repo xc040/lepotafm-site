@@ -179,17 +179,20 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // === УЛУЧШЕННЫЙ СБРОС ПРИ ПЕРЕКЛЮЧЕНИИ ВКЛАДОК ===
+    // Сообщаем нативной части (Android), какая вкладка активна
+    if (isApp && window.Android && window.Android.updateActiveTab) {
+        window.Android.updateActiveTab(tabName);
+    }
+    
+    // Сброс игры при уходе с вкладки Home
     if (tabName !== 'home') {
-        // Игрок ушёл с вкладки с игрой → считаем, что игра неактивна
         stats.currentGame = "lobby";
-        stats.isInternalPause = true;  // Принудительно ставим паузу (на всякий случай)
+        stats.isInternalPause = true;
         
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
     }
-    // ==========================================
 };
 
 window.loadGame = function(gamePath) {
@@ -285,6 +288,5 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
-if (isApp && window.Android && window.Android.updateActiveTab) {
-    window.Android.updateActiveTab(tabName);
-}
+
+
