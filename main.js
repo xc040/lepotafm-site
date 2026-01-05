@@ -23,7 +23,10 @@ var stats = {
 
 // Счётчик секунд
 setInterval(function() {
-    var isHomeActive = document.getElementById('home').classList.contains('active');
+    var homePane = document.getElementById('home');
+    var isHomeActive = homePane ? homePane.classList.contains('active') : false;
+    
+    // Условие: мы в игре, если выбрана игра, открыта вкладка Home и нет паузы внутри
     var isActuallyPlaying = (stats.currentGame !== "lobby" && isHomeActive && !stats.isInternalPause);
 
     if (isActuallyPlaying) {
@@ -63,6 +66,7 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
+// Слушаем паузу из игр
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -109,29 +113,41 @@ window.openTab = function(tabName, btnElement) {
     var target = document.getElementById(tabName);
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
+    
+    // Если перешли на любую вкладку кроме Home — считаем, что мы не в игре
+    // Но название игры не стираем, чтобы при возврате оно подхватилось
 };
 
 window.loadGame = function(gamePath) {
-    // УЛУЧШЕННАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ ИМЕНИ ИГРЫ
+    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
-        var parts = gamePath.split('/');
-        var fileName = parts.pop().replace('.html', '');
+        // Убираем параметры после вопроса (?) и разделяем по слешу
+        var cleanPath = gamePath.split('?')[0];
+        var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
         
-        // Если файл называется "index", берем название папки выше
-        if (fileName === 'index' && parts.length > 0) {
-            stats.currentGame = parts.pop();
+        var fileName = parts[parts.length - 1].replace('.html', '');
+        
+        // Если файл называется "index", берем имя папки, в которой он лежит
+        if (fileName === 'index' && parts.length > 1) {
+            stats.currentGame = parts[parts.length - 2];
         } else {
             stats.currentGame = fileName;
         }
 
         stats.isInternalPause = false;
-        if (isApp) window.Android.updateActiveGame(stats.currentGame);
-    } catch(e) { stats.currentGame = "unknown"; }
+        if (isApp && window.Android && window.Android.updateActiveGame) {
+            window.Android.updateActiveGame(stats.currentGame);
+        }
+    } catch(e) { 
+        stats.currentGame = "unknown_game"; 
+    }
 
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
+        
+        // Переходим на вкладку с игрой
         var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
         window.openTab('home', homeBtn);
     }
