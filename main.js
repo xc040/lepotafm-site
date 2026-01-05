@@ -27,9 +27,6 @@ setInterval(function() {
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
     if (isHomeActive) {
-        // Активная игровая сессия — ТОЛЬКО когда:
-        // 1. Загружена конкретная игра
-        // 2. Игра не на внутренней паузе
         var isActiveGameSession = (stats.currentGame !== "lobby") && !stats.isInternalPause;
 
         if (isActiveGameSession) {
@@ -39,13 +36,12 @@ setInterval(function() {
                 stats.gameOnlyTime++;
             }
         } else {
-            // Лобби или просто home + радио
             if (isPlaying) {
                 stats.radioOnlyTime++;
             }
         }
     }
-    // На других вкладках — ничего не считаем (это делает APK)
+    // На других вкладках — ничего не считаем, это делает APK
 }, 1000);
 
 // Отправка данных каждые 15 секунд
@@ -54,7 +50,7 @@ setInterval(sendStatsToServer, 15000);
 function sendStatsToServer() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
-    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); // YYYYMMDD
+    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); 
     
     var params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
@@ -123,28 +119,23 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
+    // Сообщаем APK о текущей вкладке при любом переключении
+    if (isApp && window.Android && window.Android.updateActiveTab) {
+        window.Android.updateActiveTab(tabName);
+    }
+
     // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
-        stats.isInternalPause = false;
+        stats.isInternalPause = false; 
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
-        }
-        // Добавлено: сообщаем APK о смене вкладки
-        if (isApp && window.Android && window.Android.updateActiveTab) {
-            window.Android.updateActiveTab(tabName);
-        }
-    } else {
-        // Если вернулись на home — тоже сообщаем
-        if (isApp && window.Android && window.Android.updateActiveTab) {
-            window.Android.updateActiveTab(tabName);
         }
     }
     // ==========================================
 };
 
 window.loadGame = function(gamePath) {
-    // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
