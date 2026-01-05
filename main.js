@@ -140,7 +140,7 @@ window.onload = function() {
                         if (homeBtn) window.openTab('home', homeBtn);
                     }
 
-                    // Сообщаем нативной части (Android)
+                    // Сообщаем нативной части (Android) ИМЕННО ЭТУ ИГРУ
                     if (window.Android && window.Android.updateActiveGame) {
                         window.Android.updateActiveGame(stats.currentGame);
                     }
@@ -258,14 +258,31 @@ function togglePlayState() {
 function initVolume() {
     var slider = document.getElementById('vol-slider');
     if (!slider) return;
-    var savedVol = localStorage.getItem('savedVolume') || 1.0;
-    slider.value = savedVol;
-    if (isApp && window.Android) window.Android.setVolume(parseFloat(savedVol)); else audio.volume = savedVol;
+
+    // ИСПРАВЛЕНИЕ: Логика "Первый запуск 30%, далее по памяти"
+    var savedVol = localStorage.getItem('savedVolume');
+    var finalVol;
+    
+    if (savedVol === null) {
+        finalVol = 0.3; // Нет сохраненного -> 30%
+    } else {
+        finalVol = parseFloat(savedVol); // Есть сохраненное -> берем его
+    }
+    
+    slider.value = finalVol;
+
+    // Применяем громкость сразу
+    if (isApp && window.Android) {
+        window.Android.setVolume(finalVol); 
+    } else {
+        audio.volume = finalVol;
+    }
 
     slider.addEventListener('input', function(e) {
         var vol = e.target.value;
         localStorage.setItem('savedVolume', vol);
-        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); else audio.volume = vol;
+        if (isApp && window.Android) window.Android.setVolume(parseFloat(vol)); 
+        else audio.volume = vol;
     });
 }
 
@@ -286,5 +303,3 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
-
-
