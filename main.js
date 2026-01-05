@@ -21,23 +21,35 @@ var stats = {
     isInternalPause: false 
 };
 
-// Счётчик секунд — ИСПРАВЛЕННАЯ ВЕРСИЯ
+// Счётчик секунд
 setInterval(function() {
-    // Условие: мы в игре, если выбрана игра и она не на внутренней паузе
-    // Вкладка Home больше НЕ нужна для определения активности игры
-    var isInGameSession = (stats.currentGame !== "lobby" && !stats.isInternalPause);
+    var homePane = document.getElementById('home');
+    var isHomeActive = homePane ? homePane.classList.contains('active') : false;
+    
+    // Активная игровая сессия — ТОЛЬКО когда:
+    // 1. Открыта вкладка Home (игра на экране)
+    // 2. Загружена конкретная игра
+    // 3. Игра не на внутренней паузе (сообщает через postMessage)
+    var isActiveGameSession = isHomeActive && 
+                              (stats.currentGame !== "lobby") && 
+                              !stats.isInternalPause;
 
-    if (isInGameSession) {
+    if (isActiveGameSession) {
         if (isPlaying) {
-            stats.hybridTime++;      // Игра + радио
+            stats.hybridTime++;       // Гибрид: игра активно на экране + радио играет
         } else {
-            stats.gameOnlyTime++;    // Только игра (музыка выключена)
+            stats.gameOnlyTime++;     // Только игра (на экране, но радио выключено)
         }
     } else {
+        // Всё остальное — включая:
+        // - Лобби
+        // - Другие вкладки (даже если игра загружена)
+        // - Игра на паузе
+        // - Просто прослушивание радио
         if (isPlaying) {
-            stats.radioOnlyTime++;   // Только радио (лобби или не в игре)
+            stats.radioOnlyTime++;    // Только радио
         }
-        // Если ничего не играет и не в игре — ничего не начисляем (правильно)
+        // Если музыка выключена и не в активной игре — ничего не начисляем
     }
 }, 1000);
 
@@ -47,12 +59,15 @@ setInterval(sendStatsToServer, 15000);
 function sendStatsToServer() {
     if (stats.radioOnlyTime === 0 && stats.gameOnlyTime === 0 && stats.hybridTime === 0) return;
 
+    var dateNum = new Date().toISOString().slice(0,10).replace(/-/g, ''); // YYYYMMDD
+    
     var params = new URLSearchParams({
         radio_only: stats.radioOnlyTime,
         game_only: stats.gameOnlyTime,
         hybrid: stats.hybridTime,
         last_game: stats.currentGame,
-        user_type: (window.isPaidUser ? 'paid' : 'free')
+        user_type: (window.isPaidUser ? 'paid' : 'free'),
+        date_num: dateNum
     });
 
     fetch(CONFIG.statsUrl, {
@@ -113,20 +128,26 @@ window.openTab = function(tabName, btnElement) {
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
     
-    // Если перешли на любую вкладку кроме Home — считаем, что мы не в игре
-    // Но название игры не стираем, чтобы при возврате оно подхватилось
+    // === СБРОС СТАТУСА ИГРЫ ПРИ ПЕРЕКЛЮЧЕНИИ ===
+    // Если переключаемся НЕ на 'home' — сбрасываем в лобби
+    if (tabName !== 'home') {
+        stats.currentGame = "lobby";
+        stats.isInternalPause = false; // чтобы не висела пауза
+        if (isApp && window.Android && window.Android.updateActiveGame) {
+            window.Android.updateActiveGame("lobby");
+        }
+    }
+    // ==========================================
 };
 
 window.loadGame = function(gamePath) {
     // УЛУЧШЕННОЕ ОПРЕДЕЛЕНИЕ ИМЕНИ ИГРЫ
     try {
-        // Убираем параметры после вопроса (?) и разделяем по слешу
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
         
         var fileName = parts[parts.length - 1].replace('.html', '');
         
-        // Если файл называется "index", берем имя папки, в которой он лежит
         if (fileName === 'index' && parts.length > 1) {
             stats.currentGame = parts[parts.length - 2];
         } else {
