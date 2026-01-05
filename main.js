@@ -26,13 +26,18 @@ setInterval(function() {
     var homePane = document.getElementById('home');
     var isHomeActive = homePane ? homePane.classList.contains('active') : false;
     
-    // Условие: мы реально в игре, если открыт вкладка Home, выбрана игра и нет паузы
     var isActuallyPlaying = (stats.currentGame !== "lobby" && isHomeActive && !stats.isInternalPause);
 
     if (isActuallyPlaying) {
-        if (isPlaying) stats.hybridTime++; else stats.gameOnlyTime++; 
+        if (isPlaying) {
+            stats.hybridTime++; 
+        } else {
+            stats.gameOnlyTime++; 
+        }
     } else {
-        if (isPlaying) stats.radioOnlyTime++; 
+        if (isPlaying) {
+            stats.radioOnlyTime++; 
+        }
     }
 }, 1000);
 
@@ -60,6 +65,7 @@ function sendStatsToServer() {
     stats.radioOnlyTime = 0; stats.gameOnlyTime = 0; stats.hybridTime = 0;
 }
 
+// Слушаем паузу из игр
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
@@ -68,19 +74,6 @@ window.addEventListener('message', function(e) {
 // ---------------------------------
 
 window.onload = function() {
-    // ДЕТЕКЦИЯ ИГРЫ ПРИ СТАРТЕ (для АПК)
-    var frame = document.getElementById('game-frame');
-    if (frame && frame.src && !frame.src.includes('about:blank')) {
-        try {
-            var cleanPath = frame.src.split('?')[0];
-            var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
-            var fileName = parts[parts.length - 1].replace('.html', '');
-            if (fileName === 'index' && parts.length > 1) {
-                stats.currentGame = parts[parts.length - 2];
-            } else { stats.currentGame = fileName; }
-        } catch(e) { stats.currentGame = "startup_game"; }
-    }
-
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
     } else {
@@ -94,27 +87,20 @@ window.onload = function() {
     setInterval(updateMetadata, CONFIG.refreshTime);
 };
 
+// Вызывается из Android
 window.syncAppState = function(androidIsPlaying, androidIsPaid) {
     window.isPaidUser = androidIsPaid;
     isPlaying = androidIsPlaying; 
     updateUI();
 };
 
-// Функция обновления визуала (вращение и иконка)
 function updateUI() {
     var icon = document.getElementById('play-icon');
-    var playerDiv = document.querySelector('.inline-player'); // Тот элемент, который вращается
-    
-    if (icon) {
-        icon.className = isPlaying ? "fas fa-pause" : "fas fa-play";
-    }
-    
+    var playerDiv = document.querySelector('.inline-player');
+    if (icon) icon.className = isPlaying ? "fas fa-pause" : "fas fa-play";
     if (playerDiv) {
-        if (isPlaying) {
-            playerDiv.classList.add('playing');
-        } else {
-            playerDiv.classList.remove('playing');
-        }
+        if (isPlaying) playerDiv.classList.add('playing');
+        else playerDiv.classList.remove('playing');
     }
 }
 
@@ -127,9 +113,20 @@ window.openTab = function(tabName, btnElement) {
     var target = document.getElementById(tabName);
     if(target) target.classList.add('active');
     if(btnElement) btnElement.classList.add('active');
+
+    if (tabName !== 'home') {
+        // stats.currentGame = "lobby"; // Закомментировано, чтобы не терять имя игры при переключении табов
+        // var frame = document.getElementById('game-frame');
+        // if(frame) frame.src = "about:blank";
+    }
 };
 
 window.loadGame = function(gamePath) {
+    var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
+    
+    document.querySelectorAll('.tab-pane').forEach(function(el){ el.classList.remove('active'); });
+    document.getElementById('home').classList.add('active');
+
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
@@ -140,21 +137,18 @@ window.loadGame = function(gamePath) {
         } else {
             stats.currentGame = fileName;
         }
-
         stats.isInternalPause = false;
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame(stats.currentGame);
         }
-    } catch(e) { 
-        stats.currentGame = "unknown_game"; 
+    } catch(e) {
+        stats.currentGame = "unknown";
     }
 
     var frame = document.getElementById('game-frame');
     if(frame) {
         var buster = gamePath.indexOf('?') !== -1 ? '&' : '?';
         frame.src = gamePath + buster + "v=" + Date.now();
-        var homeBtn = document.querySelector('.tab-btn[onclick*="home"]');
-        window.openTab('home', homeBtn);
     }
 };
 
@@ -165,6 +159,7 @@ function initPlayer() {
 
 function togglePlayState() {
     var slider = document.getElementById('vol-slider');
+
     if (isApp && window.Android) {
         if (isPlaying) {
             window.Android.pauseAudio();
@@ -184,7 +179,7 @@ function togglePlayState() {
             isPlaying = true;
         }
     }
-    updateUI(); // Принудительно обновляем визуал после нажатия
+    updateUI();
 }
 
 function initVolume() {
@@ -211,10 +206,36 @@ function updateMetadata() {
                 if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
                 if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
             }
+            if (data.song_history) renderHistory(data.song_history);
         }).catch(function(err) {});
+}
+
+function renderHistory(history) {
+    var container = document.getElementById('history-container');
+    if (!container) return;
+    var html = '';
+    history.forEach(function(item) {
+        var song = item.song;
+        var art = fixUrl(song.art);
+        var safeTitle = (song.title || "").replace(/'/g, "\\'");
+        var safeArtist = (song.artist || "").replace(/'/g, "\\'");
+        html += '<div class="history-item"><img src="' + art + '" class="hist-img" onerror="this.src=\'' + CONFIG.defaultImage + '\'"><div class="hist-info"><span class="hist-title">' + song.title + '</span><span class="hist-artist">' + song.artist + '</span></div><button class="sku-btn" onclick="openSku(\'' + safeTitle + '\', \'' + safeArtist + '\', \'' + art + '\')"><i class="fas fa-info"></i></button></div>';
+    });
+    container.innerHTML = html;
 }
 
 function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+
+window.openSku = function(title, artist, art) {
+    if(document.getElementById('modal-art')) document.getElementById('modal-art').src = art;
+    if(document.getElementById('modal-title')) document.getElementById('modal-title').innerText = title;
+    if(document.getElementById('modal-artist')) document.getElementById('modal-artist').innerText = artist;
+    if(document.getElementById('info-modal')) document.getElementById('info-modal').classList.remove('hidden');
+};
+
+window.closeSku = function() { 
+    if(document.getElementById('info-modal')) document.getElementById('info-modal').classList.add('hidden'); 
+};
