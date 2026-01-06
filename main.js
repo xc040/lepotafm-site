@@ -37,7 +37,7 @@ document.addEventListener('click', function() {
 var INACTIVITY_THRESHOLD = 30000; 
 // ============================================
 
-// СИСТЕМНЫЙ ТАЙМЕР (1 СЕКУНДА)
+// СИСТЕМА ТАЙМЕР (1 СЕКУНДА)
 // Теперь он не считает время, а сообщает статус в Android
 setInterval(function() {
     // ИСПОЛЬЗУЕМ КЭШ ВМЕСТО getElementById
@@ -77,6 +77,13 @@ window.onload = function() {
 
     // 2. ЗАПОЛНЯЕМ КЭШ
     cachedHomePane = document.getElementById('home');
+
+    // === ФУНКЦИЯ АВТОЗАГРУЗКИ ПОСЛЕДНЕЙ ИГРЫ ===
+    var savedGamePath = localStorage.getItem('lastPlayedLepotaGame');
+    if (isApp && savedGamePath) {
+        window.loadGame(savedGamePath);
+    }
+    // ===========================================
 
     if (!isApp) {
         audio.src = CONFIG.streamUrl;
@@ -156,6 +163,7 @@ window.openTab = function(tabName, btnElement) {
 
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
+        localStorage.removeItem('lastPlayedLepotaGame'); // Очищаем память при выходе в лобби
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
@@ -163,6 +171,9 @@ window.openTab = function(tabName, btnElement) {
 };
 
 window.loadGame = function(gamePath) {
+    // СОХРАНЕНИЕ ПУТИ К ИГРЕ В ПАМЯТЬ
+    localStorage.setItem('lastPlayedLepotaGame', gamePath);
+
     try {
         var cleanPath = gamePath.split('?')[0];
         var parts = cleanPath.split('/').filter(function(p) { return p.length > 0; });
@@ -297,12 +308,3 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
-
-// ПЕРЕСЫЛКА ПРОГРЕССА: Ловим число от АПК и кидаем его внутрь игры
-window.updateRadioBar = function(progress) {
-    const frame = document.getElementById('game-frame');
-    if (frame && frame.contentWindow) {
-        // Отправляем сообщение внутрь iframe
-        frame.contentWindow.postMessage({ type: 'radioProgress', value: progress }, '*');
-    }
-};
