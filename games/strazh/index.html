@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Страж Эфира 14.6 - Elite Fix v4.2</title>
+    <title>Страж Эфира 14.6 - Elite Fix v4.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { 
@@ -344,7 +344,7 @@
                         x: d.x, y: d.y, dist: d.dist, angle: d.angle, collisions: d.collisions 
                     })),
                     playerBases: entities.playerBases.map(b => ({ 
-                        x: b.x, b.y: b.health, maxHealth: b.maxHealth 
+                        x: b.x, y: b.y, health: b.health, maxHealth: b.maxHealth 
                     }))
                 },
                 upgrades: {
@@ -548,7 +548,7 @@
                 } else {
                     score += cost;
                 }
-            } else if(type === 'fireRate-laser') {
+            } else if(type === 'fire-rate-laser') {
                 fireRateUpgradeLevel++;
                 const nearestBase = findNearestBase(snake.x, snake.y);
                 const nearbyLaser = entities.turrets.find(t => 
@@ -596,19 +596,6 @@
             updateUI();
         }
 
-        // ОПТИМИЗИРОВАННЫЕ ФУНКЦИИ РАССТОЯНИЙ
-        function distSq(x1, y1, x2, y2) {
-            const dx = x1 - x2;
-            const dy = y1 - y2;
-            return dx * dx + dy * dy;
-        }
-        
-        function isWithinRangeSq(x1, y1, x2, y2, rangeSq) {
-            const dx = x1 - x2;
-            const dy = y1 - y2;
-            return dx * dx + dy * dy < rangeSq;
-        }
-        
         // ОПТИМИЗИРОВАННЫЙ UPDATE
         function update() {
             if(!started || paused) return;
