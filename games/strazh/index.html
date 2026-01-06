@@ -236,11 +236,23 @@
         <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v2.9</div>
     </div>
 
-    <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: var(--neon-red);">СВЯЗЬ ПОТЕРЯНА</h1>
-        <div id="final-stats" style="margin-bottom:20px; color:#888;"></div>
-        <button class="btn-start" id="radio-continue-btn" style="display:none; margin-bottom: 12px;" onclick="window.radioContinue()">ПРОДОЛЖИТЬ</button>
-        <button class="btn-start" onclick="location.reload()">ПЕРЕЗАГРУЗКА</button>
+  <div id="game-over-screen" class="overlay hidden">
+        <h1 style="color: var(--neon-red); margin-bottom: 10px;">СВЯЗЬ ПОТЕРЯНА</h1>
+        <!-- Статистика с центровкой -->
+        <div id="final-stats" style="margin-bottom:25px; color:#aaa; text-align: center; line-height: 1.6;"></div>
+        
+        <!-- Кнопка теперь видна всегда, но меняет стиль если не заряжена -->
+        <button class="btn-start" id="radio-continue-btn" style="margin-bottom: 10px; width: 220px;" onclick="window.radioContinue()">ПРОДОЛЖИТЬ</button>
+        
+        <!-- Шкала радио под кнопкой -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 10px; color: var(--neon-purple); text-transform: uppercase; margin-bottom: 4px;">Заряд Радио-Бонуса</div>
+            <div class="progress-container" style="width: 200px; margin: 0 auto; border-color: var(--neon-purple);">
+                <div id="radio-bar-over" style="width: 0%; height: 100%; background: var(--neon-purple); transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <button class="btn-start" onclick="location.reload()" style="border-color: #555; color: #888; box-shadow: none; font-size: 14px;">НОВАЯ ИГРА</button>
     </div>
 
 <script>
@@ -1759,10 +1771,34 @@ function gameOver() {
     if(window.ammoTick) clearInterval(window.ammoTick);
     
     document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Уровней пройдено: " + (curLevel - 1) + " | Собрано данных: " + Math.floor(score);
     
+    // Вывод статистики: уровни и данные на разных строках по центру
+    document.getElementById('final-stats').innerHTML = 
+        "УРОВНЕЙ ПРОЙДЕНО: " + (curLevel - 1) + "<br>" + 
+        "СОБРАНО ДАННЫХ: " + Math.floor(score);
+    
+    // Обновляем шкалу в окне смерти
+    const overBar = document.getElementById('radio-bar-over');
+    if (overBar) overBar.style.width = radioPercent + '%';
+
+    // Логика кнопки "Продолжить"
     const btn = document.getElementById('radio-continue-btn');
-    if (btn) btn.style.display = (radioPercent >= 100) ? 'block' : 'none';
+    if (btn) {
+        if (radioPercent >= 100) {
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+            btn.style.borderColor = "var(--neon-purple)";
+            btn.style.color = "white";
+            btn.style.boxShadow = "0 0 15px var(--neon-purple)";
+            btn.innerText = "ИСПОЛЬЗОВАТЬ БОНУС";
+        } else {
+            btn.style.opacity = "0.4";
+            btn.style.pointerEvents = "none"; // Нажать нельзя, пока нет 100%
+            btn.style.borderColor = "#444";
+            btn.style.boxShadow = "none";
+            btn.innerText = "ЗАРЯДКА...";
+        }
+    }
 }
 
 /** --- ДЖОЙСТИК --- */
@@ -1847,6 +1883,11 @@ window.radioContinue = function() {
     if (gov) gov.classList.add('hidden');
     
     startGame(false); // Продолжаем с сохранения
+
+
+// Внутри window.updateRadioBar добавь это:
+const overBar = document.getElementById('radio-bar-over');
+if (overBar) overBar.style.width = percent + '%';
 
     // Команда на обнуление в АПК (через родительское окно)
     if (window.parent && window.parent.Android && window.parent.Android.resetRadioTimer) {
