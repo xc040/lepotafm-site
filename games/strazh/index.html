@@ -1827,6 +1827,33 @@ function initJoystick() {
 
 // Запуск инициализации джойстика
 initJoystick();
+// === МОСТ СВЯЗИ С АНДРОИДОМ ЧЕРЕЗ ОБОЛОЧКУ ===
+
+// 1. Принимаем прогресс (от оболочки) и обновляем полоску
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'radioProgress') {
+        window.updateRadioBar(event.data.value);
+    }
+});
+
+// 2. Исправляем функцию сброса, чтобы она видела АПК через родителя
+window.radioContinue = function() {
+    if (radioPercent < 100) return;
+    
+    radioPercent = 0;
+    window.updateRadioBar(0);
+    
+    const gov = document.getElementById('game-over-screen');
+    if (gov) gov.classList.add('hidden');
+    
+    startGame(false); // Продолжаем с сохранения
+
+    // Команда на обнуление в АПК (через родительское окно)
+    if (window.parent && window.parent.Android && window.parent.Android.resetRadioTimer) {
+        window.parent.Android.resetRadioTimer();
+    }
+};
+// =============================================
 </script>
 </body>
 </html>
