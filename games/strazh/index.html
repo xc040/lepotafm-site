@@ -140,7 +140,7 @@
         </div>
 
         <div id="top-left" class="stat-box">
-            <div>ЭФИР</div>
+            <div>РАДИО</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
         </div>
         
@@ -149,12 +149,12 @@
   <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
 </div>
 <div id="top-right" class="stat-box">
-            <div>ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
             <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
+            <div>ХВОСТ: <span id="tail-val" style="color:var(--neon-blue); font-weight:bold;">25</span></div>
         </div>
 
         <div id="mission-box" class="hidden">
-            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
+            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span> | ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
             <div id="mission-text">Загрузка протоколов...</div>
         </div>
 
@@ -299,11 +299,11 @@ let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапа
 let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
 let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
 
-// ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
-window.startGame = startGame;
-window.toggleShop = toggleShop;
-window.togglePause = togglePause;
-window.buyUpgrade = buyUpgrade;
+// --- СИСТЕМА РАДИО ---
+let radioLevel = 0; // Уровень радио (0-100)
+let radioStartTime = 0; // Время начала прослушивания радио
+let lastRadioCheck = 0; // Последняя проверка аудио
+let isRadioPlaying = false; // Флаг воспроизведения радио
 
 /** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
 window.onload = function() {
@@ -1033,18 +1033,63 @@ function buyUpgrade(type, cost) {
         
         if(lives > 0) saveProgress();
     }
-    updateUI();
 }
+
+// --- СИСТЕМА РАДИО ---
+function updateRadio() {
+    const now = Date.now();
+    
+    // Проверяем каждые 5 секунд
+    if (now - lastRadioCheck > 5000) {
+        lastRadioCheck = now;
+        
+        // Проверяем играет ли какое-либо аудио в браузере
+        const audios = document.getElementsByTagName('audio');
+        let playingAudio = false;
+        
+        for (let i = 0; i < audios.length; i++) {
+            if (!audios[i].paused && audios[i].currentTime > 0) {
+                playingAudio = true;
+                break;
+            }
+        }
+        
+        // Также проверяем iframe и video элементы для радио плееров
+        const iframes = document.getElementsByTagName('iframe');
+        const videos = document.getElementsByTagName('video');
+        
+        // Если найдено воспроизведение
+        if (playingAudio || videos.length > 0 || iframes.length > 0) {
+            if (!isRadioPlaying) {
+                // Начало прослушивания
+                isRadioPlaying = true;
+                radioStartTime = now;
+            } else {
+                // Продолжаем слушать - добавляем уровень радио
+                const listeningSeconds = (now - radioStartTime) / 1000;
+                if (listeningSeconds >= 180) { // 3 минуты = 180 секунд
+                    radioLevel = Math.min(100, radioLevel + 33); // +33% за 3 минуты
+                    radioStartTime = now; // Сбрасываем таймер
+                }
+            }
+        } else {
+            // Радио не играет
+            isRadioPlaying = false;
+        }
+    }
+}
+
 function updateUI() {
     const bar = document.getElementById('signal-bar');
     if (bar) {
-        bar.style.width = baseAmmo + '%';
-        bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
+        bar.style.width = radioLevel + '%';
+        bar.style.background = radioLevel < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
     }
-    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
+    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val'), tv = document.getElementById('tail-val');
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
+    if(tv) tv.innerText = snake.length;
     
     // Обновляем время игры
     const playTimeElement = document.getElementById('play-time');
@@ -1053,6 +1098,9 @@ function updateUI() {
         const seconds = Math.floor(totalPlayTime % 60);
         playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
+    
+    // Обновляем радио
+    updateRadio();
     
     // Управление звуком шума эфира
     if (typeof updateEtherNoise === "function") updateEtherNoise();
