@@ -1000,17 +1000,22 @@ function buyUpgrade(type, cost) {
     updateUI();
 }
 function updateUI() {
+    // 1. Полоска энергии
     const bar = document.getElementById('signal-bar');
     if (bar) {
         bar.style.width = baseAmmo + '%';
         bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
     }
-    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
+    
+    // 2. Текстовая статистика
+    const sv = document.getElementById('score-val');
+    const sc = document.getElementById('shop-credits');
+    const lv = document.getElementById('lives-val');
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
     if(lv) lv.innerText = lives;
     
-    // Обновляем время игры
+    // 3. Время игры
     const playTimeElement = document.getElementById('play-time');
     if (playTimeElement) {
         const minutes = Math.floor(totalPlayTime / 60);
@@ -1018,8 +1023,10 @@ function updateUI() {
         playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
-    // Управление звуком шума эфира
-    updateEtherNoise();
+    // 4. Звук (если есть функция)
+    if (typeof updateEtherNoise === "function") updateEtherNoise();
+    
+    // 5. Босс
     const bossBox = document.getElementById('boss-info');
     const bossStrength = document.getElementById('boss-strength');
     const bossHp = document.getElementById('boss-hp');
