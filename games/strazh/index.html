@@ -999,7 +999,39 @@ function buyUpgrade(type, cost) {
     }
     updateUI();
 }
-// ИСПРАВЛЕННЫЙ UPDATE (ВЕРСИЯ 4.0)
+function updateUI() {
+    const bar = document.getElementById('signal-bar');
+    if (bar) {
+        bar.style.width = baseAmmo + '%';
+        bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
+    }
+    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
+    if(sv) sv.innerText = Math.floor(score);
+    if(sc) sc.innerText = Math.floor(score);
+    if(lv) lv.innerText = lives;
+    
+    // Обновляем время игры
+    const playTimeElement = document.getElementById('play-time');
+    if (playTimeElement) {
+        const minutes = Math.floor(totalPlayTime / 60);
+        const seconds = Math.floor(totalPlayTime % 60);
+        playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Управление звуком шума эфира
+    updateEtherNoise();
+    const bossBox = document.getElementById('boss-info');
+    const bossStrength = document.getElementById('boss-strength');
+    const bossHp = document.getElementById('boss-hp');
+    if (entities.boss && bossBox && bossStrength && bossHp) {
+        bossBox.style.display = 'block';
+        bossStrength.innerText = 'Lv.' + (entities.boss.level||curLevel);
+        bossHp.innerText = 'HP: ' + Math.round(entities.boss.health) + ' / ' + Math.round(entities.boss.maxHealth);
+    } else if (bossBox) {
+        bossBox.style.display = 'none';
+    }
+}
+    // ИСПРАВЛЕННЫЙ UPDATE (ВЕРСИЯ 4.0)
 function update() {
     if(!started || paused) return;
     frameCount++;
