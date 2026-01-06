@@ -163,7 +163,7 @@ window.openTab = function(tabName, btnElement) {
 
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
-        localStorage.removeItem('lastPlayedLepotaGame'); // Очищаем память при выходе в лобби
+        // localStorage.removeItem УДАЛЕН ОТСЮДА, чтобы игра не забывалась в лобби
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
