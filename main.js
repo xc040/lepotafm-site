@@ -37,34 +37,40 @@ document.addEventListener('click', function() {
 var INACTIVITY_THRESHOLD = 30000; 
 // ============================================
 
+// --- МОСТ: ПРИЕМ ДАННЫХ ОТ ANDROID И ПЕРЕСЫЛКА В ИГРУ ---
+window.updateRadioBar = function(percent) {
+    var frame = document.getElementById('game-frame');
+    if (frame && frame.contentWindow) {
+        // Пересылаем проценты внутрь игры (iframe)
+        frame.contentWindow.postMessage({ type: 'radioProgress', value: percent }, '*');
+    }
+};
+
 // СИСТЕМА ТАЙМЕР (1 СЕКУНДА)
 // Теперь он не считает время, а сообщает статус в Android
 setInterval(function() {
     // ИСПОЛЬЗУЕМ КЭШ ВМЕСТО getElementById
     var isHomeActive = cachedHomePane ? cachedHomePane.classList.contains('active') : false;
     
-    // ИСПРАВЛЕНИЕ: Удалена проверка !stats.isInternalPause.
-    // Браузер не знает о паузе внутри игры (нет моста), поэтому считаем игру активной
-    // всегда, когда открыта вкладка Home и загружена игра (не лобби).
-    
     // Логика: Активная сессия = Вкладка Home + Не лобби
     var isActiveGameSession = isHomeActive && 
                               (stats.currentGame !== "lobby");
 
     // ОТПРАВЛЯЕМ СТАТУС В JAVA (Android)
-    // Java сама решит, что с этим делать (считать гибрид или радио)
     if (isApp && window.Android && window.Android.reportGameState) {
         window.Android.reportGameState(isActiveGameSession, stats.currentGame);
     }
 }, 1000);
 
-// ИНТЕРВАЛ ОТПРАВКИ (sendStatsToServer) УДАЛЕН.
-// ФУНКЦИЯ sendStatsToServer УДАЛЕНА.
-// Теперь отправкой занимается только Java.
-
 window.addEventListener('message', function(e) {
     if (e.data && e.data.type === 'gameStatus') {
         stats.isInternalPause = e.data.paused;
+    }
+    // МОСТ: ПРИЕМ КОМАНДЫ СБРОСА ОТ ИГРЫ И ОТПРАВКА В АНДРОИД
+    if (e.data && e.data.type === 'resetRadioTimer') {
+        if (isApp && window.Android && window.Android.resetRadioTimer) {
+            window.Android.resetRadioTimer();
+        }
     }
 });
 // ---------------------------------
@@ -163,7 +169,6 @@ window.openTab = function(tabName, btnElement) {
 
     if (tabName !== 'home') {
         stats.currentGame = "lobby";
-        // localStorage.removeItem УДАЛЕН ОТСЮДА, чтобы игра не забывалась в лобби
         if (isApp && window.Android && window.Android.updateActiveGame) {
             window.Android.updateActiveGame("lobby");
         }
@@ -264,30 +269,26 @@ function updateMetadata() {
     fetch(CONFIG.apiUrl + "?t=" + Date.now())
         .then(function(res) { return res.json(); })
         .then(function(data) {
-            // ОПТИМИЗАЦИЯ: Если песня та же, не перерисовываем DOM
             if (data.now_playing && data.now_playing.song) {
                 var song = data.now_playing.song;
                 
                 if (song.title !== lastSongTitle) {
-                    lastSongTitle = song.title; // Обновляем кэш заголовка
+                    lastSongTitle = song.title; 
 
                     if(document.getElementById('track-name')) document.getElementById('track-name').innerText = song.title;
                     if(document.getElementById('artist-name')) document.getElementById('artist-name').innerText = song.artist || "";
                     if(document.getElementById('mini-art')) document.getElementById('mini-art').src = fixUrl(song.art);
                 }
             }
-            // ВОССТАНОВЛЕНА ИСТОРИЯ ПЕСЕН
             if (data.song_history) renderHistory(data.song_history);
         }).catch(function(err) {});
 }
 
-// ФУНКЦИЯ ОТРИСОВКИ ИСТОРИИ
 function renderHistory(history) {
     var container = document.getElementById('history-container');
     if (!container) return;
     
     var html = '';
-    // Берем последние 5 песен
     history.slice(0, 5).forEach(function(item) {
         var song = item.song;
         var art = fixUrl(song.art);
@@ -298,7 +299,6 @@ function renderHistory(history) {
                 '<div class="hist-artist">' + (song.artist || "") + '</div>' +
                 '</div></div>';
     });
-    // Обновляем HTML только если он изменился (простая оптимизация)
     if (container.innerHTML !== html) {
         container.innerHTML = html;
     }
