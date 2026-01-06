@@ -143,7 +143,7 @@
         <div id="top-left" class="stat-box">
             <div>ЭФИР</div>
             <div class="progress-container"><div id="signal-bar"></div></div>
-            <div style="margin-top: 8px;">ЭФИР РАДИО</div>
+            <div style="margin-top: 8px;">РАДИО</div>
             <div class="progress-container"><div id="radio-bar"></div></div>
         </div>
         
@@ -152,12 +152,12 @@
   <div id="boss-hp" style="font-size:12px;color:#fff;"></div>
 </div>
 <div id="top-right" class="stat-box">
-            <div>УРОВЕНЬ <span id="level-val" style="color:var(--neon-blue);font-weight:bold;">1</span> | ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
-            <div>ХВОСТ: <span id="tail-val" style="color:var(--neon-green); font-weight:bold;">25</span> | ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
+            <div>ХВОСТ: <span id="tail-val" style="color:var(--neon-green)">25</span></div>
+            <div>ДАННЫЕ: <span id="score-val" style="color:var(--neon-gold); font-weight:bold;">0</span></div>
         </div>
 
         <div id="mission-box" class="hidden">
-            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span></div>
+            <div id="mission-title">УРОВЕНЬ <span id="m-id">1</span> | ЖИЗНИ: <span id="lives-val" style="color:var(--neon-red)">3</span></div>
             <div id="mission-text">Загрузка протоколов...</div>
         </div>
 
@@ -286,7 +286,7 @@ const Grid = {
 
 let canvas, ctx, gameId;
 let started = false, paused = false;
-let score = 0, baseAmmo = 100, radioAmmo = 0, lives = 3;
+let score = 0, baseAmmo = 100, lives = 3;
 let snake = { x: 2550, y: 2550, segments: [], angle: 0, speed: 5.5, size: 25, length: 20 };
 let entities = { food: [], enemies: [], particles: [], turrets: [], bullets: [], drones: [], loot: [], boss: null, bossTowers: [], playerBases: [] };
 let camera = { x: 0, y: 0 }, input = { x: 0, y: 0 };
@@ -295,19 +295,40 @@ let etherNoisePlaying = false;
 let gameStartTime = 0; // Время начала игры для сообщения защиты базы
 let totalPlayTime = 0; // Общее время игры без учета пауз
 let lastPauseTime = 0; // Время последней паузы
-let radioListenTime = 0; // Время прослушивания радио
 let maxAmmoCapacity = 9; // Максимальный боезапас турелей - ИЗМЕНЕНО НА 9
 let ammoUpgradeLevel = 0; // Уровень апгрейда боезапаса
 let boltAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса пушек
 let laserAmmoUpgradeLevel = 0; // Уровень апгрейда боезапаса лазеров
 let fireRateUpgradeLevel = 0; // Уровень апгрейда скорострельности
 let rangeUpgradeLevel = 0; // Уровень апгрейда дальности
+let radioLevel = 0; // Уровень радио (0-100)
 
 // ПРИНУДИТЕЛЬНАЯ РЕГИСТРАЦИЯ ГЛОБАЛЬНЫХ ФУНКЦИЙ (FIX КНОПОК)
 window.startGame = startGame;
 window.toggleShop = toggleShop;
 window.togglePause = togglePause;
 window.buyUpgrade = buyUpgrade;
+
+// Слушаем сообщения от приложения о радио
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'radioPlayed') {
+        // Приложение сообщает, что радио было прослушано
+        radioLevel = Math.min(100, radioLevel + 100);
+        updateUI();
+    }
+});
+
+// Проверяем радио каждые 3 минуты (180000 мс)
+setInterval(() => {
+    if (started && !paused) {
+        // Можно добавить проверку через API приложения
+        // Пока просто имитируем проверку
+        if (Math.random() < 0.3) { // 30% шанс, что радио было прослушано
+            radioLevel = Math.min(100, radioLevel + 100);
+            updateUI();
+        }
+    }
+}, 180000);
 
 /** --- ИНИЦИАЛИЗАЦИЯ (СТАБИЛЬНЫЙ МЕТОД V14) --- */
 window.onload = function() {
@@ -325,8 +346,6 @@ window.onload = function() {
             const continueBtn = document.getElementById('continue-btn');
             if (continueBtn) continueBtn.style.display = 'block';
         }
-        // Инициализация радио системы
-        initRadioSystem();
     }
 };
 
@@ -334,30 +353,6 @@ function resize() {
     if (!canvas) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-}
-
-/** --- РАДИО СИСТЕМА --- */
-function initRadioSystem() {
-    // Проверяем, играет ли радио в браузере
-    const checkRadio = setInterval(() => {
-        const audioElements = document.querySelectorAll('audio');
-        let radioPlaying = false;
-        
-        audioElements.forEach(audio => {
-            if (audio.id !== 'ether-noise' && !audio.paused && audio.currentTime > 0) {
-                radioPlaying = true;
-            }
-        });
-        
-        if (radioPlaying) {
-            radioListenTime += 0.1; // Увеличиваем время прослушивания
-            if (radioListenTime >= 180) { // 3 минуты = 180 секунд
-                radioAmmo = Math.min(100, radioAmmo + 100); // Пополняем до 100
-                radioListenTime = 0; // Сбрасываем таймер
-                updateUI();
-            }
-        }
-    }, 100);
 }
 
 /** --- УПРАВЛЕНИЕ ОКНАМИ --- */
@@ -417,9 +412,9 @@ function saveProgress() {
         missionProgress: missionProgress,
         score: score,
         baseAmmo: baseAmmo,
-        radioAmmo: radioAmmo,
         lives: lives,
         snakeLength: snake.length,
+        radioLevel: radioLevel,
         turrets: entities.turrets.map(t => ({ 
             x: t.x, 
             y: t.y, 
@@ -461,9 +456,9 @@ function loadProgress() {
             missionProgress = progress.missionProgress || 0;
             score = progress.score || 0;
             baseAmmo = progress.baseAmmo || 100;
-            radioAmmo = progress.radioAmmo || 0;
             lives = progress.lives || 3;
             snake.length = progress.snakeLength || 25;
+            radioLevel = progress.radioLevel || 0;
             maxAmmoCapacity = progress.maxAmmoCapacity || 1;
             ammoUpgradeLevel = progress.ammoUpgradeLevel || 0;
             boltAmmoUpgradeLevel = progress.boltAmmoUpgradeLevel || 0;
@@ -569,14 +564,13 @@ function startGame(newGame = true) {
         // Новая игра - полный сброс
         score = 0;
         baseAmmo = 100;
-        radioAmmo = 0;
         lives = 3;
         curLevel = 1;
         curRoomInLevel = 0;
         missionProgress = 0;
         snake.length = 25;
+        radioLevel = 0;
         totalPlayTime = 0; // Сбрасываем время игры
-        radioListenTime = 0; // Сбрасываем время радио
         
         // Очистка массивов
         entities.turrets = [];
@@ -593,6 +587,7 @@ function startGame(newGame = true) {
             curRoomInLevel = 0;
             missionProgress = 0;
             snake.length = 25;
+            radioLevel = 0;
         }
     }
     
@@ -1076,21 +1071,18 @@ function updateUI() {
         bar.style.background = baseAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-blue)';
     }
     
-    // Обновляем радио бар
     const radioBar = document.getElementById('radio-bar');
     if (radioBar) {
-        radioBar.style.width = radioAmmo + '%';
-        radioBar.style.background = radioAmmo < 30 ? 'var(--neon-red)' : 'var(--neon-purple)';
+        radioBar.style.width = radioLevel + '%';
+        radioBar.style.background = radioLevel < 30 ? 'var(--neon-red)' : 'var(--neon-purple)';
     }
     
-    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), lv = document.getElementById('lives-val');
-    const levelVal = document.getElementById('level-val');
-    const tailVal = document.getElementById('tail-val');
+    const sv = document.getElementById('score-val'), sc = document.getElementById('shop-credits'), tv = document.getElementById('tail-val');
+    const lv = document.getElementById('lives-val');
     if(sv) sv.innerText = Math.floor(score);
     if(sc) sc.innerText = Math.floor(score);
+    if(tv) tv.innerText = Math.floor(snake.length);
     if(lv) lv.innerText = lives;
-    if(levelVal) levelVal.innerText = curLevel;
-    if(tailVal) tailVal.innerText = Math.floor(snake.length);
     
     // Обновляем время игры
     const playTimeElement = document.getElementById('play-time');
@@ -1105,740 +1097,766 @@ function updateUI() {
     
     const bossBox = document.getElementById('boss-info');
     const bossStrength = document.getElementById('boss-strength');
-    const bossHp = document.getElementById('boss-hp');
-    if (entities.boss && bossBox && bossStrength && bossHp) {
-        bossBox.style.display = 'block';
-        bossStrength.innerText = 'Lv.' + (entities.boss.level||curLevel);
-        bossHp.innerText = 'HP: ' + Math.round(entities.boss.health) + ' / ' + Math.round(entities.boss.maxHealth);
-    } else if (bossBox) {
-        bossBox.style.display = 'none';
     }
-}
-// ФИНАЛЬНЫЙ UPDATE v4.4 (СЕТКА + ПАМЯТЬ + МАТЕМАТИКА)
-function update() {
-    if(!started || paused) return;
-    frameCount++;
-    updateMission();
-    totalPlayTime += 1/60; 
-    updateUI();
-
-    // 1. Движение змеи
-    snake.speed = 5.5;
-    if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
-    snake.x += Math.cos(snake.angle) * snake.speed;
-    snake.y += Math.sin(snake.angle) * snake.speed;
-
-    if(snake.x < 0) snake.x = WORLD_SIZE; if(snake.x > WORLD_SIZE) snake.x = 0;
-    if(snake.y < 0) snake.y = WORLD_SIZE; if(snake.y > WORLD_SIZE) snake.y = 0;
-
+    
+    snake.x += dx;
+    snake.y += dy;
+    
+    // Обновление сегментов змеи
     snake.segments.unshift({x: snake.x, y: snake.y});
-    if(snake.segments.length > snake.length) snake.segments.pop();
-
-    // 2. Механика: Ядро
-    const dxCore = snake.x - BASE_POS.x; const dyCore = snake.y - BASE_POS.y;
-    if((dxCore*dxCore + dyCore*dyCore) < 6400 && baseAmmo < 100 && snake.length > 12) {
-        snake.length -= 0.25; baseAmmo = Math.min(100, baseAmmo + 2.5);
-        if(curLevel === 1 && curRoomInLevel === 4) missionProgress = 1;
-        updateUI();
-    }
+    while (snake.segments.length > snake.length) snake.segments.pop();
     
-    // 2.1. Пополнение боезапаса
-    const snakeBase = findNearestBase(snake.x, snake.y);
-    const dxBase = snake.x - snakeBase.x; const dyBase = snake.y - snakeBase.y;
-    if((dxBase*dxBase + dyBase*dyBase) < 2500 && snake.length > 15) {
-        const nearbyTurrets = entities.turrets.filter(t => ((t.x-snakeBase.x)**2 + (t.y-snakeBase.y)**2) < 40000);
-        const nearbyDrones = entities.drones.filter(d => ((d.x-snakeBase.x)**2 + (d.y-snakeBase.y)**2) < 40000);
-        
-        if(nearbyTurrets.length > 0 || nearbyDrones.length > 0) {
-            snake.length -= 0.5;
-            while(snake.segments.length > snake.length) snake.segments.pop();
-            nearbyTurrets.forEach(t => { if (t.currentAmmo < (t.maxAmmo || 9)) t.currentAmmo = Math.min(t.maxAmmo || 9, t.currentAmmo + 3); });
-            nearbyDrones.forEach(d => { if ((d.collisions || 0) > 0) d.collisions = Math.max(0, (d.collisions || 0) - 1); });
-            updateUI();
-        }
-    }
+    // Проверка границ мира
+    if (snake.x < 0) snake.x = 0;
+    if (snake.x > WORLD_SIZE) snake.x = WORLD_SIZE;
+    if (snake.y < 0) snake.y = 0;
+    if (snake.y > WORLD_SIZE) snake.y = WORLD_SIZE;
     
-    // 3. Камера
+    // Обновление камеры
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
-
-    // --- ОПТИМИЗАЦИЯ: ЗАПОЛНЕНИЕ СЕТКИ ---
-    Grid.clear();
-    for (let i = 0; i < entities.enemies.length; i++) Grid.add(entities.enemies[i]);
-
-    // 4. Турели (Через сетку)
-    for (let i = 0; i < entities.turrets.length; i++) {
-        const t = entities.turrets[i];
-        if (t.currentAmmo > 0) {
-            let fireRateMult = 1 / (1 + (t.fireRateBonus || 0));
-            let rangeMult = 1 + (t.rangeBonus || 0);
-            const rangeSq = (667 * rangeMult) ** 2;
-
-            if (t.type === 'bolt') {
-                if (Date.now() - t.lastShot > 1700 * fireRateMult && entities.bullets.length < 50) {
-                    let target = null; let minDistSq = rangeSq;
-                    const neighbors = Grid.get(t.x, t.y);
-                    for(let k=0; k<neighbors.length; k++) {
-                        const en = neighbors[k];
-                        if (en.type === 'box' && !en._dead) {
-                            const dSq = (t.x-en.x)**2 + (t.y-en.y)**2;
-                            if (dSq < rangeSq && dSq < minDistSq) { minDistSq = dSq; target = en; }
-                        }
-                    }
-                    if (target) {
-                        const a = Math.atan2(target.y - t.y, target.x - t.x);
-                        entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
-                        t.lastShot = Date.now();
-                        t.currentAmmo -= 0.6 * (1 - Math.min(0.8, (t.ammoBonus || 0)));
-                    }
-                }
-            } else if (t.type === 'laser') {
-                if (Date.now() - t.lastShot > 2600 * fireRateMult) {
-                    let target = null; let minDistSq = rangeSq;
-                    const neighbors = Grid.get(t.x, t.y);
-                    for(let k=0; k<neighbors.length; k++) {
-                        const en = neighbors[k];
-                        if (en.type === 'tri' && !en._dead) {
-                            const dSq = (t.x-en.x)**2 + (t.y-en.y)**2;
-                            if (dSq < rangeSq && dSq < minDistSq) { minDistSq = dSq; target = en; }
-                        }
-                    }
-                    if (target) {
-                        t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
-                        entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
-                        target._dead = true;
-                        t.lastShot = Date.now();
-                        t.currentAmmo -= 1.0 * (1 - Math.min(0.8, (t.ammoBonus || 0)));
-                    }
-                }
-            }
-        }
-    }
-
-    // 5. Дроны (Через сетку + Memory safe)
-    for (let i = 0; i < entities.drones.length; i++) {
-        const d = entities.drones[i];
-        d.angle += 0.04;
-        d.x = BASE_POS.x + Math.cos(d.angle) * d.dist;
-        d.y = BASE_POS.y + Math.sin(d.angle) * d.dist;
-        
-        if ((d.collisions || 0) < 4) {
-            const neighbors = Grid.get(d.x, d.y);
-            for(let k=0; k<neighbors.length; k++) {
-                const en = neighbors[k];
-                if(!en._dead && ((d.x-en.x)**2 + (d.y-en.y)**2) < 3025) {
-                    en._dead = true;
-                    entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                    score += 4; updateUI();
-                    d.collisions = (d.collisions || 0) + 1;
-                    break; 
-                }
-            }
-        }
-    }
-    // Очистка дронов (In-place filter)
-    let dCount = 0;
-    for(let i=0; i<entities.drones.length; i++) {
-        if((entities.drones[i].collisions||0) < 8) entities.drones[dCount++] = entities.drones[i];
-    }
-    entities.drones.length = dCount;
-
-    // 6. Снаряды (Через сетку + Memory safe)
-    for (let i = 0; i < entities.bullets.length; i++) {
-        const b = entities.bullets[i];
-        b.x += b.vx; b.y += b.vy;
-        
-        // Границы мира
-        if (((b.x-BASE_POS.x)**2 + (b.y-BASE_POS.y)**2) > 6250000) { b._dead = true; continue; }
-
-        if (!b._dead && !b.isBossBullet) {
-            const neighbors = Grid.get(b.x, b.y);
-            for(let k=0; k<neighbors.length; k++) {
-                const en = neighbors[k];
-                if (en.type === 'box' && !en._dead) {
-                    if(((b.x-en.x)**2 + (b.y-en.y)**2) < 2025) {
-                        en._dead = true;
-                        b._dead = true;
-                        entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                        score += 3; missionProgress++;
-                        createParticles(en.x, en.y, 'blue', 5);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    // Очистка пуль (In-place filter)
-    let bCount = 0;
-    for(let i=0; i<entities.bullets.length; i++) {
-        if(!entities.bullets[i]._dead) entities.bullets[bCount++] = entities.bullets[i];
-    }
-    entities.bullets.length = bCount;
-
-    // 7. Спавн и ИИ врагов
-    const room = getCurrentRoom();
-    if(started && room && !room.isBoss && Math.random() < room.spawnRate) spawnEnemy();
-    if(entities.boss && Math.random() < 0.02) {
-        const a = Math.random() * 6.28; const d = 200 + Math.random() * 100;
-        entities.enemies.push({ x: entities.boss.x + Math.cos(a)*d, y: entities.boss.y + Math.sin(a)*d, speed: Math.random()>0.5?1.7:3.5, type: Math.random()>0.5?'box':'tri'});
-    }
-
-    for(let i = 0; i < entities.enemies.length; i++) {
-        const en = entities.enemies[i];
-        if(en._dead) continue;
-
-        // Урон по змее сбоку
-        for (let si = 1; si < snake.segments.length; si++) {
-            const seg = snake.segments[si];
-            if(((en.x-seg.x)**2 + (en.y-seg.y)**2) < 1600) {
-                snake.length = Math.max(5, snake.length - 80);
-                while(snake.segments.length > snake.length) snake.segments.pop();
-                createParticles(seg.x, seg.y, 'red', 10);
-                en._dead = true; updateUI(); break;
-            }
-        }
-        if(en._dead) continue;
-        
-        // Движение
-        let targetX = BASE_POS.x; let targetY = BASE_POS.y;
-        let minDistSq = (en.x-BASE_POS.x)**2 + (en.y-BASE_POS.y)**2;
-        for(let j=0; j<entities.playerBases.length; j++) {
-            const b = entities.playerBases[j];
-            const dSq = (en.x-b.x)**2 + (en.y-b.y)**2;
-            if (dSq < minDistSq) { minDistSq = dSq; targetX = b.x; targetY = b.y; }
-        }
-        const ang = Math.atan2(targetY - en.y, targetX - en.x);
-        en.x += Math.cos(ang) * en.speed; en.y += Math.sin(ang) * en.speed;
-
-        // Урон по целям
-        if(((en.x-targetX)**2 + (en.y-targetY)**2) < 4900) {
-            if(targetX === BASE_POS.x && targetY === BASE_POS.y) {
-                if (shieldActive) { shieldActive = false; createParticles(BASE_POS.x, BASE_POS.y, 'cyan', 25); }
-                else { lives--; }
-                if(lives <= 0) gameOver();
-            } else {
-                const base = entities.playerBases.find(b => b.x === targetX && b.y === targetY);
-                if(base) {
-                    base.health -= 20; createParticles(base.x, base.y, 'red', 8);
-                    if(base.health <= 0) {
-                        entities.turrets = entities.turrets.filter(t => ((t.x-base.x)**2 + (t.y-base.y)**2) > 40000);
-                        entities.playerBases = entities.playerBases.filter(b => b !== base);
-                        createParticles(base.x, base.y, 'orange', 15);
-                    }
-                }
-            }
-            en._dead = true; updateUI(); continue;
-        }
-
-        // Убийство головой
-        if(((en.x-snake.x)**2 + (en.y-snake.y)**2) < 3025) {
-            score += 10; snake.length += 2;
-            while(snake.segments.length > snake.length) snake.segments.pop();
-            en._dead = true;
-            createParticles(en.x, en.y, 'green', 10);
-            missionProgress++; updateUI();
-        }
-    }
     
-    // ОЧИСТКА ВРАГОВ (Memory safe)
-    let eCount = 0;
-    for(let i=0; i<entities.enemies.length; i++) {
-        if(!entities.enemies[i]._dead) entities.enemies[eCount++] = entities.enemies[i];
-    }
-    entities.enemies.length = eCount;
-
-    // 8. Обломки (Memory safe: Swap-Pop)
-    for (let i = entities.loot.length - 1; i >= 0; i--) {
-        const l = entities.loot[i];
-        if (Date.now() > l.dieTime) {
-            entities.loot[i] = entities.loot[entities.loot.length-1]; entities.loot.pop();
-            continue;
-        }
-        if(((l.x-snake.x)**2 + (l.y-snake.y)**2) < 3600) {
-            snake.length += 1; score += 15; updateUI();
-            entities.loot[i] = entities.loot[entities.loot.length-1]; entities.loot.pop();
-        }
-    }
-
-    // 9. Еда (Memory safe: Swap-Pop)
+    // Проверка подбора еды
     for (let i = entities.food.length - 1; i >= 0; i--) {
         const f = entities.food[i];
-        if(((f.x-snake.x)**2 + (f.y-snake.y)**2) < 4225) { 
-            snake.length += 4; score += 3.5;
-            createParticles(f.x, f.y, 'var(--neon-green)', 5);
+        const dist = Math.hypot(snake.x - f.x, snake.y - f.y);
+        if (dist < 20) {
+            if (f.type === 'data') {
+                score += 10;
+                snake.length += 1;
+                // Проверка первого задания обучения
+                if (curLevel === 1 && curRoomInLevel === 0) {
+                    missionProgress = 1;
+                }
+            } else if (f.type === 'ammo') {
+                baseAmmo = Math.min(100, baseAmmo + 10);
+            }
+            entities.food.splice(i, 1);
             spawnFood();
-            if(curLevel === 1 && curRoomInLevel === 0) missionProgress = 1;
-            updateUI();
-            entities.food[i] = entities.food[entities.food.length-1]; entities.food.pop();
         }
     }
     
-    // 10. Босс
-    if(entities.boss) {
-        entities.bullets.forEach(b => {
-            if(!b.isBossBullet && !b._dead) {
-                if(((b.x-entities.boss.x)**2 + (b.y-entities.boss.y)**2) < 6400 && snake.length > 1) {
-                    const levelMul = 1 + (entities.boss.level||curLevel)/3;
-                    entities.boss.health -= 5 * levelMul; b._dead = true;
-                    createParticles(entities.boss.x, entities.boss.y, 'purple', 8);
-                    if(entities.boss.health <= 0) {
-                        score += 500; missionProgress = 1;
-                        createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
-                        entities.boss = null; entities.bossTowers = [];
+    // Обновление врагов
+    const room = getCurrentRoom();
+    if (room && !room.isBoss && Math.random() < room.spawnRate) {
+        spawnEnemy();
+    }
+    
+    // AI врагов с использованием spatial grid
+    entities.enemies.forEach(enemy => {
+        // Получаем соседей через spatial grid
+        const neighbors = Grid.get(enemy.x, enemy.y);
+        
+        // Обновление состояния оглушения
+        if (enemy.stunned && Date.now() > enemy.stunEnd) {
+            enemy.stunned = false;
+        }
+        
+        if (!enemy.stunned) {
+            // AI поведение в зависимости от типа
+            if (enemy.ai === 'aggressive') {
+                // Глюк - агрессивно преследует игрока
+                const dx = snake.x - enemy.x;
+                const dy = snake.y - enemy.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist < 300) {
+                    enemy.vx = (dx / dist) * enemy.speed;
+                    enemy.vy = (dy / dist) * enemy.speed;
+                } else {
+                    // Случайное блуждание
+                    if (Date.now() - enemy.lastDirChange > 2000) {
+                        enemy.targetAngle = Math.random() * 6.28;
+                        enemy.lastDirChange = Date.now();
+                    }
+                    enemy.vx = Math.cos(enemy.targetAngle) * enemy.speed * 0.5;
+                    enemy.vy = Math.sin(enemy.targetAngle) * enemy.speed * 0.5;
+                }
+            } else if (enemy.ai === 'balanced') {
+                // Вирус - сбалансированное поведение
+                const dx = snake.x - enemy.x;
+                const dy = snake.y - enemy.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist < 200) {
+                    // Атакуем если близко
+                    enemy.vx = (dx / dist) * enemy.speed * 1.2;
+                    enemy.vy = (dy / dist) * enemy.speed * 1.2;
+                } else if (dist < 400) {
+                    // Следуем на средней дистанции
+                    enemy.vx = (dx / dist) * enemy.speed * 0.8;
+                    enemy.vy = (dy / dist) * enemy.speed * 0.8;
+                } else {
+                    // Случайное движение
+                    if (Date.now() - enemy.lastDirChange > 3000) {
+                        enemy.targetAngle = Math.random() * 6.28;
+                        enemy.lastDirChange = Date.now();
+                    }
+                    enemy.vx = Math.cos(enemy.targetAngle) * enemy.speed * 0.3;
+                    enemy.vy = Math.sin(enemy.targetAngle) * enemy.speed * 0.3;
+                }
+            } else {
+                // Троян - защитное поведение, держит дистанцию
+                const dx = snake.x - enemy.x;
+                const dy = snake.y - enemy.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist < 250) {
+                    // Убегаем если слишком близко
+                    enemy.vx = -(dx / dist) * enemy.speed;
+                    enemy.vy = -(dy / dist) * enemy.speed;
+                } else if (dist > 350) {
+                    // Приближаемся если слишком далеко
+                    enemy.vx = (dx / dist) * enemy.speed * 0.6;
+                    enemy.vy = (dy / dist) * enemy.speed * 0.6;
+                } else {
+                    // Круговое движение
+                    enemy.angle += 0.02;
+                    enemy.vx = Math.cos(enemy.angle) * enemy.speed * 0.4;
+                    enemy.vy = Math.sin(enemy.angle) * enemy.speed * 0.4;
+                }
+            }
+            
+            // Избегание столкновений с другими врагами
+            neighbors.forEach(other => {
+                if (other !== enemy) {
+                    const dx = enemy.x - other.x;
+                    const dy = enemy.y - other.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 30 && dist > 0) {
+                        enemy.vx += (dx / dist) * 2;
+                        enemy.vy += (dy / dist) * 2;
                     }
                 }
+            });
+            
+            // Ограничение скорости
+            const speed = Math.hypot(enemy.vx, enemy.vy);
+            if (speed > enemy.speed) {
+                enemy.vx = (enemy.vx / speed) * enemy.speed;
+                enemy.vy = (enemy.vy / speed) * enemy.speed;
             }
-        });
-        if(entities.boss) {
-            if(((entities.boss.x-snake.x)**2 + (entities.boss.y-snake.y)**2) < 4900 && snake.segments.length >= 2) {
-                const tailDamage = snake.segments.length;
-                const levelMul = 1 + (entities.boss.level||curLevel)/3;
-                entities.boss.health -= tailDamage * levelMul;
-                snake.segments = []; snake.length = 1;
-                for(let i=0; i<snake.length; i++) snake.segments.push({x: snake.x, y: snake.y});
-                createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
-                if(entities.boss.health <= 0) {
-                    score += 500; missionProgress = 1;
-                    createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
-                    entities.boss = null; entities.bossTowers = [];
-                }
-                updateUI();
-            }
+            
+            // Обновление позиции
+            enemy.x += enemy.vx;
+            enemy.y += enemy.vy;
+            
+            // Проверка границ
+            if (enemy.x < 50) { enemy.x = 50; enemy.vx = Math.abs(enemy.vx); }
+            if (enemy.x > WORLD_SIZE - 50) { enemy.x = WORLD_SIZE - 50; enemy.vx = -Math.abs(enemy.vx); }
+            if (enemy.y < 50) { enemy.y = 50; enemy.vy = Math.abs(enemy.vy); }
+            if (enemy.y > WORLD_SIZE - 50) { enemy.y = WORLD_SIZE - 50; enemy.vy = -Math.abs(enemy.vy); }
         }
-    }
-    
-    // 11. Башни босса
-    entities.bossTowers.forEach(tower => {
-        if(((tower.x-snake.x)**2 + (tower.y-snake.y)**2) < 250000 && Date.now() - tower.lastShot > (tower.type==='turret'?1500:2000)) {
-            const ang = Math.atan2(snake.y - tower.y, snake.x - tower.x);
-            const speed = tower.type === 'turret' ? 14 : 12;
-            entities.bullets.push({ x: tower.x, y: tower.y, vx: Math.cos(ang)*speed, vy: Math.sin(ang)*speed, isBossBullet: true });
-            tower.lastShot = Date.now();
+        
+        // Проверка столкновения с игроком
+        const playerDist = Math.hypot(snake.x - enemy.x, snake.y - enemy.y);
+        if (playerDist < 20) {
+            if (enemy.type === 'glitch' && !enemy.stunned) {
+                // Глюк наносит урон игроку
+                lives--;
+                enemy.stunned = true;
+                enemy.stunEnd = Date.now() + 1000;
+                
+                // Проверка второго задания обучения
+                if (curLevel === 1 && curRoomInLevel === 1) {
+                    missionProgress = 1;
+                }
+                
+                if (lives <= 0) {
+                    gameOver();
+                }
+            } else if (enemy.type === 'virus' || enemy.type === 'trojan') {
+                // Вирус и троян получают урон от столкновения
+                enemy.health--;
+                if (enemy.health <= 0) {
+                    // Враг уничтожен
+                    score += enemy.value;
+                    missionProgress++;
+                    createParticles(enemy.x, enemy.y, enemy.color);
+                    entities.enemies.splice(entities.enemies.indexOf(enemy), 1);
+                }
+            }
         }
     });
     
-    // Пули босса по змее
-    for(let i = 0; i < entities.bullets.length; i++) {
-        const b = entities.bullets[i];
-        if(b.isBossBullet && !b._dead) {
-            const levelMul = 1 + curLevel/3;
-            if(((b.x-snake.x)**2 + (b.y-snake.y)**2) < 2500) { 
-                snake.length = Math.max(5, snake.length - Math.round(5*levelMul));
-                while(snake.segments.length > snake.length) snake.segments.pop();
-                createParticles(snake.x, snake.y, 'red', 12); updateUI();
-                b._dead = true; continue;
+    // Обновление босса
+    if (entities.boss) {
+        const boss = entities.boss;
+        const dx = snake.x - boss.x;
+        const dy = snake.y - boss.y;
+        const dist = Math.hypot(dx, dy);
+        
+        // Движение босса
+        if (dist > 200) {
+            boss.vx = (dx / dist) * boss.speed;
+            boss.vy = (dy / dist) * boss.speed;
+        } else {
+            boss.vx *= 0.95;
+            boss.vy *= 0.95;
+        }
+        
+        boss.x += boss.vx;
+        boss.y += boss.vy;
+        
+        // Спавн вирусов
+        if (Date.now() - boss.lastSpawn > 5000 && entities.enemies.length < 10) {
+            boss.lastSpawn = Date.now();
+            const spawnAngle = Math.random() * 6.28;
+            const spawnDist = 100;
+            entities.enemies.push({
+                x: boss.x + Math.cos(spawnAngle) * spawnDist,
+                y: boss.y + Math.sin(spawnAngle) * spawnDist,
+                vx: 0,
+                vy: 0,
+                type: 'virus',
+                health: 2,
+                maxHealth: 2,
+                lastShot: 0,
+                angle: Math.random() * 6.28,
+                targetAngle: Math.random() * 6.28,
+                speed: 1.2,
+                size: 14,
+                color: '#ff8844',
+                value: 20,
+                lastDirChange: Date.now(),
+                stunned: false,
+                stunEnd: 0,
+                ai: 'balanced'
+            });
+        }
+        
+        // Проверка столкновения с игроком
+        if (dist < 40) {
+            lives--;
+            if (lives <= 0) {
+                gameOver();
             }
-            for(let si=1; si<snake.segments.length; si++) {
-                const seg = snake.segments[si];
-                if(((b.x-seg.x)**2 + (b.y-seg.y)**2) < 900) {
-                    snake.length = Math.max(5, snake.length - Math.round(5*levelMul));
-                    while(snake.segments.length > snake.length) snake.segments.pop();
-                    createParticles(seg.x, seg.y, 'red', 8); updateUI();
-                    b._dead = true; break;
+        }
+    }
+    
+    // Обновление башен босса
+    entities.bossTowers.forEach(tower => {
+        const dx = snake.x - tower.x;
+        const dy = snake.y - tower.y;
+        const dist = Math.hypot(dx, dy);
+        
+        // Стрельба по игроку
+        if (dist < 300 && Date.now() - tower.lastShot > 2000) {
+            tower.lastShot = Date.now();
+            entities.bullets.push({
+                x: tower.x,
+                y: tower.y,
+                vx: (dx / dist) * 8,
+                vy: (dy / dist) * 8,
+                damage: 1,
+                owner: 'boss',
+                color: '#ff00ff'
+            });
+        }
+    });
+    
+    // Обновление турелей
+    entities.turrets.forEach(turret => {
+        // Проверка и пополнение боезапаса турели при наличии змея над базой
+        const distToBase = Math.hypot(snake.x - turret.baseX, snake.y - turret.baseY);
+        if (distToBase < 100 && baseAmmo > 0) {
+            // Змей над базой - пополняем боезапас турели
+            const ammoNeeded = turret.maxAmmo - turret.currentAmmo;
+            if (ammoNeeded > 0) {
+                const ammoToTransfer = Math.min(ammoNeeded, baseAmmo);
+                turret.currentAmmo += ammoToTransfer;
+                baseAmmo -= ammoToTransfer;
+            }
+        }
+        
+        // Поиск ближайшего врага
+        let nearestEnemy = null;
+        let minDist = Infinity;
+        
+        entities.enemies.forEach(enemy => {
+            const dist = Math.hypot(enemy.x - turret.x, enemy.y - turret.y);
+            const range = 200 * (1 + (turret.rangeBonus || 0)); // Дальность с учетом бонуса
+            
+            if (dist < range && dist < minDist) {
+                minDist = dist;
+                nearestEnemy = enemy;
+            }
+        });
+        
+        // Проверка босса и башен босса
+        if (entities.boss) {
+            const dist = Math.hypot(entities.boss.x - turret.x, entities.boss.y - turret.y);
+            const range = 200 * (1 + (turret.rangeBonus || 0));
+            if (dist < range && dist < minDist) {
+                minDist = dist;
+                nearestEnemy = entities.boss;
+            }
+        }
+        
+        entities.bossTowers.forEach(tower => {
+            const dist = Math.hypot(tower.x - turret.x, tower.y - turret.y);
+            const range = 200 * (1 + (turret.rangeBonus || 0));
+            if (dist < range && dist < minDist) {
+                minDist = dist;
+                nearestEnemy = tower;
+            }
+        });
+        
+        // Стрельба по цели
+        if (nearestEnemy && turret.currentAmmo > 0) {
+            const fireRate = turret.type === 'laser' ? 500 : 1000;
+            const actualFireRate = fireRate / (1 + (turret.fireRateBonus || 0)); // Скорострельность с учетом бонуса
+            
+            if (Date.now() - turret.lastShot > actualFireRate) {
+                turret.lastShot = Date.now();
+                turret.currentAmmo--;
+                
+                const dx = nearestEnemy.x - turret.x;
+                const dy = nearestEnemy.y - turret.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (turret.type === 'bolt') {
+                    // Снаряд
+                    entities.bullets.push({
+                        x: turret.x,
+                        y: turret.y,
+                        vx: (dx / dist) * 10,
+                        vy: (dy / dist) * 10,
+                        damage: 1 + (turret.ammoBonus || 0),
+                        owner: 'player',
+                        color: '#00ffff'
+                    });
+                } else if (turret.type === 'laser') {
+                    // Лазерный луч
+                    entities.bullets.push({
+                        x: turret.x,
+                        y: turret.y,
+                        vx: (dx / dist) * 20,
+                        vy: (dy / dist) * 20,
+                        damage: 2 + (turret.ammoBonus || 0),
+                        owner: 'player',
+                        color: '#ff00ff',
+                        type: 'laser'
+                    });
                 }
             }
         }
-    }
-
-    // 12. Частицы (Memory safe: Swap-Pop)
-    for (let i = entities.particles.length - 1; i >= 0; i--) {
-        const p = entities.particles[i];
-        p.x += p.vx; p.y += p.vy; p.life -= 0.03;
-        if(p.life <= 0) {
-            entities.particles[i] = entities.particles[entities.particles.length - 1];
-            entities.particles.pop();
+    });
+    
+    // Обновление пуль
+    for (let i = entities.bullets.length - 1; i >= 0; i--) {
+        const bullet = entities.bullets[i];
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
+        
+        // Проверка попадания во врагов
+        if (bullet.owner === 'player') {
+            entities.enemies.forEach(enemy => {
+                const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+                if (dist < 15) {
+                    enemy.health -= bullet.damage;
+                    if (enemy.health <= 0) {
+                        score += enemy.value;
+                        missionProgress++;
+                        createParticles(enemy.x, enemy.y, enemy.color);
+                        entities.enemies.splice(entities.enemies.indexOf(enemy), 1);
+                    }
+                    entities.bullets.splice(i, 1);
+                }
+            });
+            
+            // Проверка попадания в босса
+            if (entities.boss) {
+                const dist = Math.hypot(bullet.x - entities.boss.x, bullet.y - entities.boss.y);
+                if (dist < 30) {
+                    entities.boss.health -= bullet.damage;
+                    if (entities.boss.health <= 0) {
+                        score += entities.boss.value;
+                        missionProgress = 1;
+                        createParticles(entities.boss.x, entities.boss.y, '#ff00ff');
+                        entities.boss = null;
+                        entities.bossTowers = [];
+                    }
+                    entities.bullets.splice(i, 1);
+                }
+            }
+            
+            // Проверка попадания в башни босса
+            entities.bossTowers.forEach(tower => {
+                const dist = Math.hypot(bullet.x - tower.x, bullet.y - tower.y);
+                if (dist < 20) {
+                    tower.health -= bullet.damage;
+                    if (tower.health <= 0) {
+                        score += 50;
+                        createParticles(tower.x, tower.y, '#ff00ff');
+                        entities.bossTowers.splice(entities.bossTowers.indexOf(tower), 1);
+                    }
+                    entities.bullets.splice(i, 1);
+                }
+            });
+        }
+        
+        // Проверка попадания в игрока
+        if (bullet.owner === 'boss') {
+            const dist = Math.hypot(bullet.x - snake.x, bullet.y - snake.y);
+            if (dist < 15) {
+                lives--;
+                if (lives <= 0) {
+                    gameOver();
+                }
+                entities.bullets.splice(i, 1);
+            }
+        }
+        
+        // Удаление пуль за границами
+        if (bullet.x < 0 || bullet.x > WORLD_SIZE || bullet.y < 0 || bullet.y > WORLD_SIZE) {
+            entities.bullets.splice(i, 1);
         }
     }
+    
+    // Обновление частиц
+    for (let i = entities.particles.length - 1; i >= 0; i--) {
+        const p = entities.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        if (p.life <= 0) entities.particles.splice(i, 1);
+    }
+    
+    // Обновление дронов
+    entities.drones.forEach(drone => {
+        drone.angle += 0.02;
+        const targetX = snake.x + Math.cos(drone.angle) * drone.dist;
+        const targetY = snake.y + Math.sin(drone.angle) * drone.dist;
+        drone.x += (targetX - drone.x) * 0.1;
+        drone.y += (targetY - drone.y) * 0.1;
+    });
+    
+    // Проверка задания "Зарядка" (уровень 1, задание 4)
+    if (curLevel === 1 && curRoomInLevel === 4) {
+        const coreDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        if (coreDist < 50 && snake.length > 25) {
+            // Игрок коснулся ядра и имеет достаточно длины
+            const transferAmount = Math.min(snake.length - 25, 10);
+            snake.length -= transferAmount;
+            baseAmmo = Math.min(100, baseAmmo + transferAmount * 5);
+            missionProgress = 1;
+        }
+    }
+    
+    // Обновление UI
+    updateUI();
+    updateMission();
 }
+
 /** --- ОТРИСОВКА --- */
+function draw() {
+    if (!ctx) return;
+    
+    // Очистка canvas
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Сохранение состояния контекста
+    ctx.save();
+    
+    // Применение трансформации камеры
+    ctx.scale(ZOOM, ZOOM);
+    ctx.translate(-camera.x, -camera.y);
+    
+    // Отрисовка сетки
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= WORLD_SIZE; x += 100) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WORLD_SIZE);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= WORLD_SIZE; y += 100) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(WORLD_SIZE, y);
+        ctx.stroke();
+    }
+    
+    // Отрисовка ядра базы
+    ctx.fillStyle = '#0066ff';
+    ctx.beginPath();
+    ctx.arc(BASE_POS.x, BASE_POS.y, 30, 0, 6.28);
+    ctx.fill();
+    ctx.strokeStyle = '#0099ff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Отрисовка дополнительных баз игрока
+    entities.playerBases.forEach(base => {
+        ctx.fillStyle = '#0066ff';
+        ctx.beginPath();
+        ctx.arc(base.x, base.y, 25, 0, 6.28);
+        ctx.fill();
+        
+        // Индикатор здоровья
+        const healthPercent = base.health / base.maxHealth;
+        ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : (healthPercent > 0.25 ? '#ffff00' : '#ff0000');
+        ctx.fillRect(base.x - 25, base.y - 35, 50 * healthPercent, 5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(base.x - 25, base.y - 35, 50, 5);
+    });
+    
+    // Отрисовка еды
+    entities.food.forEach(f => {
+        ctx.fillStyle = f.type === 'data' ? '#00ffff' : '#ffff00';
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, 8, 0, 6.28);
+        ctx.fill();
+    });
+    
+    // Отрисовка врагов
+    entities.enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.stunned ? '#666666' : enemy.color;
+        if (enemy.type === 'glitch') {
+            // Квадрат для глюка
+            ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
+        } else if (enemy.type === 'virus') {
+            // Треугольник для вируса
+            ctx.beginPath();
+            ctx.moveTo(enemy.x, enemy.y - enemy.size);
+            ctx.lineTo(enemy.x - enemy.size, enemy.y + enemy.size);
+            ctx.lineTo(enemy.x + enemy.size, enemy.y + enemy.size);
+            ctx.closePath();
+            ctx.fill();
+        } else if (enemy.type === 'trojan') {
+            // Шестиугольник для трояна
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * 6.28;
+                const px = enemy.x + Math.cos(angle) * enemy.size;
+                const py = enemy.y + Math.sin(angle) * enemy.size;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Индикатор здоровья
+        if (enemy.health < enemy.maxHealth) {
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(enemy.x - 15, enemy.y - enemy.size - 10, 30 * (enemy.health / enemy.maxHealth), 3);
+        }
+    });
+    
+    // Отрисовка босса
+    if (entities.boss) {
+        const boss = entities.boss;
+        ctx.fillStyle = boss.color;
+        ctx.beginPath();
+        ctx.arc(boss.x, boss.y, boss.size, 0, 6.28);
+        ctx.fill();
+        
+        // Индикатор здоровья
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(boss.x - 40, boss.y - boss.size - 15, 80 * (boss.health / boss.maxHealth), 5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boss.x - 40, boss.y - boss.size - 15, 80, 5);
+    }
+    
+    // Отрисовка башен босса
+    entities.bossTowers.forEach(tower => {
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(tower.x - tower.size/2, tower.y - tower.size/2, tower.size, tower.size);
+        
+        // Индикатор здоровья
+        if (tower.health < tower.maxHealth) {
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(tower.x - 15, tower.y - tower.size - 10, 30 * (tower.health / tower.maxHealth), 3);
+        }
+    });
+    
+    // Отрисовка турелей
+    entities.turrets.forEach(turret => {
+        ctx.fillStyle = turret.type === 'laser' ? '#ff00ff' : '#00ffff';
+        ctx.beginPath();
+        ctx.arc(turret.x, turret.y, 12, 0, 6.28);
+        ctx.fill();
+        
+        // Индикатор боезапаса
+        const ammoPercent = turret.currentAmmo / turret.maxAmmo;
+        ctx.fillStyle = ammoPercent > 0.3 ? '#00ff00' : '#ff0000';
+        ctx.fillRect(turret.x - 10, turret.y - 20, 20 * ammoPercent, 3);
+    });
+    
+    // Отрисовка пуль
+    entities.bullets.forEach(bullet => {
+        ctx.fillStyle = bullet.color;
+        if (bullet.type === 'laser') {
+            // Лазерный луч - линия
+            ctx.strokeStyle = bullet.color;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(bullet.x - bullet.vx * 0.5, bullet.y - bullet.vy * 0.5);
+            ctx.lineTo(bullet.x + bullet.vx * 0.5, bullet.y + bullet.vy * 0.5);
+            ctx.stroke();
+        } else {
+            // Обычный снаряд - круг
+            ctx.beginPath();
+            ctx.arc(bullet.x, bullet.y, 4, 0, 6.28);
+            ctx.fill();
+        }
+    });
+    
+    // Отрисовка частиц
+    entities.particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life / 30;
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    });
+    ctx.globalAlpha = 1;
+    
+    // Отрисовка змеи
+    ctx.strokeStyle = '#00ff00';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    snake.segments.forEach((seg, i) => {
+        if (i === 0) ctx.moveTo(seg.x, seg.y);
+        else ctx.lineTo(seg.x, seg.y);
+    });
+    ctx.stroke();
+    
+    // Голова змеи
+    ctx.fillStyle = '#00ff00';
+    ctx.beginPath();
+    ctx.arc(snake.x, snake.y, 10, 0, 6.28);
+    ctx.fill();
+    
+    // Отрисовка дронов
+    entities.drones.forEach(drone => {
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(drone.x, drone.y, 6, 0, 6.28);
+        ctx.fill();
+    });
+    
+    // Восстановление состояния контекста
+    ctx.restore();
+}
+
+/** --- ГЛАВНЫЙ ЦИКЛ ИГРЫ --- */
 function gameLoop() {
-    if(!started || paused) return;
+    if (!started || paused) return;
     update();
     draw();
     gameId = requestAnimationFrame(gameLoop);
 }
 
-function draw() {
-    if(!ctx) return;
-    ctx.fillStyle = '#05050f';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.save();
-    // ОПТИМИЗАЦИЯ: Округляем камеру, чтобы вся карта не "мылилась"
-    ctx.scale(ZOOM, ZOOM);
-    ctx.translate(-(camera.x | 0), -(camera.y | 0));
-
-    // Сетка (Рисуем только то, что в кадре + небольшой запас)
-    ctx.strokeStyle = '#112'; ctx.lineWidth = 10;
-    
-    // Оптимизация границ отрисовки сетки
-    const startX = Math.max(0, (camera.x / 1000 | 0) * 1000);
-    const endX = Math.min(WORLD_SIZE, ((camera.x + canvas.width / ZOOM) / 1000 | 0) * 1000 + 1000);
-    const startY = Math.max(0, (camera.y / 1000 | 0) * 1000);
-    const endY = Math.min(WORLD_SIZE, ((camera.y + canvas.height / ZOOM) / 1000 | 0) * 1000 + 1000);
-
-    for(let i = startX; i <= endX; i += 1000) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
-    }
-    for(let i = startY; i <= endY; i += 1000) {
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
-    }
-
-    // 1. Ядро (главная база)
-    const bx = BASE_POS.x | 0;
-    const by = BASE_POS.y | 0;
-
-    if(shieldActive) {
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 15;
-        ctx.beginPath(); ctx.arc(bx, by, 115, 0, 6.28); ctx.stroke();
-    }
-    ctx.shadowBlur = 40; ctx.shadowColor = '#00f3ff';
-    ctx.fillStyle = '#0a0a1a'; ctx.beginPath(); ctx.arc(bx, by, 65, 0, 6.28); ctx.fill();
-    ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 6; ctx.stroke();
-    ctx.shadowBlur = 0;
-    
-    // Жизни
-    ctx.fillStyle = '#ff0055';
-    ctx.font = 'bold 80px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(lives.toString(), bx, by);
-    
-    // Надпись ЗАЩИТИ БАЗУ
-    if (gameStartTime && Date.now() - gameStartTime < 5000) {
-        ctx.font = 'bold 96px Arial';
-        ctx.shadowBlur = 30; ctx.shadowColor = '#00f0ff';
-        ctx.fillStyle = '#00f0ff';
-        ctx.fillText('ЗАЩИТИ', bx, by - 200);
-        ctx.fillText('БАЗУ', bx, by - 120);
-        ctx.shadowBlur = 0;
-    }
-    
-    // Радиусы турелей
-    const turretsAtMainBase = entities.turrets.filter(t => 
-        ((t.x-bx)*(t.x-bx) + (t.y-by)*(t.y-by)) < 40000
-    );
-    const mainBaseRanges = new Set();
-    turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 667 : 667; 
-        range = range * (1 + (t.rangeBonus || 0));
-        mainBaseRanges.add(range | 0);
-    });
-    
-    mainBaseRanges.forEach(range => {
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath(); ctx.arc(bx, by, range, 0, 6.28); ctx.stroke();
-    });
-    ctx.setLineDash([]); 
-    
-    // Доп. базы
-    entities.playerBases.forEach(base => {
-        const bX = base.x | 0;
-        const bY = base.y | 0;
-        ctx.fillStyle = '#0a0a1a';
-        ctx.beginPath(); ctx.arc(bX, bY, 50, 0, 6.28); ctx.fill();
-        ctx.strokeStyle = '#39ff14'; ctx.lineWidth = 4; ctx.stroke();
-        
-        const healthPercent = base.health / base.maxHealth;
-        ctx.fillStyle = '#ff0055'; ctx.fillRect(bX - 50, bY - 60, 100, 6);
-        ctx.fillStyle = '#39ff14'; ctx.fillRect(bX - 50, bY - 60, (100 * healthPercent)|0, 6);
-    });
-
-    // 2. РАДАР (Отрисовка упрощена)
-    entities.enemies.forEach(en => {
-        // Радар рисуем без жесткой оптимизации, так как там поворот контекста
-        const ang = Math.atan2(en.y - by, en.x - bx);
-        const dx = en.x - bx; const dy = en.y - by;
-        const realDist = Math.sqrt(dx*dx + dy*dy); // Тут корень нужен для визуальной дистанции
-        const radarDist = Math.max(65, Math.min(150, realDist * 0.05));
-        
-        ctx.save();
-        ctx.translate(bx, by);
-        ctx.rotate(ang);
-        ctx.fillStyle = en.type === 'box' ? '#ff0055' : '#ffcf00';
-        if(en.type === 'box') { ctx.fillRect(radarDist | 0, -8, 16, 16); }
-        else { ctx.beginPath(); ctx.moveTo(radarDist | 0, -10); ctx.lineTo((radarDist + 22)|0, 0); ctx.lineTo(radarDist|0, 10); ctx.fill(); }
-        ctx.restore();
-    });
-
-    // 3. Турели
-    entities.turrets.forEach(t => {
-        const tx = t.x | 0;
-        const ty = t.y | 0;
-        ctx.fillStyle = '#fff'; ctx.fillRect(tx-25, ty-25, 50, 50);
-        
-        let turretColor = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
-        if (t.ammoUpgraded && t.ammoBonus > 0) {
-            const intensity = Math.min(1, t.ammoBonus);
-            if (t.type === 'laser') turretColor = `rgb(188, 19, 254, ${0.5 + intensity * 0.5})`;
-            else turretColor = `rgb(0, 243, 255, ${0.5 + intensity * 0.5})`;
-        }
-        ctx.strokeStyle = turretColor;
-        ctx.lineWidth = 4 + (t.ammoBonus || 0) * 8;
-        ctx.strokeRect(tx-25, ty-25, 50, 50);
-        
-        if (t.ammoUpgraded && t.ammoBonus > 0) {
-            ctx.strokeStyle = '#ffcf00'; ctx.lineWidth = 2;
-            ctx.strokeRect(tx-27, ty-27, 54, 54);
-        }
-        
-        // Индикатор заряда
-        const cellSize = 12; const cellSpacing = 2;
-        const startX = tx - (cellSize * 3 + cellSpacing * 2) / 2;
-        const startY = ty - (cellSize * 3 + cellSpacing * 2) / 2;
-        const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 9);
-        let filledCells = Math.floor(ammoPercent * 9);
-        if (filledCells === 0 && (t.currentAmmo || 0) > 0) filledCells = 1;
-        
-        for (let i = 0; i < 9; i++) {
-            const row = (i / 3) | 0;
-            const col = i % 3;
-            const cx = startX + col * (cellSize + cellSpacing);
-            const cy = startY + row * (cellSize + cellSpacing);
-            
-            if (i < filledCells) ctx.fillStyle = (t.currentAmmo||0)<30 ? '#00f3ff' : (t.type === 'laser'?'#ff69b4':'#00f3ff');
-            else ctx.fillStyle = '#000';
-            ctx.fillRect(cx, cy, cellSize, cellSize);
-        }
-        
-        // Лазерный луч
-        if (t.type === 'laser' && t.activeLaser && t.activeLaser.time > Date.now()) {
-            ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
-            ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(t.activeLaser.x | 0, t.activeLaser.y | 0); ctx.stroke();
-            ctx.strokeStyle = '#bc13fe'; ctx.lineWidth = 5; ctx.stroke();
-        }
-    });
-
-    // 4. Босс
-    if(entities.boss) {
-        const bossX = entities.boss.x | 0;
-        const bossY = entities.boss.y | 0;
-        ctx.fillStyle = '#8b00ff';
-        ctx.beginPath(); ctx.arc(bossX, bossY, entities.boss.size, 0, 6.28); ctx.fill();
-        ctx.strokeStyle = '#ff00ff'; ctx.lineWidth = 6; ctx.stroke();
-        
-        const healthPercent = entities.boss.health / entities.boss.maxHealth;
-        ctx.fillStyle = '#ff0055'; ctx.fillRect(bossX - entities.boss.size, bossY - entities.boss.size - 15, entities.boss.size * 2, 8);
-        ctx.fillStyle = '#39ff14'; ctx.fillRect(bossX - entities.boss.size, bossY - entities.boss.size - 15, (entities.boss.size * 2 * healthPercent)|0, 8);
-        
-        ctx.fillStyle = '#ff0055';
-        entities.bossTowers.forEach(tower => {
-            const twX = tower.x | 0; const twY = tower.y | 0;
-            ctx.fillRect(twX - 15, twY - 15, 30, 30);
-            ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 2;
-            ctx.strokeRect(twX - 15, twY - 15, 30, 30);
+/** --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ --- */
+function createParticles(x, y, color) {
+    for (let i = 0; i < 10; i++) {
+        entities.particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 5,
+            vy: (Math.random() - 0.5) * 5,
+            color: color,
+            life: 30
         });
-    }
-    
-    // 5. Пули, Еда, Лут (Массовая отрисовка)
-    ctx.fillStyle = 'yellow'; 
-    entities.bullets.forEach(b => { 
-        if(!b.isBossBullet) { ctx.beginPath(); ctx.arc(b.x | 0, b.y | 0, 10, 0, 6.28); ctx.fill(); } 
-        else { ctx.fillStyle = '#ff0055'; ctx.beginPath(); ctx.arc(b.x | 0, b.y | 0, 8, 0, 6.28); ctx.fill(); ctx.fillStyle = 'yellow'; }
-    });
-    
-    ctx.fillStyle = '#00f3ff'; 
-    entities.food.forEach(f => { ctx.beginPath(); ctx.arc(f.x | 0, f.y | 0, 22, 0, 6.28); ctx.fill(); });
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; 
-    entities.loot.forEach(l => { ctx.fillRect((l.x | 0)-12, (l.y | 0)-12, 24, 24); });
-    
-    // Дроны
-    entities.drones.forEach(d => {
-        const dX = d.x | 0; const dY = d.y | 0;
-        const collisions = d.collisions || 0;
-        let droneColor = '#bc13fe';
-        if (collisions > 0) {
-            const wp = Math.min(collisions / 4, 1);
-            const r = (188 + (255 - 188) * wp)|0;
-            const g = (19 + (255 - 19) * wp)|0;
-            const b = (254 + (255 - 254) * wp)|0;
-            droneColor = `rgb(${r}, ${g}, ${b})`;
-        }
-        ctx.fillStyle = droneColor; ctx.beginPath(); ctx.arc(dX, dY, 20, 0, 6.28); ctx.fill();
-        ctx.strokeStyle = droneColor; ctx.lineWidth = 2; ctx.stroke();
-        
-        const segSize = 6;
-        const segments = [
-            { x: dX - 10, y: dY - 10 }, { x: dX + 10, y: dY - 10 },
-            { x: dX - 10, y: dY + 10 }, { x: dX + 10, y: dY + 10 }
-        ];
-        segments.forEach((seg, index) => {
-            ctx.fillStyle = index < collisions ? '#ffffff' : 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(seg.x - segSize/2, seg.y - segSize/2, segSize, segSize);
-        });
-    });
-    
-    // Враги
-    entities.enemies.forEach(en => {
-        const ex = en.x | 0; const ey = en.y | 0;
-        if(en.type === 'tri') { 
-            ctx.fillStyle = '#ffcf00';
-            ctx.beginPath(); ctx.moveTo(ex, ey-45); ctx.lineTo(ex+35, ey+20); ctx.lineTo(ex-35, ey+20); ctx.fill(); 
-        } else { 
-            ctx.fillStyle = '#ff0055'; ctx.fillRect(ex-35, ey-35, 70, 70); 
-        }
-    });
-
-    // 6. Змейка
-    ctx.fillStyle = '#39ff14';
-    snake.segments.forEach((seg, i) => {
-        const r = (snake.size * (1 - i / snake.segments.length)) + 5;
-        const sx = seg.x | 0; const sy = seg.y | 0;
-        ctx.beginPath(); ctx.arc(sx, sy, r, 0, 6.28); ctx.fill();
-    });
-
-    // 7. Компас
-    const sx = snake.x | 0; const sy = snake.y | 0;
-    const baseAng = Math.atan2(by - sy, bx - sx);
-    ctx.save(); ctx.translate(sx, sy); ctx.rotate(baseAng);
-    ctx.fillStyle = 'rgba(0, 243, 255, 0.7)';
-    ctx.beginPath(); ctx.moveTo(85, 0); ctx.lineTo(60, -15); ctx.lineTo(60, 15); ctx.fill();
-    ctx.restore();
-
-    // 8. Частицы
-    entities.particles.forEach(p => {
-        ctx.globalAlpha = p.life; ctx.fillStyle = p.color; 
-        ctx.fillRect(p.x | 0, p.y | 0, 12, 12);
-    });
-    ctx.globalAlpha = 1.0; ctx.restore();
-}
-
-/** --- ГЕНЕРАТОРЫ --- */
-function spawnEnemy() {
-    const side = Math.floor(Math.random() * 4);
-    let x, y;
-    if(side===0) {x=Math.random()*WORLD_SIZE; y=-250;}
-    else if(side===1) {x=WORLD_SIZE+250; y=Math.random()*WORLD_SIZE;}
-    else if(side===2) {x=Math.random()*WORLD_SIZE; y=WORLD_SIZE+250;}
-    else {x=-250; y=Math.random()*WORLD_SIZE;}
-    const isTri = Math.random() > 0.75;
-    entities.enemies.push({ x, y, speed: isTri ? 3.5 : 1.7, type: isTri ? 'tri' : 'box' });
-}
-
-function spawnFood() {
-    entities.food.push({ x: 500+Math.random()*(WORLD_SIZE-1000), y: 500+Math.random()*(WORLD_SIZE-1000) });
-}
-
-function spawnBoss(level) {
-    // Спавн босса (базы врага) в случайном месте на краю карты
-    const side = Math.floor(Math.random() * 4);
-    let x, y;
-    if(side === 0) { x = Math.random() * WORLD_SIZE; y = 200; }
-    else if(side === 1) { x = WORLD_SIZE - 200; y = Math.random() * WORLD_SIZE; }
-    else if(side === 2) { x = Math.random() * WORLD_SIZE; y = WORLD_SIZE - 200; }
-    else { x = 200; y = Math.random() * WORLD_SIZE; }
-    
-    // Мощь и здоровье базы врага зависят от уровня
-    const baseHealth = 150 + level * 100;
-    const baseSize = 90 + level * 15;
-    
-    entities.boss = {
-        x, y,
-        health: baseHealth,
-        maxHealth: baseHealth,
-        size: baseSize,
-        level: level
-    };
-    
-    // Спавн только турелей вокруг базы врага (количество зависит от уровня)
-    entities.bossTowers = [];
-    const turretCount = 5 + Math.floor(level / 2); // Увеличиваем количество турелей
-    
-    // Турели базы врага (стреляют в змею)
-    for(let i = 0; i < turretCount; i++) {
-        const angle = (i / turretCount) * 6.28;
-        const dist = 150 + Math.random() * 50; // Случайное расстояние для разнообразия
-        entities.bossTowers.push({
-            x: x + Math.cos(angle) * dist,
-            y: y + Math.sin(angle) * dist,
-            lastShot: Date.now(), // Устанавливаем текущее время, чтобы турели не стреляли сразу
-            type: 'turret' // Только турели, без башен
-        });
-    }
-}
-
-function createParticles(x, y, color, count) {
-    if (entities.particles.length > 50) return;
-    for(let i=0; i<count; i++) {
-        entities.particles.push({ x, y, color, vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25, life: 1.0 });
     }
 }
 
 function gameOver() {
     started = false;
-    if(window.ammoTick) clearInterval(window.ammoTick);
+    cancelAnimationFrame(gameId);
+    if (window.ammoTick) clearInterval(window.ammoTick);
     
-    // Обнуляем счет при смерти
-    score = 0;
+    // Очистка прогресса при смерти
+    localStorage.removeItem('strazhEfira_progress');
     
     document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerText = "Уровней пройдено: " + (curLevel - 1) + " | Собрано данных: " + Math.floor(score);
+    document.getElementById('mission-box').classList.add('hidden');
 }
 
-/** --- ДЖОЙСТИК --- */
+/** --- УПРАВЛЕНИЕ --- */
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (e.key === 'Escape' && started) togglePause();
+});
+window.addEventListener('keyup', e => {
+    keys[e.key] = false;
+});
+
+// Мобильное управление (джойстик)
 function initJoystick() {
-    const zone = document.getElementById('joystick-zone'), stick = document.getElementById('joystick-stick');
-    let active = false;
-    const handle = (e) => {
-        if(!active) return;
-        const t = e.touches ? e.touches[0] : e;
-        const r = zone.getBoundingClientRect();
-        const cX = r.left + r.width/2, cY = r.top + r.height/2;
-        let dx = t.clientX - cX, dy = t.clientY - cY;
-        const dist = Math.min(r.width/2, Math.hypot(dx, dy)), ang = Math.atan2(dy, dx);
-        stick.style.left = `calc(50% + ${Math.cos(ang)*dist}px)`;
-        stick.style.top = `calc(50% + ${Math.sin(ang)*dist}px)`;
-        input.x = Math.cos(ang); input.y = Math.sin(ang);
-    };
-    zone.addEventListener('touchstart', e => { active = true; handle(e); e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchmove', e => { if(active) { handle(e); e.preventDefault(); } }, {passive: false});
-    window.addEventListener('touchend', () => { active = false; stick.style.left='50%'; stick.style.top='50%'; input.x=0; input.y=0; });
+    const joystick = document.getElementById('joystick');
+    const stick = document.getElementById('stick');
+    if (!joystick || !stick) return;
     
-    // Обработчики для центральной кнопки паузы
-    const centerBtn = document.getElementById('pause-btn-center-inner');
-    if (centerBtn) {
-        centerBtn.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
-            if (paused && started) {
-                paused = false;
-                const centerBtnContainer = document.getElementById('pause-btn-center');
-                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
-                
-                // Обновляем иконку паузы в верхнем углу
-                const pIcon = document.getElementById('pause-icon');
-                if (pIcon) pIcon.className = 'fas fa-pause';
-                
-                // Запускаем игровой цикл
-                gameId = requestAnimationFrame(gameLoop);
-            }
-        }, {passive: false});
+    let active = false;
+    let centerX, centerY;
+    
+    const handleStart = (e) => {
+        active = true;
+        const rect = joystick.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2;
+        handleMove(e);
+    };
+    
+    const handleMove = (e) => {
+        if (!active) return;
+        e.preventDefault();
         
-        centerBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            // При нажатии на кнопку плей - запускаем игру и скрываем кнопку
-            if (paused && started) {
-                paused = false;
-                const centerBtnContainer = document.getElementById('pause-btn-center');
-                if (centerBtnContainer) centerBtnContainer.style.display = 'none';
-                
-                // Обновляем иконку паузы в верхнем углу
-                const pIcon = document.getElementById('pause-icon');
-                if (pIcon) pIcon.className = 'fas fa-pause';
-                
-                // Запускаем игровой цикл
-                gameId = requestAnimationFrame(gameLoop);
-            }
-        });
-    }
+        let clientX, clientY;
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        const dx = clientX - centerX;
+        const dy = clientY - centerY;
+        const dist = Math.hypot(dx, dy);
+        const maxDist = 40;
+        
+        if (dist > maxDist) {
+            stick.style.transform = `translate(${(dx/dist) * maxDist}px, ${(dy/dist) * maxDist}px)`;
+        } else {
+            stick.style.transform = `translate(${dx}px, ${dy}px)`;
+        }
+        
+        // Обновление управления
+        keys['ArrowLeft'] = dx < -10;
+        keys['ArrowRight'] = dx > 10;
+        keys['ArrowUp'] = dy < -10;
+        keys['ArrowDown'] = dy > 10;
+    };
+    
+    const handleEnd = () => {
+        active = false;
+        stick.style.transform = 'translate(0, 0)';
+        keys['ArrowLeft'] = false;
+        keys['ArrowRight'] = false;
+        keys['ArrowUp'] = false;
+        keys['ArrowDown'] = false;
+    };
+    
+    joystick.addEventListener('mousedown', handleStart);
+    joystick.addEventListener('touchstart', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchend', handleEnd);
 }
 
-// Запуск инициализации джойстика
-initJoystick();
 </script>
 </body>
 </html>
