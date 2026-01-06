@@ -297,3 +297,12 @@ function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
 }
+
+// ПЕРЕСЫЛКА ПРОГРЕССА: Ловим число от АПК и кидаем его внутрь игры
+window.updateRadioBar = function(progress) {
+    const frame = document.getElementById('game-frame');
+    if (frame && frame.contentWindow) {
+        // Отправляем сообщение внутрь iframe
+        frame.contentWindow.postMessage({ type: 'radioProgress', value: progress }, '*');
+    }
+};
