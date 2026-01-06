@@ -229,25 +229,24 @@
         </div>
     </div>
 
-<!-- УНИВЕРСАЛЬНЫЙ СТАРТОВЫЙ ЭКРАН / ЭКРАН ПОСЛЕ СМЕРТИ -->
-    <div id="start-screen" class="overlay">
+<!-- ГЛАВНЫЙ ЭКРАН -->
+    <div id="start-screen" class="overlay" style="z-index: 2000; pointer-events: auto;">
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 5px;">СТРАЖ ЭФИРА</h1>
         
-        <!-- СТАТИСТИКА ПОСЛЕ СМЕРТИ -->
+        <!-- СТАТИСТИКА ПОСЛЕ СМЕРТИ (скрыта при первом запуске) -->
         <div id="death-stats" class="hidden" style="text-align: center; margin-bottom: 20px;">
             <div style="color: #aaa; font-size: 14px;">УРОВЕНЬ: <span id="final-level" style="color: var(--neon-purple);">1</span></div>
             <div style="color: #aaa; font-size: 14px;">ДАННЫХ: <span id="final-score" style="color: var(--neon-gold);">0</span></div>
         </div>
 
-        <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px; width: 260px;">НОВАЯ ИГРА</button>
+        <button class="btn-start" onclick="window.startGame(true)" style="margin-bottom: 15px; width: 260px; pointer-events: auto; position: relative; z-index: 2001;">НОВАЯ ИГРА</button>
         
-        <!-- КНОПКА ПРОДОЛЖИТЬ С БОНУСОМ -->
-        <div id="continue-container" style="text-align: center;">
-            <button class="btn-start" id="radio-continue-btn" onclick="window.radioContinue()" style="width: 260px; font-size: 13px; opacity: 0.4; pointer-events: none; border-color: #444;">
+        <!-- БЛОК ПРОДОЛЖИТЬ -->
+        <div id="continue-container" style="text-align: center; position: relative; z-index: 2001;">
+            <button class="btn-start" id="radio-continue-btn" onclick="window.radioContinue()" style="width: 260px; font-size: 12px; margin-bottom: 5px;">
                 ПРОДОЛЖИТЬ (БОНУС ОТ РАДИО)
             </button>
-            <!-- ШКАЛА ВНУТРИ СТАРТОВОГО ЭКРАНА -->
-            <div class="progress-container" style="width: 240px; margin: 8px auto 0; border-color: var(--neon-purple); height: 4px;">
+            <div class="progress-container" style="width: 240px; margin: 0 auto; border-color: var(--neon-purple); height: 6px;">
                 <div id="radio-bar-start" style="width: 0%; height: 100%; background: var(--neon-purple); transition: width 0.3s;"></div>
             </div>
         </div>
@@ -326,15 +325,15 @@ window.updateRadioBar = function(percent) {
     const p = Math.max(0, Math.min(100, Number(percent) || 0));
     radioPercent = p;
     
-    // Обновляем шкалу в игре (верхняя панель)
+    // 1. Полоска в самой игре (вверху)
     const rb = document.getElementById('radio-bar');
     if (rb) rb.style.width = p + '%';
     
-    // Обновляем шкалу на стартовом экране
+    // 2. Полоска на главном экране (под кнопкой)
     const rbStart = document.getElementById('radio-bar-start');
     if (rbStart) rbStart.style.width = p + '%';
 
-    // Управляем активностью кнопки "Продолжить"
+    // 3. Активность кнопки
     const btn = document.getElementById('radio-continue-btn');
     if (btn) {
         if (p >= 100) {
@@ -343,7 +342,7 @@ window.updateRadioBar = function(percent) {
             btn.style.borderColor = "var(--neon-purple)";
             btn.style.boxShadow = "0 0 15px var(--neon-purple)";
         } else {
-            btn.style.opacity = "0.4";
+            btn.style.opacity = "0.3";
             btn.style.pointerEvents = "none";
             btn.style.borderColor = "#444";
             btn.style.boxShadow = "none";
@@ -1790,35 +1789,29 @@ function gameOver() {
     started = false;
     if(window.ammoTick) clearInterval(window.ammoTick);
     
-    // 1. Вместо экрана смерти показываем Стартовый экран
-    document.getElementById('start-screen').style.display = 'flex';
+    // Показываем меню
+    const startScreen = document.getElementById('start-screen');
+    if(startScreen) startScreen.style.display = 'flex';
     
-    // 2. Показываем блок статистики (УРОВЕНЬ и ДАННЫЕ)
+    // Показываем статистику
     const statsBox = document.getElementById('death-stats');
     if (statsBox) statsBox.classList.remove('hidden');
     
-    // 3. Заполняем результаты
+    // Пишем данные
     document.getElementById('final-level').innerText = curLevel;
     document.getElementById('final-score').innerText = Math.floor(score);
     
-    // 4. Обновляем состояние кнопки бонуса (чтобы она сразу стала серой или яркой)
+    // Обновляем кнопку сразу при смерти
     window.updateRadioBar(radioPercent);
 }
 
-// ФУНКЦИЯ ДЛЯ КНОПКИ "ПРОДОЛЖИТЬ" (Бонус от радио)
 window.radioContinue = function() {
-    if (radioPercent < 100) return; // Если не заряжено, кнопка не сработает
-    
-    radioPercent = 0; // Сбрасываем локальный счетчик
-    window.updateRadioBar(0); // Обнуляем полоски
-    
-    // Прячем меню
+    if (radioPercent < 100) return;
+    radioPercent = 0;
+    window.updateRadioBar(0);
     document.getElementById('start-screen').style.display = 'none';
-    
-    // Запускаем игру с сохранения (false = не новая игра)
-    startGame(false); 
+    startGame(false); // Продолжаем
 
-    // Даем команду в АПК обнулить таймер
     if (window.parent && window.parent.Android && window.parent.Android.resetRadioTimer) {
         window.parent.Android.resetRadioTimer();
     }
