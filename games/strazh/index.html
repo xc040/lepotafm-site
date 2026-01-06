@@ -245,6 +245,42 @@ const WORLD_SIZE = 5000;
 const BASE_POS = { x: 2500, y: 2500 };
 const ZOOM = 0.28;
 
+// --- СИСТЕМА SPATIAL GRID (СЕТКА) ---
+const Grid = {
+    size: 250, // Размер клетки
+    cells: {},
+    
+    // Очистка сетки перед новым кадром
+    clear: function() { 
+        this.cells = {}; 
+    },
+    
+    // Добавление врага в сетку
+    add: function(en) {
+        const key = ((en.x / this.size) | 0) + "," + ((en.y / this.size) | 0);
+        if (!this.cells[key]) this.cells[key] = [];
+        this.cells[key].push(en);
+    },
+    
+    // Получение соседей (врагов в этой и соседних клетках)
+    get: function(x, y) {
+        const cx = (x / this.size) | 0;
+        const cy = (y / this.size) | 0;
+        let res = [];
+        // Проверяем 9 клеток вокруг (3x3)
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                const key = (cx + i) + "," + (cy + j);
+                if (this.cells[key]) {
+                    const arr = this.cells[key];
+                    for (let k = 0; k < arr.length; k++) res.push(arr[k]);
+                }
+            }
+        }
+        return res;
+    }
+};
+
 let canvas, ctx, gameId;
 let started = false, paused = false;
 let score = 0, baseAmmo = 100, lives = 3;
