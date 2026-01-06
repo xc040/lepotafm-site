@@ -1000,16 +1000,16 @@ function buyUpgrade(type, cost) {
     updateUI();
 }
 function update() {
+    function update() {
     if(!started || paused) return;
     frameCount++;
     updateMission();
     
-    // Обновляем время игры (только когда не на паузе)
-    totalPlayTime += 1/60; // Предполагаем 60 FPS
+    // Обновляем время игры
+    totalPlayTime += 1/60; 
     updateUI();
 
     // 1. Движение змеи
-    // Принудительно восстанавливаем скорость чтобы избежать падения при попадании
     snake.speed = 5.5;
     if(input.x || input.y) snake.angle = Math.atan2(input.y, input.x);
     snake.x += Math.cos(snake.angle) * snake.speed;
@@ -1022,99 +1022,80 @@ function update() {
     snake.segments.unshift({x: snake.x, y: snake.y});
     if(snake.segments.length > snake.length) snake.segments.pop();
 
-    // 2. Механика: Пополнение заряда у Ядра - ОПТИМИЗИРОВАННО
+    // 2. Механика: Пополнение заряда у Ядра
     const dxCore = snake.x - BASE_POS.x;
     const dyCore = snake.y - BASE_POS.y;
-    const distCoreSq = dxCore * dxCore + dyCore * dyCore;
-    const coreRadiusSq = 80 * 80; // 6400
-    
-    if(distCoreSq < coreRadiusSq && baseAmmo < 100 && snake.length > 12) {
+    // 80*80 = 6400
+    if((dxCore*dxCore + dyCore*dyCore) < 6400 && baseAmmo < 100 && snake.length > 12) {
         snake.length -= 0.25; 
         baseAmmo = Math.min(100, baseAmmo + 2.5);
-        // Зарядка у ядра - для обучения (задание 4, индекс 4)
-        if(curLevel === 1 && curRoomInLevel === 4) {
-            missionProgress = 1;
-        }
+        if(curLevel === 1 && curRoomInLevel === 4) missionProgress = 1;
         updateUI();
     }
     
-    // 2.1. Механика: Пополнение боезапаса турелей и дронов только когда змей НАД базой - ОПТИМИЗИРОВАННО
+    // 2.1. Пополнение боезапаса турелей и дронов
     const snakeBase = findNearestBase(snake.x, snake.y);
-    // Проверяем что змей непосредственно НАД базой (близко к центру)
     const dxBase = snake.x - snakeBase.x;
     const dyBase = snake.y - snakeBase.y;
-    const baseDistSq = dxBase * dxBase + dyBase * dyBase;
-    const baseRadiusSq = 50 * 50; // 2500
-    
-    if(baseDistSq < baseRadiusSq && snake.length > 15) {
-        // Находим турели у этой базы - ОПТИМИЗИРОВАННО
+    // 50*50 = 2500
+    if((dxBase*dxBase + dyBase*dyBase) < 2500 && snake.length > 15) {
+        // Радиус поиска 200 (200*200 = 40000)
         const nearbyTurrets = entities.turrets.filter(t => {
             const dx = t.x - snakeBase.x;
             const dy = t.y - snakeBase.y;
-            const distSq = dx * dx + dy * dy;
-            return distSq < (200 * 200); // 40000
+            return (dx*dx + dy*dy) < 40000;
         });
         
-        // Находим дроны у этой базы - ОПТИМИЗИРОВАННО
         const nearbyDrones = entities.drones.filter(d => {
             const dx = d.x - snakeBase.x;
             const dy = d.y - snakeBase.y;
-            const distSq = dx * dx + dy * dy;
-            return distSq < (200 * 200); // 40000
+            return (dx*dx + dy*dy) < 40000;
         });
         
         if(nearbyTurrets.length > 0 || nearbyDrones.length > 0) {
-            // Уменьшаем хвост змея для пополнения турелей и дронов
             snake.length -= 0.5;
             while(snake.segments.length > snake.length) snake.segments.pop();
             
-            // Распределяем заряд по турелям
-            const ammoPerTurret = 3; // Каждая турель получает +3 заряда
+            const ammoPerTurret = 3;
             nearbyTurrets.forEach(t => {
                 if (t.currentAmmo < (t.maxAmmo || 9)) {
                     t.currentAmmo = Math.min(t.maxAmmo || 9, t.currentAmmo + ammoPerTurret);
                 }
             });
             
-            // Распределяем заряд по дронам (восстановление столкновений)
             nearbyDrones.forEach(d => {
-                const collisions = d.collisions || 0;
-                if (collisions > 0) {
-                    // Восстанавливаем 1 столкновение за каждую зарядку
-                    d.collisions = Math.max(0, collisions - 1);
+                if ((d.collisions || 0) > 0) {
+                    d.collisions = Math.max(0, (d.collisions || 0) - 1);
                 }
             });
-            
             updateUI();
         }
     }
+    
     // 3. Камера
     camera.x = snake.x - (canvas.width / ZOOM) / 2;
     camera.y = snake.y - (canvas.height / ZOOM) / 2;
 
-    // 4. Отработка защиты (Специализация + Расход патронов) - ОПТИМИЗИРОВАННО
+    // 4. Отработка защиты
     entities.turrets.forEach(t => {
-        // Проверяем индивидуальный заряд турели
         if (t.currentAmmo > 0) {
             if (t.type === 'bolt') {
-                // Применяем апгрейды скорострельности и дальности
-                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
-                const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
+                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0));
+                const rangeMultiplier = 1 + (t.rangeBonus || 0);
                 const baseFireRate = 1700;
-                const baseRange = 667; // Уменьшено на треть (1000 -> 667)
-                const rangeSq = baseRange * baseRange * rangeMultiplier * rangeMultiplier;
+                const rangeSq = (667 * rangeMultiplier) ** 2;
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier && entities.bullets.length < 20) {
-                    // Ищем ближайшего врага в дальности, а не первого попавшегося - ОПТИМИЗИРОВАННО
                     let target = null;
                     let minDistSq = rangeSq;
+                    
                     entities.enemies.forEach(en => {
-                        if (en.type === 'box') { // Только квадраты
+                        if (en.type === 'box') {
                             const dx = t.x - en.x;
                             const dy = t.y - en.y;
-                            const distSq = dx * dx + dy * dy;
-                            if (distSq < rangeSq && distSq < minDistSq) {
-                                minDistSq = distSq;
+                            const dSq = dx*dx + dy*dy;
+                            if (dSq < rangeSq && dSq < minDistSq) {
+                                minDistSq = dSq;
                                 target = en;
                             }
                         }
@@ -1124,30 +1105,27 @@ function update() {
                         const a = Math.atan2(target.y - t.y, target.x - t.x);
                         entities.bullets.push({x: t.x, y: t.y, vx: Math.cos(a)*16, vy: Math.sin(a)*16});
                         t.lastShot = Date.now();
-                        // Разный расход энергии в зависимости от апгрейда
-                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0)); // Максимальная экономия 80%
+                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0));
                         t.currentAmmo -= 0.6 * ammoEfficiency;
                     }
                 }
             } else if (t.type === 'laser') {
-                // Применяем апгрейды скорострельности и дальности
-                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0)); // Правильная формула: 1/(1+bonus) для 2x ускорения при максимуме
-                const rangeMultiplier = 1 + (t.rangeBonus || 0); // Чем выше бонус, тем больше дальность
+                const fireRateMultiplier = 1 / (1 + (t.fireRateBonus || 0));
+                const rangeMultiplier = 1 + (t.rangeBonus || 0);
                 const baseFireRate = 2600;
-                const baseRange = 667; // Уменьшено на треть (1000 -> 667)
-                const rangeSq = baseRange * baseRange * rangeMultiplier * rangeMultiplier;
+                const rangeSq = (667 * rangeMultiplier) ** 2;
                 
                 if (Date.now() - t.lastShot > baseFireRate * fireRateMultiplier) {
-                    // Ищем ближайшего врага в дальности, а не первого попавшегося - ОПТИМИЗИРОВАННО
                     let target = null;
                     let minDistSq = rangeSq;
+                    
                     entities.enemies.forEach(en => {
-                        if (en.type === 'tri') { // Только треугольники
+                        if (en.type === 'tri') {
                             const dx = t.x - en.x;
                             const dy = t.y - en.y;
-                            const distSq = dx * dx + dy * dy;
-                            if (distSq < rangeSq && distSq < minDistSq) {
-                                minDistSq = distSq;
+                            const dSq = dx*dx + dy*dy;
+                            if (dSq < rangeSq && dSq < minDistSq) {
+                                minDistSq = dSq;
                                 target = en;
                             }
                         }
@@ -1155,13 +1133,10 @@ function update() {
                     
                     if (target) {
                         t.activeLaser = { x: target.x, y: target.y, time: Date.now() + 150 };
-                        // Выпадение обломка при смерти от лазера
                         entities.loot.push({x: target.x, y: target.y, dieTime: Date.now() + 5000});
                         entities.enemies = entities.enemies.filter(e => e !== target);
-                        // Убираем очки за убийство турелью
                         t.lastShot = Date.now();
-                        // Разный расход энергии в зависимости от апгрейда
-                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0)); // Максимальная экономия 80%
+                        const ammoEfficiency = 1 - Math.min(0.8, (t.ammoBonus || 0));
                         t.currentAmmo -= 1.0 * ammoEfficiency;
                     }
                 }
@@ -1169,96 +1144,111 @@ function update() {
         }
     });
 
-    // 5. Дроны (Feature 14) - Фиолетовые сферы с системой столкновений - ОПТИМИЗИРОВАННО
+    // 5. Дроны
     entities.drones.forEach((d, di) => {
         d.angle += 0.04;
-        const dx = BASE_POS.x + Math.cos(d.angle) * d.dist;
-        const dy = BASE_POS.y + Math.sin(d.angle) * d.dist;
-        d.x = dx; d.y = dy;
+        d.x = BASE_POS.x + Math.cos(d.angle) * d.dist;
+        d.y = BASE_POS.y + Math.sin(d.angle) * d.dist;
         
-        // Проверка столкновений с врагами (только если дрон не израсходовал все 4 сегмента) - ОПТИМИЗИРОВАННО
         if ((d.collisions || 0) < 4) {
             entities.enemies.forEach((en, ei) => {
-                const dxEn = en.x - dx;
-                const dyEn = en.y - dy;
-                const distSq = dxEn * dxEn + dyEn * dyEn;
-                const droneRadiusSq = 55 * 55; // 3025
-                
-                if(distSq < droneRadiusSq) {
+                const dx = d.x - en.x;
+                const dy = d.y - en.y;
+                // 55*55 = 3025
+                if((dx*dx + dy*dy) < 3025) {
                     entities.enemies.splice(ei, 1);
                     entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
                     score += 4; updateUI();
-                    
-                    // Увеличиваем счетчик столкновений дрона
                     d.collisions = (d.collisions || 0) + 1;
                 }
             });
         }
     });
-    
-    // Удаляем дроны с 8+ столкновений (израсходовали весь ресурс)
     entities.drones = entities.drones.filter(d => (d.collisions || 0) < 8);
 
-    // 6. Снаряды - ОПТИМИЗИРОВАННО
-    entities.bullets.forEach((b, i) => {
+    // 6. Снаряды
+    entities.bullets = entities.bullets.filter(b => {
         b.x += b.vx; b.y += b.vy;
         const dx = b.x - BASE_POS.x;
         const dy = b.y - BASE_POS.y;
-        const distSq = dx * dx + dy * dy;
-        const worldBoundarySq = 2500 * 2500; // 6,250,000
-        
-        if(distSq > worldBoundarySq) entities.bullets.splice(i,1);
+        // 2500*2500 = 6250000
+        return (dx*dx + dy*dy) <= 6250000;
     });
+    
+    // Коллизии пуль с врагами (Box)
+    // Используем обратный цикл для безопасного удаления
+    for(let i = entities.bullets.length - 1; i >= 0; i--) {
+        const b = entities.bullets[i];
+        let hit = false;
+        for(let j = entities.enemies.length - 1; j >= 0; j--) {
+            const en = entities.enemies[j];
+            if(en.type === 'box') {
+                const dx = b.x - en.x;
+                const dy = b.y - en.y;
+                // 45*45 = 2025
+                if((dx*dx + dy*dy) < 2025) {
+                    entities.enemies.splice(j, 1);
+                    entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
+                    score += 3;
+                    missionProgress++;
+                    createParticles(en.x, en.y, 'blue', 5);
+                    hit = true;
+                    break; 
+                }
+            }
+        }
+        if(hit) {
+            entities.bullets.splice(i, 1);
+            updateUI();
+        }
+    }
 
-    // 7. Враги (Глюки) - Спавн в зависимости от задания
+    // 7. Спавн врагов
     const room = getCurrentRoom();
     if(started && room && !room.isBoss && Math.random() < room.spawnRate) spawnEnemy();
     
-    // Спавн вирусов от босса
     if(entities.boss && Math.random() < 0.02) {
         const angle = Math.random() * 6.28;
         const dist = 200 + Math.random() * 100;
         entities.enemies.push({
             x: entities.boss.x + Math.cos(angle) * dist,
             y: entities.boss.y + Math.sin(angle) * dist,
-            speed: Math.random() > 0.5 ? 1.7 : 3.5, // Исправлено: красные враги от босса имеют ту же скорость 1.7 как обычные
+            speed: Math.random() > 0.5 ? 1.7 : 3.5,
             type: Math.random() > 0.5 ? 'box' : 'tri'
         });
     }
 
+    // Обработка врагов
     entities.enemies.forEach((en, i) => {
-        // Урон по змее сбоку (по сегментам кроме головы) - ОПТИМИЗИРОВАННО
+        // Урон по змее сбоку
         for (let si = 1; si < snake.segments.length; si++) {
             const seg = snake.segments[si];
             const dx = en.x - seg.x;
             const dy = en.y - seg.y;
-            const distSq = dx * dx + dy * dy;
-            const sideCollisionRadiusSq = 40 * 40; // 1600
-            
-            if(distSq < sideCollisionRadiusSq) {
-                // Боковое столкновение — сильный урон
+            // 40*40 = 1600
+            if((dx*dx + dy*dy) < 1600) {
                 snake.length = Math.max(5, snake.length - 80);
                 while(snake.segments.length > snake.length) snake.segments.pop();
                 createParticles(seg.x, seg.y, 'red', 10);
                 entities.enemies.splice(i, 1);
                 updateUI();
-                break;
+                return;
             }
         }
-        // Поиск ближайшей цели (основная база или дополнительные базы) - ОПТИМИЗИРОВАННО
+        
+        // Поиск цели
         let targetX = BASE_POS.x;
         let targetY = BASE_POS.y;
         const dxBase = en.x - BASE_POS.x;
         const dyBase = en.y - BASE_POS.y;
-        let minDistSq = dxBase * dxBase + dyBase * dyBase;
+        let minDistSq = dxBase*dxBase + dyBase*dyBase;
         
-        // Проверяем все дополнительные базы
         entities.playerBases.forEach(base => {
             const dx = en.x - base.x;
             const dy = en.y - base.y;
-            const distSq = dx * dx + dy * dy;
-            if (distSq < minDistSq) {
-                minDistSq = distSq;
+            const dSq = dx*dx + dy*dy;
+            if (dSq < minDistSq) {
+                minDistSq = dSq;
                 targetX = base.x;
                 targetY = base.y;
             }
@@ -1268,195 +1258,45 @@ function update() {
         en.x += Math.cos(ang) * en.speed;
         en.y += Math.sin(ang) * en.speed;
 
-        // Попадание пули (только в квадраты, треугольники игнорируют пули) - ОПТИМИЗИРОВАННО
-        if(en.type === 'box') {
-            entities.bullets.forEach((b, bi) => {
-                const dx = b.x - en.x;
-                const dy = b.y - en.y;
-                const distSq = dx * dx + dy * dy;
-                const bulletHitRadiusSq = 45 * 45; // 2025
-                
-                if(distSq < bulletHitRadiusSq) {
-                    entities.enemies.splice(i,1); entities.bullets.splice(bi,1);
-                    entities.loot.push({x: en.x, y: en.y, dieTime: Date.now() + 5000});
-                    // Убираем очки за убийство турелью - только змея получает очки
-                    missionProgress++;
-                    createParticles(en.x, en.y, 'blue', 5);
-                }
-            });
-        }
-
-        // Урон Ядру - ОПТИМИЗИРОВАННО
-        const dxCore = en.x - BASE_POS.x;
-        const dyCore = en.y - BASE_POS.y;
-        const distCoreSq = dxCore * dxCore + dyCore * dyCore;
-        const coreDamageRadiusSq = 70 * 70; // 4900
+        // Урон по целям (Ядро и базы) - 70*70 = 4900
+        const dxT = en.x - targetX;
+        const dyT = en.y - targetY;
         
-        if(distCoreSq < coreDamageRadiusSq) {
-            if (shieldActive) { shieldActive = false; createParticles(BASE_POS.x, BASE_POS.y, 'cyan', 25); }
-            else { lives--; }
-            entities.enemies.splice(i, 1);
-            if(lives <= 0) gameOver();
-            updateUI();
-        }
-        
-        // Урон дополнительным базам - ОПТИМИЗИРОВАННО
-        entities.playerBases.forEach((base, baseIndex) => {
-            const dx = en.x - base.x;
-            const dy = en.y - base.y;
-            const distSq = dx * dx + dy * dy;
-            const baseDamageRadiusSq = 70 * 70; // 4900
-            
-            if(distSq < baseDamageRadiusSq) {
-                base.health -= 20;
-                entities.enemies.splice(i, 1);
-                createParticles(base.x, base.y, 'red', 8);
-                if(base.health <= 0) {
-                    // Удаляем турели возле этой базы - ОПТИМИЗИРОВАННО
-                    entities.turrets = entities.turrets.filter(turret => {
-                        const dx = turret.x - base.x;
-                        const dy = turret.y - base.y;
-                        const distSq = dx * dx + dy * dy;
-                        return distSq > (200 * 200); // 40000
-                    });
-                    entities.playerBases.splice(baseIndex, 1);
-                    createParticles(base.x, base.y, 'orange', 15);
+        if((dxT*dxT + dyT*dyT) < 4900) {
+            // Проверяем, это Ядро или доп. база
+            if(targetX === BASE_POS.x && targetY === BASE_POS.y) {
+                if (shieldActive) { shieldActive = false; createParticles(BASE_POS.x, BASE_POS.y, 'cyan', 25); }
+                else { lives--; }
+                if(lives <= 0) gameOver();
+            } else {
+                // Это доп база
+                const base = entities.playerBases.find(b => b.x === targetX && b.y === targetY);
+                if(base) {
+                    base.health -= 20;
+                    createParticles(base.x, base.y, 'red', 8);
+                    if(base.health <= 0) {
+                        // Удалить турели рядом - 200*200 = 40000
+                        entities.turrets = entities.turrets.filter(t => {
+                            const dx = t.x - base.x;
+                            const dy = t.y - base.y;
+                            return (dx*dx + dy*dy) > 40000;
+                        });
+                        // Удалить саму базу
+                        entities.playerBases = entities.playerBases.filter(b => b !== base);
+                        createParticles(base.x, base.y, 'orange', 15);
+                    }
                 }
-                updateUI();
             }
-        });
+            entities.enemies.splice(i, 1);
+            updateUI();
+            return;
+        }
 
-        // Змея vs Враг (Убийство ГОЛОВОЙ с ростом) - ОПТИМИЗИРОВАННО
-        const dxSnake = en.x - snake.x;
-        const dySnake = en.y - snake.y;
-        const distHeadSq = dxSnake * dxSnake + dySnake * dySnake;
-        const headKillRadiusSq = 55 * 55; // 3025
-        
-        if(distHeadSq < headKillRadiusSq) {
+        // Убийство головой - 55*55 = 3025
+        const dxHead = en.x - snake.x;
+        const dyHead = en.y - snake.y;
+        if((dxHead*dxHead + dyHead*dyHead) < 3025) {
             score += 10;
-            snake.length += 2; // При лобовом столкновении змея растет (+2)
-            while(snake.segments.length > snake.length) snake.segments.pop();
-            entities.enemies.splice(i, 1);
-            createParticles(en.x, en.y, 'green', 10);
-            missionProgress++; 
-            updateUI();
-        }
-    });
-
-    // 8. Обломки (Loot Decay) - ОПТИМИЗИРОВАННО
-    entities.loot.forEach((l, i) => {
-        if (Date.now() > l.dieTime) { entities.loot.splice(i, 1); return; }
-        const dx = l.x - snake.x;
-        const dy = l.y - snake.y;
-        const distSq = dx * dx + dy * dy;
-        const lootRadiusSq = 60 * 60; // 3600
-        
-        if(distSq < lootRadiusSq) {
-            snake.length += 1; // Обломок дает +1 к длине
-            entities.loot.splice(i, 1);
-            score += 15; updateUI();
-        }
-    });
-
-    // 9. Байты данных (Еда) - ОПТИМИЗИРОВАННО
-    entities.food.forEach((f, i) => {
-        const dx = f.x - snake.x;
-        const dy = f.y - snake.y;
-        const distSq = dx * dx + dy * dy;
-        const foodRadiusSq = 65 * 65; // 4225
-        
-        if(distSq < foodRadiusSq) { 
-            snake.length += 4; score += 3.5;
-            entities.food.splice(i, 1); spawnFood();
-            // Первый байт собран - для обучения (задание 0)
-            if(curLevel === 1 && curRoomInLevel === 0) {
-                missionProgress = 1;
-            }
-            updateUI();
-        }
-    });
-    
-    // 10. Боссы (база врага не двигается) - ОПТИМИЗИРОВАННО
-    if(entities.boss) {
-        // Босс остается на месте - это стационарная база врага
-        
-        // Урон боссу от пуль - ОПТИМИЗИРОВАННО
-        entities.bullets.forEach((b, bi) => {
-            const dx = b.x - entities.boss.x;
-            const dy = b.y - entities.boss.y;
-            const distSq = dx * dx + dy * dy;
-            const bossBulletRadiusSq = 80 * 80; // 6400
-            
-            if(distSq < bossBulletRadiusSq && snake.length > 1) {
-                // Сила урона пули игрока: можно добавить усложнение от уровня
-                const levelMul = 1 + (entities.boss.level||curLevel)/3;
-                entities.boss.health -= 5 * levelMul;
-                entities.bullets.splice(bi, 1);
-                createParticles(entities.boss.x, entities.boss.y, 'purple', 8);
-                if(entities.boss.health <= 0) {
-                    score += 500;
-                    missionProgress = 1; // Отмечаем босса как убитого
-                    createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
-                    entities.boss = null;
-                    entities.bossTowers = [];
-                }
-            }
-        });
-        
-        // Урон боссу от змеи - ОПТИМИЗИРОВАННО
-        const dxBoss = entities.boss.x - snake.x;
-        const dyBoss = entities.boss.y - snake.y;
-        const bossSnakeRadiusSq = 70 * 70; // 4900
-        
-        if(distSq < bossSnakeRadiusSq && snake.segments.length >= 2) {
-            // Урон боссу равен всей длине хвоста
-            const tailDamage = snake.segments.length; // Урон равен количеству сегментов
-            const levelMul = 1 + (entities.boss.level||curLevel)/3;
-            entities.boss.health -= tailDamage * levelMul;
-            
-            // Змея теряет весь хвост при атаке босса
-            const currentLength = snake.segments.length;
-            snake.segments = [];
-            snake.length = 1; // Только голова остается
-            for(let i = 0; i < snake.length; i++) {
-                snake.segments.push({x: snake.x, y: snake.y});
-            }
-            
-            createParticles(entities.boss.x, entities.boss.y, 'purple', 15);
-            if(entities.boss.health <= 0) {
-                score += 500;
-                missionProgress = 1; // Отмечаем босса как убитого
-                createParticles(entities.boss.x, entities.boss.y, 'purple', 30);
-                entities.boss = null;
-                entities.bossTowers = [];
-            }
-            updateUI();
-        }
-    }
-    
-    // 11. Башни и турели базы врага (атакуют змею) - ОПТИМИЗИРОВАННО
-    entities.bossTowers.forEach((tower, ti) => {
-        const dx = tower.x - snake.x;
-        const dy = tower.y - snake.y;
-        const distSq = dx * dx + dy * dy;
-        const towerAttackRadiusSq = 500 * 500; // 250000
-        const fireRate = tower.type === 'turret' ? 1500 : 2000; // Турели стреляют чаще
-        
-        if(distSq < towerAttackRadiusSq && Date.now() - tower.lastShot > fireRate) {
-            // Выстрел в змею
-            const ang = Math.atan2(snake.y - tower.y, snake.x - tower.x);
-            const speed = tower.type === 'turret' ? 14 : 12; // Турели стреляют быстрее
-            const bullet = {
-                x: tower.x, y: tower.y,
-                vx: Math.cos(ang) * speed,
-                vy: Math.sin(ang) * speed,
-                isBossBullet: true
-            };
-            entities.bullets.push(bullet);
-            tower.lastShot = Date.now();
-        }
-    });
-}
 
 
 /** --- ОТРИСОВКА --- */
