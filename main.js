@@ -348,6 +348,84 @@ window.setAiMode = function(mode, btn) {
     if(mode === 'analyze') input.placeholder = "Вставь код для поиска ошибок или улучшения...";
 };
 
+// === СИСТЕМА АВТОРИЗАЦИИ И ГЕНЕРАЦИИ ===
+
+// 1. Идентификация устройства (для халявных попыток)
+var deviceId = localStorage.getItem('device_id');
+if (!deviceId) {
+    deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('device_id', deviceId);
+}
+
+var currentUser = null;
+
+// 2. Проверка сессии при запуске
+function checkSession() {
+    var fd = new FormData();
+    fd.append('action', 'check_session');
+    
+    fetch('auth.php', { method: 'POST', body: fd })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        var statusDiv = document.getElementById('user-status');
+        if (data.status === 'logged_in') {
+            currentUser = data.user;
+            statusDiv.innerHTML = '<span style="color:#00ff41"><i class="fas fa-user"></i> ' + currentUser + '</span> <i onclick="doAuth(\'logout\')" class="fas fa-sign-out-alt" style="cursor:pointer; margin-left:5px; color:#666;"></i>';
+        } else {
+            currentUser = null;
+            statusDiv.innerHTML = 'Гость (2 попытки)';
+        }
+    })
+    .catch(function(err){ console.log('Auth check fail'); });
+}
+// Запускаем проверку через секунду после старта
+setTimeout(checkSession, 1000);
+
+// 3. Функция Входа/Регистрации
+window.doAuth = function(action) {
+    var msg = document.getElementById('auth-msg');
+    
+    // Выход
+    if (action === 'logout') {
+        var fd = new FormData();
+        fd.append('action', 'logout');
+        fetch('auth.php', { method: 'POST', body: fd }).then(function() {
+            checkSession();
+        });
+        return;
+    }
+
+    // Вход/Рега
+    var login = document.getElementById('auth-login').value;
+    var pass = document.getElementById('auth-pass').value;
+
+    if (!login || !pass) {
+        msg.innerText = "Введите логин и пароль";
+        return;
+    }
+
+    var fd = new FormData();
+    fd.append('action', action);
+    fd.append('login', login);
+    fd.append('password', pass);
+
+    msg.innerText = "Загрузка...";
+
+    fetch('auth.php', { method: 'POST', body: fd })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            document.getElementById('auth-modal').classList.add('hidden');
+            msg.innerText = "";
+            checkSession(); // Обновляем статус
+        } else {
+            msg.innerText = data.message;
+        }
+    })
+    .catch(function(err) { msg.innerText = "Ошибка сети"; });
+};
+
+// 4. ГЕНЕРАЦИЯ (С учетом проектов и лимитов)
 window.startGeneration = function() {
     var promptText = document.getElementById('ai-prompt').value;
     var btn = document.getElementById('ai-submit-btn');
@@ -355,15 +433,19 @@ window.startGeneration = function() {
     var resultArea = document.getElementById('ai-result-container');
     var frame = document.getElementById('generated-frame');
     var textArea = document.getElementById('text-output');
+    
+    // Берем имя проекта (или default, если пусто)
+    var projectInput = document.getElementById('project-name');
+    var project = (projectInput && projectInput.value.trim() !== "") ? projectInput.value : 'default';
 
     if (!promptText.trim()) return;
 
     // UI: Блокировка
     btn.disabled = true;
-    status.innerText = "СВЯЗЬ С НЕЙРОСЕТЬЮ... РЕЖИМ: " + currentAiMode.toUpperCase();
+    status.innerText = "СВЯЗЬ С НЕЙРОСЕТЬЮ...";
     resultArea.classList.remove('hidden');
     
-    // Очистка перед новым запуском
+    // Очистка
     frame.style.display = 'none';
     textArea.style.display = 'none';
     frame.src = 'about:blank';
@@ -371,7 +453,9 @@ window.startGeneration = function() {
 
     var formData = new FormData();
     formData.append('text', promptText);
-    formData.append('mode', currentAiMode); // ОТПРАВЛЯЕМ РЕЖИМ
+    formData.append('mode', currentAiMode);
+    formData.append('device_id', deviceId); // ID для гостей
+    formData.append('project', project);    // Папка проекта
 
     fetch('maker.php', { method: 'POST', body: formData })
     .then(function(res) { return res.json(); })
@@ -379,18 +463,22 @@ window.startGeneration = function() {
         if (data.success) {
             status.innerText = "ГОТОВО!";
             
-            // Если это игра (ссылка на файл)
             if (data.type === 'file') {
                 frame.style.display = 'block';
-                frame.src = data.url; // Загружаем игру
-            } 
-            // Если это текст (чат или анализ)
-            else {
+                // Добавляем timestamp чтобы обновить кэш
+                frame.src = data.url + "?t=" + Date.now(); 
+            } else {
                 textArea.style.display = 'block';
                 textArea.innerText = data.content;
             }
         } else {
-            status.innerText = "ОШИБКА: " + data.error;
+            // ОБРАБОТКА ЛИМИТОВ
+            if (data.error === 'LIMIT_REACHED') {
+                status.innerText = "ЛИМИТ ИСЧЕРПАН!";
+                document.getElementById('auth-modal').classList.remove('hidden');
+            } else {
+                status.innerText = "ОШИБКА: " + data.error;
+            }
         }
     })
     .catch(function(err) {
