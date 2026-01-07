@@ -1579,12 +1579,12 @@ function draw() {
     ctx.strokeStyle = '#112'; ctx.lineWidth = 10;
     
     // Оптимизация границ отрисовки сетки
-    const startX = Math.max(0, (camera.x / 1000 | 0) * 1000);
+    const gridStartX = Math.max(0, (camera.x / 1000 | 0) * 1000);
     const endX = Math.min(WORLD_SIZE, ((camera.x + canvas.width / ZOOM) / 1000 | 0) * 1000 + 1000);
     const startY = Math.max(0, (camera.y / 1000 | 0) * 1000);
     const endY = Math.min(WORLD_SIZE, ((camera.y + canvas.height / ZOOM) / 1000 | 0) * 1000 + 1000);
 
-    for(let i = startX; i <= endX; i += 1000) {
+    for(let i = gridStartX; i <= endX; i += 1000) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
     }
     for(let i = startY; i <= endY; i += 1000) {
@@ -1679,8 +1679,8 @@ function draw() {
         
         // Индикатор заряда
         const cellSize = 12; const cellSpacing = 2;
-        const startX = tx - (cellSize * 3 + cellSpacing * 2) / 2;
-        const startY = ty - (cellSize * 3 + cellSpacing * 2) / 2;
+        const ammoStartX = tx - (cellSize * 3 + cellSpacing * 2) / 2;
+        const ammoStartY = ty - (cellSize * 3 + cellSpacing * 2) / 2;
         const ammoPercent = (t.currentAmmo || 0) / (t.maxAmmo || 9);
         let filledCells = Math.floor(ammoPercent * 9);
         if (filledCells === 0 && (t.currentAmmo || 0) > 0) filledCells = 1;
@@ -1688,8 +1688,8 @@ function draw() {
         for (let i = 0; i < 9; i++) {
             const row = (i / 3) | 0;
             const col = i % 3;
-            const cx = startX + col * (cellSize + cellSpacing);
-            const cy = startY + row * (cellSize + cellSpacing);
+            const cx = ammoStartX + col * (cellSize + cellSpacing);
+            const cy = ammoStartY + row * (cellSize + cellSpacing);
             
             if (i < filledCells) ctx.fillStyle = (t.currentAmmo||0)<30 ? '#00f3ff' : (t.type === 'laser'?'#ff69b4':'#00f3ff');
             else ctx.fillStyle = '#000';
