@@ -262,7 +262,7 @@ const ZOOM = 0.28;
 
 // --- СИСТЕМА SPATIAL GRID (СЕТКА) ---
 const Grid = {
-    size: 250, // Размер клетки
+    size: 850, // УВЕЛИЧИЛИ, ЧТОБЫ ТУРЕЛИ ВИДЕЛИ ДАЛЕКИХ ВРАГОВ
     cells: {},
     
     // Очистка сетки перед новым кадром
@@ -857,10 +857,21 @@ function buyUpgrade(type, cost) {
         });
         
         // Размещаем турель равномерно вокруг ближайшей базы
-        const turretCount = entities.turrets.filter(t => 
+        // 1. Проверяем лимит именно ПУШЕК (макс 2)
+        const boltCount = entities.turrets.filter(t => 
+            t.type === 'bolt' && Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        ).length;
+
+        if (boltCount >= 2) { 
+            score += cost; return; // Возврат денег, если пушек уже 2
+        }
+
+        // 2. Считаем ОБЩЕЕ кол-во башен для красивой расстановки (чтобы не накладывались)
+        const totalCount = entities.turrets.filter(t => 
             Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
         ).length;
-        const angle = (turretCount / 8) * 6.28; // 8 турелей вокруг базы
+
+        const angle = (totalCount / 8) * 6.28;
         const dist = 165;
         const turretX = nearestBase.x + Math.cos(angle) * dist;
         const turretY = nearestBase.y + Math.sin(angle) * dist;
@@ -894,14 +905,21 @@ function buyUpgrade(type, cost) {
             if (dist < minDist) { minDist = dist; nearestBase = base; }
         });
 
-        // 2. Считаем сколько уже башен (чтобы знать угол)
-        const turretCount = entities.turrets.filter(t => 
+       // 1. Проверяем лимит именно ЛАЗЕРОВ (макс 2)
+        const laserCount = entities.turrets.filter(t => 
+            t.type === 'laser' && Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        ).length;
+
+        if (laserCount >= 2) { 
+            score += cost; return; // Возврат денег, если лазеров уже 2
+        }
+
+        // 2. Считаем ОБЩЕЕ кол-во башен для расстановки
+        const totalCount = entities.turrets.filter(t => 
             Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
         ).length;
 
-        // ЕСЛИ НУЖЕН ЛИМИТ (раскомментируй если надо):
-        // if (turretCount >= 2) { score += cost; return; }
-
+        const angle = (totalCount / 8) * 6.28;
         const angle = (turretCount / 8) * 6.28;
         const dist = 165;
         
