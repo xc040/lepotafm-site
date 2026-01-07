@@ -103,47 +103,26 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; backg
     animation: fadeIn 0.3s;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-/* РЕЖИМЫ */
-.modes-panel { display: flex; gap: 5px; padding: 10px; background: rgba(0,0,0,0.3); }
-.mode-btn { flex: 1; background: #111; border: 1px solid #333; color: #666; padding: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 11px; }
-.mode-btn.active { background: var(--neon-blue); color: #000; border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+/* СТИЛИ ДЛЯ AI СТУДИИ */
+.studio-container { padding: 15px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
 
-/* ПОЛЕ ВВОДА */
-.input-area-studio { position: relative; padding: 10px; height: 80px; }
-#studio-prompt { width: 100%; height: 100%; background: #080810; border: 1px solid #333; color: var(--neon-blue); padding: 10px; padding-right: 50px; border-radius: 8px; box-sizing: border-box; resize: none; font-family: monospace; }
-#studio-gen-btn { position: absolute; right: 15px; bottom: 15px; width: 40px; height: 40px; border-radius: 50%; background: var(--neon-blue); border: none; font-size: 18px; cursor: pointer; box-shadow: 0 0 10px var(--neon-blue); }
-#studio-gen-btn:active { transform: scale(0.9); }
+/* Кнопки режимов */
+.mode-switcher { display: flex; gap: 5px; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; }
+.mode-btn { flex: 1; background: transparent; border: 1px solid transparent; color: #888; padding: 8px 0; cursor: pointer; border-radius: 6px; font-size: 12px; transition: 0.2s; }
+.mode-btn.active { background: var(--neon-blue); color: #000; font-weight: bold; box-shadow: 0 0 10px var(--neon-blue); }
 
-/* СЕТКА РЕЗУЛЬТАТА (КВАДРАНТЫ) */
-.result-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; padding: 10px; height: calc(100% - 150px); box-sizing: border-box; }
-.result-grid.hidden { display: none; }
+/* Поле ввода */
+.neon-input { width: 100%; height: 80px; background: #000; border: 1px solid #333; color: var(--neon-blue); padding: 10px; border-radius: 8px; font-family: monospace; resize: none; margin-bottom: 10px; box-sizing: border-box; }
+.neon-input:focus { outline: none; border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
 
-.grid-cell { background: #111; border: 1px solid #333; border-radius: 8px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.cell-label { position: absolute; top: 5px; left: 5px; font-size: 10px; color: #555; background: rgba(0,0,0,0.8); padding: 2px 5px; border-radius: 4px; z-index: 5; }
+/* Кнопка генерации */
+.action-btn.full-width { width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; cursor: pointer; }
+.action-btn:disabled { background: #333; color: #555; border-color: #555; cursor: not-allowed; }
 
-/* 1. Миниатюра */
-#mini-preview { width: 200%; height: 200%; transform: scale(0.5); transform-origin: 0 0; border: none; pointer-events: none; background: #000; }
-
-/* 2. Ракета (Старт) */
-.rocket-btn { width: 80px; height: 80px; border-radius: 50%; background: var(--neon-pink); border: none; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 20px var(--neon-pink); animation: pulse 2s infinite; }
-.rocket-btn i { font-size: 28px; margin-bottom: 5px; }
-.rocket-btn span { font-size: 10px; font-weight: bold; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-/* 3. Инфо */
-.status-text { font-size: 12px; color: var(--neon-blue); text-align: center; padding: 5px; }
-.file-tag { font-size: 10px; color: #555; margin-top: 5px; }
-
-/* 4. Действия */
-.action-small-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-
-/* ОВЕРЛЕЙ ИГРЫ */
-.overlay-window { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 900; display: flex; flex-direction: column; }
-.overlay-window.hidden { display: none; }
-.close-overlay-btn { height: 40px; background: #222; border: none; border-bottom: 1px solid var(--neon-blue); color: white; font-weight: bold; cursor: pointer; }
-#overlay-frame { flex: 1; border: none; width: 100%; height: 100%; }
-
-/* СПИСКИ */
-.list-item { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-.list-item:hover { background: rgba(255,255,255,0.05); }
-.list-item.active { border-left: 3px solid var(--neon-blue); background: rgba(0, 243, 255, 0.05); }
+/* Результат */
+.status-line { text-align: center; font-size: 11px; color: #666; margin-bottom: 5px; min-height: 15px; }
+.result-area { flex: 1; border: 1px dashed #333; border-radius: 8px; overflow: hidden; position: relative; background: #000; min-height: 200px; }
+.result-area.hidden { display: none; }
+#generated-frame { width: 100%; height: 100%; }
+.text-scrollable { padding: 10px; color: #ddd; font-family: monospace; font-size: 12px; white-space: pre-wrap; overflow-y: auto; height: 100%; }
+.text-scrollable.hidden { display: none; }
