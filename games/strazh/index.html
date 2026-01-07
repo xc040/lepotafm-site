@@ -1572,23 +1572,7 @@ function draw() {
         ctx.shadowBlur = 0;
     }
     
-    // Радиусы турелей
-    const turretsAtMainBase = entities.turrets.filter(t => 
-        ((t.x-bx)*(t.x-bx) + (t.y-by)*(t.y-by)) < 40000
-    );
-    const mainBaseRanges = new Set();
-    turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 667 : 667; 
-        range = range * (1 + (t.rangeBonus || 0));
-        mainBaseRanges.add(range | 0);
-    });
     
-    mainBaseRanges.forEach(range => {
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath(); ctx.arc(bx, by, range, 0, 6.28); ctx.stroke();
-    });
-    ctx.setLineDash([]); 
     
     // Доп. базы
     entities.playerBases.forEach(base => {
@@ -1620,10 +1604,13 @@ function draw() {
         ctx.restore();
     });
 
-    // 3. Турели
-    entities.turrets.forEach(t => {
-        const tx = t.x | 0;
-        const ty = t.y | 0;
+   // --- ВСТАВКА: ЧЕСТНЫЙ РАДИУС ВОКРУГ ТУРЕЛИ ---
+        let visRange = t.type === 'laser' ? 667 : 667; 
+        visRange = visRange * (1 + (t.rangeBonus || 0));
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; // Слабая линия
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(tx, ty, visRange, 0, 6.28); ctx.stroke();
+        // ---------------------------------------------
         ctx.fillStyle = '#fff'; ctx.fillRect(tx-25, ty-25, 50, 50);
         
         let turretColor = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
