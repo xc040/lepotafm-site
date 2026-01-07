@@ -1164,7 +1164,7 @@ function updateUI() {
         playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
-// --- ВСТАВКА: УПРАВЛЕНИЕ КНОПКАМИ МАГАЗИНА ---
+    // --- УПРАВЛЕНИЕ КНОПКАМИ МАГАЗИНА (СЕРЫЕ КНОПКИ) ---
     // Находим базу рядом со змеей для проверки лимитов
     let myBase = BASE_POS;
     let minD = Infinity;
@@ -1186,12 +1186,10 @@ function updateUI() {
         const onclick = item.getAttribute('onclick') || "";
         let isDis = false;
         
-        // Парсим цену и тип из onclick (костыль, но работает с текущим HTML)
         let cost = 0;
         if (onclick.includes('120') && onclick.includes('turret')) { cost = 120; if(curBolts >= 2) isDis = true; }
         else if (onclick.includes('300') && onclick.includes('laser')) { cost = 300; if(curLasers >= 2) isDis = true; }
         else if (onclick.includes('200') && onclick.includes('drone')) { cost = 200; if(curDrones >= 4) isDis = true; }
-        // Добавьте сюда остальные цены если нужно (ремонт, база и т.д.)
         else if (onclick.includes('250')) cost = 250;
         else if (onclick.includes('1000')) cost = 1000;
         else if (onclick.includes('80')) cost = 80;
@@ -1206,7 +1204,7 @@ function updateUI() {
         else item.classList.remove('disabled');
     });
     // ---------------------------------------------
-
+    
     // Управление звуком шума эфира
     if (typeof updateEtherNoise === "function") updateEtherNoise();
     
@@ -1571,14 +1569,13 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
-    // ОПТИМИЗАЦИЯ: Округляем камеру, чтобы вся карта не "мылилась"
+    // ОПТИМИЗАЦИЯ: Округляем камеру
     ctx.scale(ZOOM, ZOOM);
     ctx.translate(-(camera.x | 0), -(camera.y | 0));
 
-    // Сетка (Рисуем только то, что в кадре + небольшой запас)
+    // Сетка (ИСПРАВЛЕН startX -> gridStartX)
     ctx.strokeStyle = '#112'; ctx.lineWidth = 10;
     
-    // Оптимизация границ отрисовки сетки
     const gridStartX = Math.max(0, (camera.x / 1000 | 0) * 1000);
     const endX = Math.min(WORLD_SIZE, ((camera.x + canvas.width / ZOOM) / 1000 | 0) * 1000 + 1000);
     const startY = Math.max(0, (camera.y / 1000 | 0) * 1000);
@@ -1621,8 +1618,6 @@ function draw() {
         ctx.shadowBlur = 0;
     }
     
-    
-    
     // Доп. базы
     entities.playerBases.forEach(base => {
         const bX = base.x | 0;
@@ -1636,12 +1631,11 @@ function draw() {
         ctx.fillStyle = '#39ff14'; ctx.fillRect(bX - 50, bY - 60, (100 * healthPercent)|0, 6);
     });
 
-    // 2. РАДАР (Отрисовка упрощена)
+    // 2. РАДАР
     entities.enemies.forEach(en => {
-        // Радар рисуем без жесткой оптимизации, так как там поворот контекста
         const ang = Math.atan2(en.y - by, en.x - bx);
         const dx = en.x - bx; const dy = en.y - by;
-        const realDist = Math.sqrt(dx*dx + dy*dy); // Тут корень нужен для визуальной дистанции
+        const realDist = Math.sqrt(dx*dx + dy*dy); 
         const radarDist = Math.max(65, Math.min(150, realDist * 0.05));
         
         ctx.save();
@@ -1653,13 +1647,10 @@ function draw() {
         ctx.restore();
     });
 
-   // --- ВСТАВКА: ЧЕСТНЫЙ РАДИУС ВОКРУГ ТУРЕЛИ ---
-        let visRange = t.type === 'laser' ? 667 : 667; 
-        visRange = visRange * (1 + (t.rangeBonus || 0));
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; // Слабая линия
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(tx, ty, visRange, 0, 6.28); ctx.stroke();
-        // ---------------------------------------------
+    // 3. Турели
+    entities.turrets.forEach(t => {
+        const tx = t.x | 0;
+        const ty = t.y | 0;
         ctx.fillStyle = '#fff'; ctx.fillRect(tx-25, ty-25, 50, 50);
         
         let turretColor = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
@@ -1677,7 +1668,15 @@ function draw() {
             ctx.strokeRect(tx-27, ty-27, 54, 54);
         }
         
-        // Индикатор заряда
+        // --- ЧЕСТНЫЙ РАДИУС ---
+        let visRange = t.type === 'laser' ? 667 : 667; 
+        visRange = visRange * (1 + (t.rangeBonus || 0));
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; 
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(tx, ty, visRange, 0, 6.28); ctx.stroke();
+        // ----------------------
+        
+        // Индикатор заряда (ИСПРАВЛЕН startX -> ammoStartX)
         const cellSize = 12; const cellSpacing = 2;
         const ammoStartX = tx - (cellSize * 3 + cellSpacing * 2) / 2;
         const ammoStartY = ty - (cellSize * 3 + cellSpacing * 2) / 2;
@@ -1725,7 +1724,7 @@ function draw() {
         });
     }
     
-    // 5. Пули, Еда, Лут (Массовая отрисовка)
+    // 5. Пули, Еда, Лут
     ctx.fillStyle = 'yellow'; 
     entities.bullets.forEach(b => { 
         if(!b.isBossBullet) { ctx.beginPath(); ctx.arc(b.x | 0, b.y | 0, 10, 0, 6.28); ctx.fill(); } 
