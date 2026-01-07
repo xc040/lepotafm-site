@@ -283,8 +283,8 @@ const Grid = {
         const cy = (y / this.size) | 0;
         let res = [];
         // Проверяем 9 клеток вокруг (3x3)
-        for (let i = -3; i <= 3; i++) {
-            for (let j = -3; j <= 3; j++) {
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
                 const key = (cx + i) + "," + (cy + j);
                 if (this.cells[key]) {
                     const arr = this.cells[key];
@@ -860,6 +860,14 @@ function buyUpgrade(type, cost) {
         const turretCount = entities.turrets.filter(t => 
             Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
         ).length;
+
+        // --- ВСТАВКА: ЛИМИТ 2 ТУРЕЛИ НА БАЗУ ---
+        if (turretCount >= 2) { 
+            score += cost; // Возвращаем деньги
+            return; 
+        }
+        // ---------------------------------------
+
         const angle = (turretCount / 8) * 6.28; // 8 турелей вокруг базы
         const dist = 165;
         const turretX = nearestBase.x + Math.cos(angle) * dist;
@@ -893,6 +901,10 @@ function buyUpgrade(type, cost) {
         }
         if(lives > 0) saveProgress();
     } else if (type === 'drone') {
+        // --- ВСТАВКА: ЛИМИТ 4 ДРОНА ---
+        if (entities.drones.length >= 4) return;
+        // ------------------------------
+        
         score -= cost;
         entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40, collisions: 0 });
         if(lives > 0) saveProgress();
@@ -1542,15 +1554,21 @@ function draw() {
         ctx.shadowBlur = 0;
     }
     
-   // Радиусы турелей (привязаны к каждой турели)
-    entities.turrets.forEach(t => {
-        let range = 667 * (1 + (t.rangeBonus || 0));
-        ctx.strokeStyle = t.type === 'laser' ? 'rgba(188, 19, 254, 0.3)' : 'rgba(0, 243, 255, 0.3)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([10, 10]);
-        ctx.beginPath(); 
-        ctx.arc(t.x | 0, t.y | 0, range, 0, 6.28); 
-        ctx.stroke();
+    // Радиусы турелей
+    const turretsAtMainBase = entities.turrets.filter(t => 
+        ((t.x-bx)*(t.x-bx) + (t.y-by)*(t.y-by)) < 40000
+    );
+    const mainBaseRanges = new Set();
+    turretsAtMainBase.forEach(t => {
+        let range = t.type === 'laser' ? 667 : 667; 
+        range = range * (1 + (t.rangeBonus || 0));
+        mainBaseRanges.add(range | 0);
+    });
+    
+    mainBaseRanges.forEach(range => {
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath(); ctx.arc(bx, by, range, 0, 6.28); ctx.stroke();
     });
     ctx.setLineDash([]); 
     
