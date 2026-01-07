@@ -131,5 +131,10 @@
         </div>
     </div>
     <script src="main.js"></script>
+<!-- Оверлей для запуска игры (отдельное окно поверх всего, но под хедером) -->
+    <div id="game-overlay" class="overlay-window hidden">
+        <button class="close-overlay-btn" onclick="closeOverlayGame()">✕ ЗАКРЫТЬ</button>
+        <iframe id="overlay-frame" src=""></iframe>
+    </div>
 </body>
 </html>
