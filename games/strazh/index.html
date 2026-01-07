@@ -101,7 +101,15 @@
         .shop-item.purchased {
             animation: purchasePulse 0.6s ease-out;
         }
-        @keyframes purchasePulse {
+        /* --- ВСТАВКА: СТИЛЬ ОТКЛЮЧЕННОЙ КНОПКИ --- */
+        .shop-item.disabled {
+            opacity: 0.3;              /* Полупрозрачность */
+            filter: grayscale(100%);   /* Серый цвет */
+            pointer-events: none;      /* Кнопка не нажимается */
+            border-color: #333;
+        }
+        /* ----------------------------------------- */
+@keyframes purchasePulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); background: rgba(57, 255, 20, 0.3); border-color: var(--neon-green); }
             100% { transform: scale(1); }
@@ -841,106 +849,86 @@ function buyUpgrade(type, cost) {
         }
     });
     
+// --- ПОЛНАЯ ЗАМЕНА БЛОКОВ ПОКУПКИ (FIX ERROR) ---
     if (type === 'turret') {
-        score -= cost;
-        
-        // Находим ближайшую базу к змею
-        let nearestBase = BASE_POS;
-        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
-        
-        entities.playerBases.forEach(base => {
-            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestBase = base;
-            }
-        });
-        
-        // Размещаем турель равномерно вокруг ближайшей базы
-        // 1. Проверяем лимит именно ПУШЕК (макс 2)
-        const boltCount = entities.turrets.filter(t => 
-            t.type === 'bolt' && Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
-        ).length;
-
-        if (boltCount >= 2) { 
-            score += cost; return; // Возврат денег, если пушек уже 2
-        }
-
-        // 2. Считаем ОБЩЕЕ кол-во башен для красивой расстановки (чтобы не накладывались)
-        const totalCount = entities.turrets.filter(t => 
-            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
-        ).length;
-
-        const angle = (totalCount / 8) * 6.28;
-        const dist = 165;
-        const turretX = nearestBase.x + Math.cos(angle) * dist;
-        const turretY = nearestBase.y + Math.sin(angle) * dist;
-        
-        entities.turrets.push({ 
-            x: turretX, 
-            y: turretY, 
-            type: 'bolt', 
-            lastShot: 0,
-            currentAmmo: 9, // Индивидуальный заряд турели
-            maxAmmo: 9, // Максимальный заряд турели
-            ammoBonus: 0,
-            ammoUpgraded: false,
-            baseX: nearestBase.x,
-            baseY: nearestBase.y,
-            fireRateBonus: 0, // Бонус к скорострельности
-            rangeBonus: 0 // Бонус к дальности
-        });
-        
-        // Сохраняем прогресс при покупке турели (если игрок не погиб)
-        if(lives > 0) saveProgress();
-    } else if (type === 'laser') {
-        // --- НОВАЯ ЛОГИКА: СТАВИМ НОВЫЙ ЛАЗЕР, А НЕ МЕНЯЕМ ПУШКУ ---
-        score -= cost;
-        
         // 1. Находим базу
         let nearestBase = BASE_POS;
         let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
         entities.playerBases.forEach(base => {
-            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
-            if (dist < minDist) { minDist = dist; nearestBase = base; }
+            const d = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (d < minDist) { minDist = d; nearestBase = base; }
         });
 
-       // 1. Проверяем лимит именно ЛАЗЕРОВ (макс 2)
+        // 2. Считаем ТОЛЬКО ПУШКИ (лимит 2)
+        const boltCount = entities.turrets.filter(t => 
+            t.type === 'bolt' && Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        ).length;
+
+        if (boltCount >= 2) return; // Лимит достигнут, ничего не делаем
+        if (score < cost) return;   // Нет денег
+
+        score -= cost; // Списываем деньги ТОЛЬКО ТУТ
+
+        // 3. Считаем ОБЩЕЕ кол-во для угла
+        const totalCount = entities.turrets.filter(t => 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        ).length;
+        const angle = (totalCount / 8) * 6.28;
+
+        entities.turrets.push({ 
+            x: nearestBase.x + Math.cos(angle) * 165, 
+            y: nearestBase.y + Math.sin(angle) * 165, 
+            type: 'bolt', lastShot: 0, currentAmmo: 9, maxAmmo: 9,
+            ammoBonus: 0, ammoUpgraded: false, baseX: nearestBase.x, baseY: nearestBase.y,
+            fireRateBonus: 0, rangeBonus: 0
+        });
+        if(lives > 0) saveProgress();
+
+    } else if (type === 'laser') {
+        // 1. Находим базу
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        entities.playerBases.forEach(base => {
+            const d = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (d < minDist) { minDist = d; nearestBase = base; }
+        });
+
+        // 2. Считаем ТОЛЬКО ЛАЗЕРЫ (лимит 2)
         const laserCount = entities.turrets.filter(t => 
             t.type === 'laser' && Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
         ).length;
 
-        if (laserCount >= 2) { 
-            score += cost; return; // Возврат денег, если лазеров уже 2
-        }
+        if (laserCount >= 2) return; // Лимит
+        if (score < cost) return;    // Деньги
 
-        // 2. Считаем ОБЩЕЕ кол-во башен для расстановки
+        score -= cost;
+
+        // 3. Считаем ОБЩЕЕ кол-во для угла
         const totalCount = entities.turrets.filter(t => 
             Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
         ).length;
-
         const angle = (totalCount / 8) * 6.28;
-        const angle = (turretCount / 8) * 6.28;
-        const dist = 165;
-        
-        // 3. Создаем лазер
-        entities.turrets.push({ 
-            x: nearestBase.x + Math.cos(angle) * dist, 
-            y: nearestBase.y + Math.sin(angle) * dist, 
-            type: 'laser', 
-            lastShot: 0,
-            currentAmmo: 9,
-            maxAmmo: 9,
-            ammoBonus: 0,
-            ammoUpgraded: false,
-            baseX: nearestBase.x,
-            baseY: nearestBase.y,
-            fireRateBonus: 0,
-            rangeBonus: 0
-        });
 
+        entities.turrets.push({ 
+            x: nearestBase.x + Math.cos(angle) * 165, 
+            y: nearestBase.y + Math.sin(angle) * 165, 
+            type: 'laser', lastShot: 0, currentAmmo: 9, maxAmmo: 9,
+            ammoBonus: 0, ammoUpgraded: false, baseX: nearestBase.x, baseY: nearestBase.y,
+            fireRateBonus: 0, rangeBonus: 0
+        });
         if(lives > 0) saveProgress();
+
     } else if (type === 'drone') {
+        // Лимит 4 дрона
+        if (entities.drones.length >= 4) return;
+        if (score < cost) return;
+
+        score -= cost;
+        entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40, collisions: 0 });
+        if(lives > 0) saveProgress();
+    }
+    // -----------------------------------------------------
+ else if (type === 'drone') {
         score -= cost;
         entities.drones.push({ angle: Math.random()*6.28, dist: 140 + Math.random()*40, collisions: 0 });
         if(lives > 0) saveProgress();
@@ -1176,6 +1164,49 @@ function updateUI() {
         playTimeElement.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
+// --- ВСТАВКА: УПРАВЛЕНИЕ КНОПКАМИ МАГАЗИНА ---
+    // Находим базу рядом со змеей для проверки лимитов
+    let myBase = BASE_POS;
+    let minD = Infinity;
+    if (entities.playerBases) {
+        entities.playerBases.forEach(b => {
+            const d = (snake.x - b.x)**2 + (snake.y - b.y)**2;
+            if (d < minD) { minD = d; myBase = b; }
+        });
+    }
+    
+    // Считаем текущие постройки у этой базы
+    const curBolts = entities.turrets.filter(t => t.type === 'bolt' && ((t.x-myBase.x)**2 + (t.y-myBase.y)**2) < 40000).length;
+    const curLasers = entities.turrets.filter(t => t.type === 'laser' && ((t.x-myBase.x)**2 + (t.y-myBase.y)**2) < 40000).length;
+    const curDrones = entities.drones.length;
+
+    // Проходимся по всем кнопкам и отключаем ненужные
+    const items = document.querySelectorAll('.shop-item');
+    items.forEach(item => {
+        const onclick = item.getAttribute('onclick') || "";
+        let isDis = false;
+        
+        // Парсим цену и тип из onclick (костыль, но работает с текущим HTML)
+        let cost = 0;
+        if (onclick.includes('120') && onclick.includes('turret')) { cost = 120; if(curBolts >= 2) isDis = true; }
+        else if (onclick.includes('300') && onclick.includes('laser')) { cost = 300; if(curLasers >= 2) isDis = true; }
+        else if (onclick.includes('200') && onclick.includes('drone')) { cost = 200; if(curDrones >= 4) isDis = true; }
+        // Добавьте сюда остальные цены если нужно (ремонт, база и т.д.)
+        else if (onclick.includes('250')) cost = 250;
+        else if (onclick.includes('1000')) cost = 1000;
+        else if (onclick.includes('80')) cost = 80;
+        else if (onclick.includes('100')) cost = 100;
+        else if (onclick.includes('150')) cost = 150;
+        else if (onclick.includes('60')) cost = 60;
+        else if (onclick.includes('90')) cost = 90;
+        
+        if (score < cost) isDis = true; // Нет денег
+
+        if (isDis) item.classList.add('disabled');
+        else item.classList.remove('disabled');
+    });
+    // ---------------------------------------------
+
     // Управление звуком шума эфира
     if (typeof updateEtherNoise === "function") updateEtherNoise();
     
