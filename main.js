@@ -307,4 +307,24 @@ function renderHistory(history) {
 function fixUrl(url) {
     if (!url || url.indexOf('generic') !== -1) return CONFIG.defaultImage;
     return url.replace('http:', 'https:');
+
+// === ЛОГИКА ПОД-ВКЛАДОК (Студия и Эфир) ===
+window.openSubTab = function(parentId, subTabId, btnElement) {
+    // 1. Находим родительский контейнер (studio или ether)
+    var parent = document.getElementById(parentId);
+    if(!parent) return;
+
+    // 2. Убираем активность у всех кнопок и панелей ВНУТРИ этого родителя
+    var buttons = parent.querySelectorAll('.sub-tab-btn');
+    var panes = parent.querySelectorAll('.sub-pane');
+
+    for(var i=0; i<buttons.length; i++) buttons[i].classList.remove('active');
+    for(var j=0; j<panes.length; j++) panes[j].classList.remove('active');
+
+    // 3. Активируем нужные
+    var target = document.getElementById(subTabId);
+    if(target) target.classList.add('active');
+    if(btnElement) btnElement.classList.add('active');
+};
+
 }
