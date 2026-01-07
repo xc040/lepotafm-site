@@ -891,14 +891,44 @@ function buyUpgrade(type, cost) {
         // Сохраняем прогресс при покупке турели (если игрок не погиб)
         if(lives > 0) saveProgress();
     } else if (type === 'laser') {
-        let t = entities.turrets.find(t => t.type === 'bolt');
-        if (t) { 
-            score -= cost; 
-            t.type = 'laser'; 
-            // Сбрасываем боезапас лазера на 9 выстрелов при преобразовании
-            t.currentAmmo = 9;
-            t.maxAmmo = 9;
-        }
+        // --- НОВАЯ ЛОГИКА: СТАВИМ НОВЫЙ ЛАЗЕР, А НЕ МЕНЯЕМ ПУШКУ ---
+        score -= cost;
+        
+        // 1. Находим базу
+        let nearestBase = BASE_POS;
+        let minDist = Math.hypot(snake.x - BASE_POS.x, snake.y - BASE_POS.y);
+        entities.playerBases.forEach(base => {
+            const dist = Math.hypot(snake.x - base.x, snake.y - base.y);
+            if (dist < minDist) { minDist = dist; nearestBase = base; }
+        });
+
+        // 2. Считаем сколько уже башен (чтобы знать угол)
+        const turretCount = entities.turrets.filter(t => 
+            Math.hypot(t.x - nearestBase.x, t.y - nearestBase.y) < 200
+        ).length;
+
+        // ЕСЛИ НУЖЕН ЛИМИТ (раскомментируй если надо):
+        // if (turretCount >= 2) { score += cost; return; }
+
+        const angle = (turretCount / 8) * 6.28;
+        const dist = 165;
+        
+        // 3. Создаем лазер
+        entities.turrets.push({ 
+            x: nearestBase.x + Math.cos(angle) * dist, 
+            y: nearestBase.y + Math.sin(angle) * dist, 
+            type: 'laser', 
+            lastShot: 0,
+            currentAmmo: 9,
+            maxAmmo: 9,
+            ammoBonus: 0,
+            ammoUpgraded: false,
+            baseX: nearestBase.x,
+            baseY: nearestBase.y,
+            fireRateBonus: 0,
+            rangeBonus: 0
+        });
+
         if(lives > 0) saveProgress();
     } else if (type === 'drone') {
         // --- ВСТАВКА: ЛИМИТ 4 ДРОНА ---
@@ -1554,23 +1584,7 @@ function draw() {
         ctx.shadowBlur = 0;
     }
     
-    // Радиусы турелей
-    const turretsAtMainBase = entities.turrets.filter(t => 
-        ((t.x-bx)*(t.x-bx) + (t.y-by)*(t.y-by)) < 40000
-    );
-    const mainBaseRanges = new Set();
-    turretsAtMainBase.forEach(t => {
-        let range = t.type === 'laser' ? 667 : 667; 
-        range = range * (1 + (t.rangeBonus || 0));
-        mainBaseRanges.add(range | 0);
-    });
-    
-    mainBaseRanges.forEach(range => {
-        ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)'; ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-        ctx.beginPath(); ctx.arc(bx, by, range, 0, 6.28); ctx.stroke();
-    });
-    ctx.setLineDash([]); 
+   
     
     // Доп. базы
     entities.playerBases.forEach(base => {
@@ -1602,10 +1616,13 @@ function draw() {
         ctx.restore();
     });
 
-    // 3. Турели
-    entities.turrets.forEach(t => {
-        const tx = t.x | 0;
-        const ty = t.y | 0;
+   // --- ВСТАВКА: ЧЕСТНЫЙ РАДИУС ВОКРУГ ТУРЕЛИ ---
+        let visRange = t.type === 'laser' ? 667 : 667; 
+        visRange = visRange * (1 + (t.rangeBonus || 0));
+        ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; // Слабая линия
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(tx, ty, visRange, 0, 6.28); ctx.stroke();
+        // ---------------------------------------------
         ctx.fillStyle = '#fff'; ctx.fillRect(tx-25, ty-25, 50, 50);
         
         let turretColor = t.type === 'laser' ? '#bc13fe' : '#00f3ff';
