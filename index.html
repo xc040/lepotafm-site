@@ -83,7 +83,34 @@
                     <button class="sub-tab-btn" onclick="openSubTab('studio', 's-price', this)">Цены</button>
                 </div>
                 <div class="sub-content-area">
-                    <div id="s-make" class="sub-pane active"><div class="placeholder-box">Раздел "Делать"</div></div>
+                    <div id="s-make" class="sub-pane active">
+                        <div class="studio-container">
+                            <!-- Кнопки выбора режима -->
+                            <div class="mode-switcher">
+                                <button class="mode-btn" onclick="setAiMode('chat', this)">Слова</button>
+                                <button class="mode-btn active" onclick="setAiMode('code', this)">Код</button>
+                                <button class="mode-btn" onclick="setAiMode('part', this)">Частями</button>
+                                <button class="mode-btn" onclick="setAiMode('analyze', this)">Анализ</button>
+                            </div>
+
+                            <!-- Поле ввода -->
+                            <textarea id="ai-prompt" class="neon-input" placeholder="Опиши игру или задачу..."></textarea>
+                            
+                            <!-- Кнопка запуска -->
+                            <button id="ai-submit-btn" class="action-btn full-width" onclick="startGeneration()">
+                                <i class="fas fa-microchip"></i> СГЕНЕРИРОВАТЬ
+                            </button>
+                            
+                            <!-- Статус и Результат -->
+                            <div id="ai-status" class="status-line">Готов к работе</div>
+                            
+                            <div id="ai-result-container" class="result-area hidden">
+                                <!-- Сюда встанет iframe или текст -->
+                                <iframe id="generated-frame" frameborder="0"></iframe>
+                                <div id="text-output" class="text-scrollable hidden"></div>
+                            </div>
+                        </div>
+                    </div>
                     <div id="s-ver" class="sub-pane"><div class="placeholder-box">Раздел "Версия"</div></div>
                     <div id="s-proj" class="sub-pane"><div class="placeholder-box">Раздел "Проект"</div></div>
                     <div id="s-price" class="sub-pane"><div class="placeholder-box">Раздел "Цены"</div></div>
@@ -131,10 +158,5 @@
         </div>
     </div>
     <script src="main.js"></script>
-<!-- Оверлей для запуска игры (отдельное окно поверх всего, но под хедером) -->
-    <div id="game-overlay" class="overlay-window hidden">
-        <button class="close-overlay-btn" onclick="closeOverlayGame()">✕ ЗАКРЫТЬ</button>
-        <iframe id="overlay-frame" src=""></iframe>
-    </div>
 </body>
 </html>
