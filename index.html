@@ -84,6 +84,11 @@
                 </div>
                 <div class="sub-content-area">
                     <div id="s-make" class="sub-pane active">
+<!-- Панель пользователя и Проекта -->
+                        <div id="user-panel" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:5px 10px; border-radius:8px;">
+                            <div id="user-status" style="font-size:12px; color:#aaa;">Гость</div>
+                            <input type="text" id="project-name" class="neon-input" placeholder="Имя папки" value="MyGame" style="height:30px; width:120px; margin:0; border:none; background:transparent; text-align:right;">
+                        </div>
                         <div class="studio-container">
                             <!-- Кнопки выбора режима -->
                             <div class="mode-switcher">
@@ -155,6 +160,25 @@
             <div class="modal-actions">
                 <a href="https://t.me/lepotafm" target="_blank" class="action-btn tg">Написать</a>
             </div>
+        </div>
+    </div>
+<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+    <div id="auth-modal" class="modal hidden" style="z-index: 3000;">
+        <div class="modal-content">
+            <h2 style="color:var(--neon-blue); margin-top:0;">ВХОД</h2>
+            <p style="font-size:12px; color:#aaa; margin-bottom:15px;">
+                Халявные генерации закончились.<br>Войди или создай аккаунт.
+            </p>
+            
+            <input type="text" id="auth-login" class="neon-input" placeholder="Логин (лат. буквы)" style="height:40px; margin-bottom:10px;">
+            <input type="password" id="auth-pass" class="neon-input" placeholder="Пароль" style="height:40px; margin-bottom:20px;">
+            
+            <div style="display:flex; gap:10px;">
+                <button class="action-btn" style="flex:1; background:#222; border:1px solid #444;" onclick="doAuth('login')">ВОЙТИ</button>
+                <button class="action-btn" style="flex:1;" onclick="doAuth('register')">СОЗДАТЬ</button>
+            </div>
+            <p id="auth-msg" style="color:#ff4444; font-size:12px; margin-top:10px; min-height:15px;"></p>
+            <button onclick="document.getElementById('auth-modal').classList.add('hidden')" style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Закрыть</button>
         </div>
     </div>
     <script src="main.js"></script>
