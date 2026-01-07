@@ -1186,17 +1186,29 @@ function updateUI() {
         const onclick = item.getAttribute('onclick') || "";
         let isDis = false;
         
-        let cost = 0;
+     let cost = 0;
+        // Покупки юнитов
         if (onclick.includes('120') && onclick.includes('turret')) { cost = 120; if(curBolts >= 2) isDis = true; }
         else if (onclick.includes('300') && onclick.includes('laser')) { cost = 300; if(curLasers >= 2) isDis = true; }
         else if (onclick.includes('200') && onclick.includes('drone')) { cost = 200; if(curDrones >= 4) isDis = true; }
+        
+        // АПГРЕЙДЫ ПУШКИ (Блокируем, если нет пушек)
+        else if (onclick.includes('bolt')) {
+            if (curBolts === 0) isDis = true;
+            if (onclick.includes('80')) cost = 80;
+            if (onclick.includes('100')) cost = 100;
+            if (onclick.includes('60')) cost = 60;
+        }
+        // АПГРЕЙДЫ ЛАЗЕРА (Блокируем, если нет лазеров)
+        else if (onclick.includes('laser')) {
+            if (curLasers === 0) isDis = true;
+            if (onclick.includes('120')) cost = 120;
+            if (onclick.includes('150')) cost = 150;
+            if (onclick.includes('90')) cost = 90;
+        }
+        // Остальное
         else if (onclick.includes('250')) cost = 250;
         else if (onclick.includes('1000')) cost = 1000;
-        else if (onclick.includes('80')) cost = 80;
-        else if (onclick.includes('100')) cost = 100;
-        else if (onclick.includes('150')) cost = 150;
-        else if (onclick.includes('60')) cost = 60;
-        else if (onclick.includes('90')) cost = 90;
         
         if (score < cost) isDis = true; // Нет денег
 
@@ -1250,7 +1262,7 @@ function update() {
     // 2.1. Пополнение боезапаса
     const snakeBase = findNearestBase(snake.x, snake.y);
     const dxBase = snake.x - snakeBase.x; const dyBase = snake.y - snakeBase.y;
-    if((dxBase*dxBase + dyBase*dyBase) < 2500 && snake.length > 15) {
+    if((dxBase*dxBase + dyBase*dyBase) < 2500 && snake.length > 1) {
         const nearbyTurrets = entities.turrets.filter(t => ((t.x-snakeBase.x)**2 + (t.y-snakeBase.y)**2) < 40000);
         const nearbyDrones = entities.drones.filter(d => ((d.x-snakeBase.x)**2 + (d.y-snakeBase.y)**2) < 40000);
         
@@ -1286,7 +1298,8 @@ function update() {
                     for(let k=0; k<neighbors.length; k++) {
                         const en = neighbors[k];
                         if (en.type === 'box' && !en._dead) {
-                            const dSq = (t.x-en.x)**2 + (t.y-en.y)**2;
+                            // ИЗМЕНЕНО: Считаем дистанцию от ЦЕНТРА БАЗЫ (baseX), а не от турели
+                            const dSq = (t.baseX-en.x)**2 + (t.baseY-en.y)**2;
                             if (dSq < rangeSq && dSq < minDistSq) { minDistSq = dSq; target = en; }
                         }
                     }
@@ -1304,7 +1317,8 @@ function update() {
                     for(let k=0; k<neighbors.length; k++) {
                         const en = neighbors[k];
                         if (en.type === 'tri' && !en._dead) {
-                            const dSq = (t.x-en.x)**2 + (t.y-en.y)**2;
+                            // ИЗМЕНЕНО: Считаем дистанцию от ЦЕНТРА БАЗЫ (baseX)
+                            const dSq = (t.baseX-en.x)**2 + (t.baseY-en.y)**2;
                             if (dSq < rangeSq && dSq < minDistSq) { minDistSq = dSq; target = en; }
                         }
                     }
