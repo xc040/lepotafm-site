@@ -839,7 +839,8 @@ function buyUpgrade(type, cost) {
     // Добавляем анимацию кнопки покупки
     const shopItems = document.querySelectorAll('.shop-item');
     shopItems.forEach(item => {
-        if (item.getAttribute('onclick').includes(type)) {
+        // ИЗМЕНЕНО: Ищем type в кавычках ("'" + type + "'"), чтобы 'laser' не путался с 'ammo-laser'
+        if (item.getAttribute('onclick').includes("'" + type + "'")) {
             // Убираем предыдущий класс если есть
             item.classList.remove('purchased');
             // Принудительно перезапускаем анимацию
@@ -1682,12 +1683,13 @@ function draw() {
             ctx.strokeRect(tx-27, ty-27, 54, 54);
         }
         
-        // --- ЧЕСТНЫЙ РАДИУС ---
+        // --- ЧЕСТНЫЙ РАДИУС (ОТ БАЗЫ) ---
         let visRange = t.type === 'laser' ? 667 : 667; 
         visRange = visRange * (1 + (t.rangeBonus || 0));
         ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; 
         ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(tx, ty, visRange, 0, 6.28); ctx.stroke();
+        // ИЗМЕНЕНО: tx, ty -> t.baseX, t.baseY
+        ctx.beginPath(); ctx.arc(t.baseX, t.baseY, visRange, 0, 6.28); ctx.stroke();
         // ----------------------
         
         // Индикатор заряда (ИСПРАВЛЕН startX -> ammoStartX)
