@@ -328,214 +328,76 @@ window.openSubTab = function(parentId, subTabId, btnElement) {
 };
 
 }
-// === ЛОГИКА СТУДИИ (ГЕНЕРАТОР ИГР) ===
+// === ЛОГИКА AI СТУДИИ ===
+var currentAiMode = 'code'; // По умолчанию режим КОД
 
-// Состояние студии
-var studioState = {
-    mode: 'code',      // code, part, analyze
-    currentUrl: '',    // Ссылка на текущий сгенерированный файл
-    currentProject: 'Default', // Текущий проект
-    projects: {}       // Структура: { "ProjectName": ["path1.html", "path2.html"] }
-};
-
-// Загрузка данных при старте
-function loadStudioData() {
-    var data = localStorage.getItem('studioProjects');
-    if (data) {
-        studioState.projects = JSON.parse(data);
-    } else {
-        studioState.projects = { "Default": [] };
-    }
-}
-loadStudioData(); // Вызываем сразу
-
-// 1. ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ
-window.setMode = function(mode, btn) {
-    studioState.mode = mode;
+window.setAiMode = function(mode, btn) {
+    currentAiMode = mode;
     
-    // Обновляем UI кнопок
-    var btns = document.querySelectorAll('.mode-btn');
+    // Обновляем вид кнопок
+    var container = document.querySelector('.mode-switcher');
+    var btns = container.querySelectorAll('.mode-btn');
     btns.forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    
-    // Меняем плейсхолдер
-    var area = document.getElementById('studio-prompt');
-    if(mode === 'code') area.placeholder = "Новая игра (Пример: Змейка)...";
-    if(mode === 'part') area.placeholder = "Что изменить? (Пример: Сделай фон красным)...";
-    if(mode === 'analyze') area.placeholder = "Что проверить?...";
+
+    // Меняем подсказку в поле ввода
+    var input = document.getElementById('ai-prompt');
+    if(mode === 'chat') input.placeholder = "Спроси что-нибудь или попроси идею...";
+    if(mode === 'code') input.placeholder = "Опиши игру (Змейка, Тетрис, Гонки)...";
+    if(mode === 'part') input.placeholder = "Опиши функцию или часть кода (например: логика прыжка)...";
+    if(mode === 'analyze') input.placeholder = "Вставь код для поиска ошибок или улучшения...";
 };
 
-// 2. ГЕНЕРАЦИЯ
 window.startGeneration = function() {
-    var prompt = document.getElementById('studio-prompt').value;
-    var status = document.getElementById('gen-status');
-    
-    if (!prompt) { status.innerText = "Введите текст!"; return; }
-    
-    // Если режим "Часть", проверяем, есть ли что менять
-    if (studioState.mode === 'part' && !studioState.currentUrl) {
-        status.innerText = "Сначала создайте игру, чтобы менять её!";
-        return;
-    }
+    var promptText = document.getElementById('ai-prompt').value;
+    var btn = document.getElementById('ai-submit-btn');
+    var status = document.getElementById('ai-status');
+    var resultArea = document.getElementById('ai-result-container');
+    var frame = document.getElementById('generated-frame');
+    var textArea = document.getElementById('text-output');
 
-    // UI: Блокируем
-    document.getElementById('studio-gen-btn').disabled = true;
-    status.innerText = "Думаю... (это займет время)";
-    status.style.color = "#00f3ff";
+    if (!promptText.trim()) return;
 
-    // Готовим данные
+    // UI: Блокировка
+    btn.disabled = true;
+    status.innerText = "СВЯЗЬ С НЕЙРОСЕТЬЮ... РЕЖИМ: " + currentAiMode.toUpperCase();
+    resultArea.classList.remove('hidden');
+    
+    // Очистка перед новым запуском
+    frame.style.display = 'none';
+    textArea.style.display = 'none';
+    frame.src = 'about:blank';
+    textArea.innerText = '';
+
     var formData = new FormData();
-    formData.append('text', prompt);
-    formData.append('mode', studioState.mode);
-    if (studioState.mode === 'part') {
-        formData.append('prevUrl', studioState.currentUrl);
-    }
+    formData.append('text', promptText);
+    formData.append('mode', currentAiMode); // ОТПРАВЛЯЕМ РЕЖИМ
 
     fetch('maker.php', { method: 'POST', body: formData })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-            if (data.success) {
-                // УСПЕХ
-                status.innerText = "ГОТОВО!";
-                status.style.color = "#00ff00";
-                
-                // 1. Показываем результат
-                document.getElementById('studio-result-grid').classList.remove('hidden');
-                
-                // 2. Загружаем в превью
-                var preview = document.getElementById('mini-preview');
-                preview.src = data.url;
-                
-                // 3. Сохраняем во временное состояние
-                studioState.currentUrl = data.url;
-                document.getElementById('current-file-name').innerText = data.url.split('/').pop();
-                
-                // 4. Автоматически добавляем в текущий проект
-                addFileToProject(studioState.currentProject, data.url);
-                
-                // 5. Очищаем поле, если это была правка
-                if(studioState.mode === 'part') document.getElementById('studio-prompt').value = "";
-                
-            } else {
-                status.innerText = "Ошибка: " + data.error;
-                status.style.color = "red";
-            }
-        })
-        .catch(function(err) {
-            status.innerText = "Сбой сети";
-            console.error(err);
-        })
-        .finally(function() {
-            document.getElementById('studio-gen-btn').disabled = false;
-        });
-};
-
-// 3. ЗАПУСК (Ракета)
-window.launchOverlayGame = function() {
-    if (!studioState.currentUrl) return;
-    
-    var overlay = document.getElementById('game-overlay');
-    var frame = document.getElementById('overlay-frame');
-    
-    frame.src = studioState.currentUrl;
-    overlay.classList.remove('hidden');
-};
-
-window.closeOverlayGame = function() {
-    var overlay = document.getElementById('game-overlay');
-    var frame = document.getElementById('overlay-frame');
-    
-    overlay.classList.add('hidden');
-    frame.src = ""; // Остановить игру
-};
-
-// 4. УПРАВЛЕНИЕ ПРОЕКТАМИ
-function addFileToProject(projectName, url) {
-    if (!studioState.projects[projectName]) {
-        studioState.projects[projectName] = [];
-    }
-    // Добавляем в начало (самая новая версия первая)
-    studioState.projects[projectName].unshift(url);
-    saveProjects();
-}
-
-function saveProjects() {
-    localStorage.setItem('studioProjects', JSON.stringify(studioState.projects));
-}
-
-window.createNewProject = function() {
-    var name = document.getElementById('new-project-name').value;
-    if (name && !studioState.projects[name]) {
-        studioState.projects[name] = [];
-        studioState.currentProject = name;
-        saveProjects();
-        updateProjectsList();
-        alert('Проект ' + name + ' создан и выбран!');
-    }
-};
-
-window.saveToProject = function() {
-    alert('Сохранено в проект: ' + studioState.currentProject);
-};
-
-// 5. СПИСКИ (Версии и Проекты)
-
-// Рендер списка проектов
-window.updateProjectsList = function() {
-    var container = document.getElementById('projects-list');
-    container.innerHTML = "";
-    
-    Object.keys(studioState.projects).forEach(function(key) {
-        var div = document.createElement('div');
-        div.className = "list-item";
-        if (key === studioState.currentProject) div.classList.add('active');
-        
-        div.innerHTML = `<span>${key}</span> <small style='color:#666'>${studioState.projects[key].length} версий</small>`;
-        div.onclick = function() {
-            studioState.currentProject = key;
-            updateProjectsList();
-            // Если в проекте есть файлы, загружаем последний в превью
-            if (studioState.projects[key].length > 0) {
-                var lastFile = studioState.projects[key][0];
-                studioState.currentUrl = lastFile;
-                document.getElementById('studio-result-grid').classList.remove('hidden');
-                document.getElementById('mini-preview').src = lastFile;
-                document.getElementById('current-file-name').innerText = lastFile.split('/').pop();
-            }
-        };
-        container.appendChild(div);
-    });
-};
-
-// Рендер списка версий (Текущего проекта)
-window.updateVersionsList = function() {
-    var container = document.getElementById('versions-list');
-    container.innerHTML = "<div style='padding:10px; color:#666'>Проект: " + studioState.currentProject + "</div>";
-    
-    var files = studioState.projects[studioState.currentProject] || [];
-    
-    if (files.length === 0) {
-        container.innerHTML += "<div style='padding:15px'>Нет версий</div>";
-        return;
-    }
-    
-    files.forEach(function(url, index) {
-        var div = document.createElement('div');
-        div.className = "list-item";
-        var fileName = url.split('/').pop();
-        // Красивое имя: Версия X (game_timestamp)
-        div.innerHTML = `<span style="color:#00f3ff">v.${files.length - index}</span> <span style="font-size:10px; color:#888">${fileName}</span>`;
-        
-        div.onclick = function() {
-            // Загрузка старой версии
-            studioState.currentUrl = url;
-            document.getElementById('studio-result-grid').classList.remove('hidden');
-            document.getElementById('mini-preview').src = url;
-            document.getElementById('current-file-name').innerText = fileName;
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        if (data.success) {
+            status.innerText = "ГОТОВО!";
             
-            // Возвращаемся в Make
-            openSubTab('studio', 's-make');
-        };
-        container.appendChild(div);
+            // Если это игра (ссылка на файл)
+            if (data.type === 'file') {
+                frame.style.display = 'block';
+                frame.src = data.url; // Загружаем игру
+            } 
+            // Если это текст (чат или анализ)
+            else {
+                textArea.style.display = 'block';
+                textArea.innerText = data.content;
+            }
+        } else {
+            status.innerText = "ОШИБКА: " + data.error;
+        }
+    })
+    .catch(function(err) {
+        status.innerText = "СБОЙ СЕТИ";
+        console.error(err);
+    })
+    .finally(function() {
+        btn.disabled = false;
     });
 };
