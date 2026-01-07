@@ -391,7 +391,11 @@ function resize() {
 function toggleShop(show) {
     if(!started) return;
     document.getElementById('shop-modal').classList.toggle('hidden', !show);
-   if(show) {
+    if(show) {
+        // ОЧИСТКА ВСЕХ КНОПОК ОТ ПРЕДЫДУЩИХ НАЖАТИЙ
+        const items = document.querySelectorAll('.shop-item');
+        items.forEach(item => item.classList.remove('purchased'));
+window.shopOpenTime = Date.now(); // Запоминаем время открытия
         paused = true;
         cancelAnimationFrame(gameId);
         // ПОЛНЫЙ СБРОС ДВИЖЕНИЯ:
@@ -820,6 +824,8 @@ function updateMission() {
 
 /** --- МАГАЗИН И ОБНОВЛЕНИЕ UI --- */
 function buyUpgrade(type, cost) {
+    // ЗАЩИТА: если магазин открыт меньше 300мс назад, клик игнорируется
+    if (!window.shopOpenTime || Date.now() - window.shopOpenTime < 300) return;
     if (score < cost) return;
     
     // Добавляем анимацию кнопки покупки
