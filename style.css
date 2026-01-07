@@ -64,3 +64,42 @@ body { margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; backg
 .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #666; font-size: 24px; cursor: pointer; }
 #modal-art { width: 100%; aspect-ratio: 1/1; border-radius: 15px; object-fit: cover; margin-bottom: 15px; }
 .action-btn { display: block; padding: 12px; border-radius: 10px; background: #0088cc; color: white; text-decoration: none; font-weight: bold; border: 1px solid #444; }
+
+/* СТИЛИ ДЛЯ ПОД-ВКЛАДОК (SUB-TABS) */
+.sub-nav-bar {
+    display: flex;
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    overflow-x: auto;
+}
+.sub-tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #aaa;
+    padding: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+}
+.sub-tab-btn.active {
+    color: var(--neon-blue);
+    border-bottom: 2px solid var(--neon-blue);
+    background: rgba(0, 243, 255, 0.05);
+}
+.sub-content-area {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    height: calc(100% - 40px); /* Вычет высоты меню */
+}
+.sub-pane {
+    display: none;
+    height: 100%;
+}
+.sub-pane.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
