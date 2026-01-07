@@ -1,3 +1,24 @@
+/* 
+ * ==========================================================================
+ *  СТРАЖ ЭФИРА (Guardian of Ether) - Game Source Code
+ * ==========================================================================
+ * 
+ *  Copyright © 2025 LepotaFM Games. Все права защищены.
+ *  
+ *  Данный программный код, графика, игровые механики и аудиовизуальные 
+ *  элементы являются интеллектуальной собственностью автора.
+ *  
+ *  ЗАПРЕЩЕНО:
+ *  1. Копирование, распространение или продажа данного кода (полностью или частично).
+ *  2. Модификация кода с целью создания производных коммерческих продуктов.
+ *  3. Использование ресурсов игры (спрайтов, звуков) в сторонних проектах 
+ *     без письменного разрешения правообладателя.
+ *  
+ *  Нарушение авторских прав преследуется по закону.
+ *  
+ * ==========================================================================
+ */
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -227,12 +248,27 @@
                 </div>
             </div>
             <div style="background:rgba(188,19,254,0.1); border:1px solid var(--neon-purple); padding:12px; border-radius:10px; margin-bottom:15px;">
-                <h3 style="color:var(--neon-purple); font-size:13px; margin:0 0 8px 0;">ХРОНИКИ ЭФИРА v2.9</h3>
-                <p style="font-size:10px; color:#aaa; margin:4px 0; line-height:1.4;">
-                    <strong style="color:var(--neon-red)">Осколки (Квадраты):</strong> Светло-красные, медленные. Уязвимы для Пушек.<br>
-                    <strong style="color:var(--neon-gold)">Векторы (Треугольники):</strong> Желтые, быстрые. Игнорируют пули, уничтожаются только Лазерами.<br>
-                    <span style="color:#888; font-size:9px;">2025 год. Эфир радиостанции LepotaFM — последний источник чистого сигнала в мире, поглощенном «Пустотой».</span>
-                </p>
+                <h3 style="color:var(--neon-green); font-size:13px; margin:0 0 8px 0; text-align:center;">РУКОВОДСТВО ПИЛОТА</h3>
+                <div style="font-size:10px; color:#ddd; line-height:1.4;">
+                    <div style="margin-bottom:6px;">
+                        <strong style="color:var(--neon-blue)">🌐 МИССИЯ:</strong> Защищай <strong>Ядро (Базу)</strong>. Турели тратят Эфир (синюю шкалу). Заряжай базу, касаясь её (тратит хвост).
+                    </div>
+                    <div style="margin-bottom:6px;">
+                        <strong style="color:var(--neon-green)">🐍 ЗМЕЙ:</strong> Хвост — это жизнь и патроны. Расти, поедая байты. Бей врагов головой, но береги бока!
+                    </div>
+                    <div style="margin-bottom:6px;">
+                        <strong style="color:var(--neon-red)">⚔️ ВРАГИ:</strong><br>
+                        🟥 <strong>Квадраты:</strong> Медленные. Уязвимы для <span style="color:var(--neon-blue)">ПУШЕК</span>.<br>
+                        ⚠️ <strong>Треугольники:</strong> Быстрые. Уязвимы только для <span style="color:var(--neon-purple)">ЛАЗЕРОВ</span>.
+                    </div>
+                    <div style="margin-bottom:6px;">
+                        <strong style="color:var(--neon-gold)">🏗️ СТРОЙКА:</strong> Ставится у ближайшей базы.<br>
+                        Лимит: 2 Пушки и 2 Лазера на базу. Дронов всего 4.
+                    </div>
+                    <div>
+                        <strong style="color:var(--neon-purple)">📻 РАДИО:</strong> Если шкала полная — воскрешение бесплатно.
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -241,6 +277,11 @@
     <div id="start-screen" class="overlay" style="z-index: 2000; pointer-events: auto;">
         <h1 style="color:var(--neon-blue); letter-spacing:5px; text-shadow: 0 0 20px var(--neon-blue); margin-bottom: 5px;">СТРАЖ ЭФИРА</h1>
         
+<div style="position: absolute; bottom: 40px; text-align: center; width: 100%; font-size: 10px; color: #444;">
+    &copy; 2025 LepotaFM. Все права защищены.<br>
+    Копирование запрещено.
+</div>
+
         <!-- СТАТИСТИКА ПОСЛЕ СМЕРТИ (скрыта при первом запуске) -->
         <div id="death-stats" class="hidden" style="text-align: center; margin-bottom: 20px;">
             <div style="color: #aaa; font-size: 14px;">УРОВЕНЬ: <span id="final-level" style="color: var(--neon-purple);">1</span></div>
@@ -259,7 +300,10 @@
             </div>
         </div>
 
-        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v3.7</div>
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #666; font-size: 12px; font-family: monospace;">v4.0</div>
+        <div style="position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 9px; color: #444; font-family: sans-serif; pointer-events: none;">
+            &copy; 2025 LepotaFM Games. Все права защищены. Копирование запрещено.
+        </div>
     </div>
 
 <script>
