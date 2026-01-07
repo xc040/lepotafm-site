@@ -41,15 +41,18 @@
             <nav class="tabs">
                 <button class="tab-btn active" onclick="openTab('home', this)">Игра</button>
                 <button class="tab-btn" onclick="openTab('catalog', this)">Каталог</button>
+                <button class="tab-btn" onclick="openTab('studio', this)">Студия</button>
                 <button class="tab-btn" onclick="openTab('ether', this)">Эфир</button>
-                <button class="tab-btn" onclick="openTab('menu', this)">Меню</button>
             </nav>
         </header>
 
         <main class="main-content">
+            <!-- Вкладка ИГРА (без изменений) -->
             <div id="home" class="tab-pane active full-height">
                 <iframe id="game-frame" src="games/snake/index.html" frameborder="0"></iframe>
             </div>
+
+            <!-- Вкладка КАТАЛОГ (без изменений) -->
             <div id="catalog" class="tab-pane scrollable-pad">
                 <div class="catalog-grid">
                     <div class="game-card" onclick="loadGame('games/snake/index.html')">
@@ -70,11 +73,49 @@
                     </div>
                 </div>
             </div>
-            <div id="ether" class="tab-pane scrollable-pad">
-                <div class="history-list" id="history-container"><div class="loading-msg">Загрузка...</div></div>
+
+            <!-- Вкладка СТУДИЯ (Новая структура с 4 под-вкладками) -->
+            <div id="studio" class="tab-pane full-height">
+                <div class="sub-nav-bar">
+                    <button class="sub-tab-btn active" onclick="openSubTab('studio', 's-make', this)">Делать</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('studio', 's-ver', this)">Версия</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('studio', 's-proj', this)">Проект</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('studio', 's-price', this)">Цены</button>
+                </div>
+                <div class="sub-content-area">
+                    <div id="s-make" class="sub-pane active"><div class="placeholder-box">Раздел "Делать"</div></div>
+                    <div id="s-ver" class="sub-pane"><div class="placeholder-box">Раздел "Версия"</div></div>
+                    <div id="s-proj" class="sub-pane"><div class="placeholder-box">Раздел "Проект"</div></div>
+                    <div id="s-price" class="sub-pane"><div class="placeholder-box">Раздел "Цены"</div></div>
+                </div>
             </div>
-            <div id="menu" class="tab-pane full-height">
-                <iframe src="menu/index.html" frameborder="0" style="width:100%; height:100%; border:none;"></iframe>
+
+            <!-- Вкладка ЭФИР (Новая структура с 4 под-вкладками) -->
+            <div id="ether" class="tab-pane full-height">
+                 <div class="sub-nav-bar">
+                    <button class="sub-tab-btn active" onclick="openSubTab('ether', 'e-hist', this)">История</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('ether', 'e-misc', this)">Разное</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('ether', 'e-shop', this)">Магазин</button>
+                    <button class="sub-tab-btn" onclick="openSubTab('ether', 'e-info', this)">Инфо</button>
+                </div>
+                <div class="sub-content-area scrollable-pad">
+                    <!-- Сюда перенесли историю (ID history-container важен для JS) -->
+                    <div id="e-hist" class="sub-pane active">
+                        <div class="history-list" id="history-container"><div class="loading-msg">Загрузка...</div></div>
+                    </div>
+                    <!-- Сюда перенесли разное (будильник, таймер) -->
+                    <div id="e-misc" class="sub-pane">
+                        <div class="placeholder-box">
+                            <h3>Будильник</h3>
+                            <p>Настройки будильника...</p>
+                            <hr style="border-color:#333; margin: 20px 0;">
+                            <h3>Таймер</h3>
+                            <p>Настройки таймера...</p>
+                        </div>
+                    </div>
+                    <div id="e-shop" class="sub-pane"><div class="placeholder-box">Магазин</div></div>
+                    <div id="e-info" class="sub-pane"><div class="placeholder-box">Информация</div></div>
+                </div>
             </div>
         </main>
     </div>
