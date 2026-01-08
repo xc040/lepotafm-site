@@ -1,5 +1,5 @@
 // === НАСТРОЙКИ СЕРВЕРА ===
-var SERVER_URL = "https://lepotafm.store";
+var SERVER_URL = "https://lepotafm.store:8080";
 
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
@@ -367,7 +367,7 @@ function checkSession() {
     var fd = new FormData();
     fd.append('action', 'check_session');
     
-    fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd })
+    fetch(SERVER_URL + '/auth.php', { method: 'POST', body: fd })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         var statusDiv = document.getElementById('user-status');
@@ -392,7 +392,7 @@ window.doAuth = function(action) {
     if (action === 'logout') {
         var fd = new FormData();
         fd.append('action', 'logout');
-        fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd }).then(function() {
+        fetch(SERVER_URL + '/auth.php', { method: 'POST', body: fd }).then(function() {
             checkSession();
         });
         return;
@@ -414,7 +414,7 @@ window.doAuth = function(action) {
 
     msg.innerText = "Загрузка...";
 
-    fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd })
+    fetch(SERVER_URL + '/auth.php', { method: 'POST', body: fd })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.status === 'success') {
@@ -465,7 +465,7 @@ window.startGeneration = function() {
     formData.append('device_id', deviceId);
     formData.append('project', project);
 
-    fetch('http://k96266d9.beget.tech/maker.php', { method: 'POST', body: formData })
+    fetch(SERVER_URL + '/maker.php', { method: 'POST', body: formData })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.success) {
