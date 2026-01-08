@@ -1,3 +1,6 @@
+// === НАСТРОЙКИ СЕРВЕРА ===
+var SERVER_URL = "https://lepotafm.store";
+
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
     apiUrl: "https://lepotafm.ru/api/nowplaying/lepotafm",
