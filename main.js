@@ -425,37 +425,42 @@ window.doAuth = function(action) {
     .catch(function(err) { msg.innerText = "Ошибка сети"; });
 };
 
-// 4. ГЕНЕРАЦИЯ (С учетом проектов и лимитов)
+// === ПЕРЕМЕННЫЕ ДЛЯ ГЕНЕРАЦИИ ===
+var lastGeneratedUrl = ""; // Тут храним ссылку на игру
+
+// === ФУНКЦИЯ ОТКРЫТИЯ В НОВОМ ОКНЕ (ИЗОЛЯЦИЯ) ===
+window.openIsolatedGame = function() {
+    if (!lastGeneratedUrl) return;
+    // Открываем в новом окне (в Android WebView это создаст новое окно браузера или вкладку)
+    window.open(lastGeneratedUrl, '_blank');
+};
+
+// === ГЕНЕРАЦИЯ ===
 window.startGeneration = function() {
     var promptText = document.getElementById('ai-prompt').value;
     var btn = document.getElementById('ai-submit-btn');
     var status = document.getElementById('ai-status');
-    var resultArea = document.getElementById('ai-result-container');
-    var frame = document.getElementById('generated-frame');
     var textArea = document.getElementById('text-output');
+    var cardSlot = document.getElementById('game-card-slot');
     
-    // Берем имя проекта (или default, если пусто)
+    // Имя проекта
     var projectInput = document.getElementById('project-name');
     var project = (projectInput && projectInput.value.trim() !== "") ? projectInput.value : 'default';
 
     if (!promptText.trim()) return;
 
-    // UI: Блокировка
     btn.disabled = true;
-    status.innerText = "СВЯЗЬ С НЕЙРОСЕТЬЮ...";
-    resultArea.classList.remove('hidden');
+    status.innerText = "ДУМАЮ (ЧИТАЮ КОНТЕКСТ)...";
     
-    // Очистка
-    frame.style.display = 'none';
-    textArea.style.display = 'none';
-    frame.src = 'about:blank';
-    textArea.innerText = '';
+    // Скрываем старое
+    cardSlot.classList.add('hidden');
+    textArea.classList.add('hidden');
 
     var formData = new FormData();
     formData.append('text', promptText);
     formData.append('mode', currentAiMode);
-    formData.append('device_id', deviceId); // ID для гостей
-    formData.append('project', project);    // Папка проекта
+    formData.append('device_id', deviceId);
+    formData.append('project', project);
 
     fetch('maker.php', { method: 'POST', body: formData })
     .then(function(res) { return res.json(); })
@@ -464,17 +469,18 @@ window.startGeneration = function() {
             status.innerText = "ГОТОВО!";
             
             if (data.type === 'file') {
-                frame.style.display = 'block';
-                // Добавляем timestamp чтобы обновить кэш
-                frame.src = data.url + "?t=" + Date.now(); 
+                // РЕЖИМ ИГРЫ: Показываем карточку
+                lastGeneratedUrl = data.url; // Запоминаем ссылку
+                document.getElementById('gen-filename').innerText = data.name || "game.html";
+                cardSlot.classList.remove('hidden'); // Показываем карточку
             } else {
-                textArea.style.display = 'block';
+                // РЕЖИМ ТЕКСТА
+                textArea.classList.remove('hidden');
                 textArea.innerText = data.content;
             }
         } else {
-            // ОБРАБОТКА ЛИМИТОВ
             if (data.error === 'LIMIT_REACHED') {
-                status.innerText = "ЛИМИТ ИСЧЕРПАН!";
+                status.innerText = "ЛИМИТ!";
                 document.getElementById('auth-modal').classList.remove('hidden');
             } else {
                 status.innerText = "ОШИБКА: " + data.error;
