@@ -1,5 +1,5 @@
 // === НАСТРОЙКИ СЕРВЕРА ===
-var SERVER_URL = "https://lepotafm.store:8080";
+var SERVER_URL = "https://lepotafm.store:8443";
 
 var CONFIG = {
     streamUrl: "https://lepotafm.ru/listen/lepotafm/radio.mp3",
@@ -498,3 +498,4 @@ window.startGeneration = function() {
         btn.disabled = false;
     });
 };
+
