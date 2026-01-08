@@ -364,7 +364,7 @@ function checkSession() {
     var fd = new FormData();
     fd.append('action', 'check_session');
     
-    fetch('auth.php', { method: 'POST', body: fd })
+    fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         var statusDiv = document.getElementById('user-status');
@@ -389,7 +389,7 @@ window.doAuth = function(action) {
     if (action === 'logout') {
         var fd = new FormData();
         fd.append('action', 'logout');
-        fetch('auth.php', { method: 'POST', body: fd }).then(function() {
+        fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd }).then(function() {
             checkSession();
         });
         return;
@@ -411,7 +411,7 @@ window.doAuth = function(action) {
 
     msg.innerText = "Загрузка...";
 
-    fetch('auth.php', { method: 'POST', body: fd })
+    fetch('http://k96266d9.beget.tech/auth.php', { method: 'POST', body: fd })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.status === 'success') {
@@ -462,7 +462,7 @@ window.startGeneration = function() {
     formData.append('device_id', deviceId);
     formData.append('project', project);
 
-    fetch('maker.php', { method: 'POST', body: formData })
+    fetch('http://k96266d9.beget.tech/maker.php', { method: 'POST', body: formData })
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.success) {
